@@ -89,4 +89,17 @@ func TestConvertYAML(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "https://auth.com?client_id=id&redirect_uri=%2Fgitauth%2Fgitlab%2Fcallback&response_type=code&scope=read", config[0].AuthCodeURL(""))
 	})
+
+	t.Run("CustomBaseURL", func(t *testing.T) {
+		t.Parallel()
+		config, err := gitauth.ConvertConfig([]codersdk.GitAuthConfig{{
+			Type:         codersdk.GitProviderGitHub,
+			ClientID:     "id",
+			ClientSecret: "secret",
+			BaseURL:      "https://github.coder.com",
+		}}, &url.URL{})
+		require.NoError(t, err)
+		require.Equal(t, "https://github.coder.com", config[0].BaseURL)
+		require.Equal(t, "https://github.coder.com/api/v3/user", config[0].ValidateURL)
+	})
 }

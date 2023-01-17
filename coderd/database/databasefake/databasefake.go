@@ -3711,6 +3711,18 @@ func (q *fakeQuerier) GetReplicasUpdatedAfter(_ context.Context, updatedAt time.
 	return replicas, nil
 }
 
+func (q *fakeQuerier) GetGitAuthLinks(_ context.Context, id uuid.UUID) ([]database.GitAuthLink, error) {
+	q.mutex.RLock()
+	defer q.mutex.RUnlock()
+	links := make([]database.GitAuthLink, 0)
+	for _, link := range q.gitAuthLinks {
+		if link.UserID == id {
+			links = append(links, link)
+		}
+	}
+	return links, nil
+}
+
 func (q *fakeQuerier) GetGitAuthLink(_ context.Context, arg database.GetGitAuthLinkParams) (database.GitAuthLink, error) {
 	q.mutex.RLock()
 	defer q.mutex.RUnlock()
@@ -3743,7 +3755,7 @@ func (q *fakeQuerier) InsertGitAuthLink(_ context.Context, arg database.InsertGi
 	return gitAuthLink, nil
 }
 
-func (q *fakeQuerier) UpdateGitAuthLink(_ context.Context, arg database.UpdateGitAuthLinkParams) error {
+func (q *fakeQuerier) UpdateGitAuthLink(_ context.Context, arg database.UpdateGitAuthLinkParams) (database.GitAuthLink, error) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 	for index, gitAuthLink := range q.gitAuthLinks {
@@ -3758,8 +3770,9 @@ func (q *fakeQuerier) UpdateGitAuthLink(_ context.Context, arg database.UpdateGi
 		gitAuthLink.OAuthRefreshToken = arg.OAuthRefreshToken
 		gitAuthLink.OAuthExpiry = arg.OAuthExpiry
 		q.gitAuthLinks[index] = gitAuthLink
+		return gitAuthLink, nil
 	}
-	return nil
+	return database.GitAuthLink{}, sql.ErrNoRows
 }
 
 func (q *fakeQuerier) GetQuotaAllowanceForUser(_ context.Context, userID uuid.UUID) (int64, error) {

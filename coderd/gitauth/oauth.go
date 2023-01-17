@@ -6,35 +6,10 @@ import (
 	"regexp"
 
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/github"
 
 	"github.com/coder/coder/coderd/httpmw"
 	"github.com/coder/coder/codersdk"
 )
-
-// endpoint contains default SaaS URLs for each Git provider.
-var endpoint = map[codersdk.GitProvider]oauth2.Endpoint{
-	codersdk.GitProviderAzureDevops: {
-		AuthURL:  "https://app.vssps.visualstudio.com/oauth2/authorize",
-		TokenURL: "https://app.vssps.visualstudio.com/oauth2/token",
-	},
-	codersdk.GitProviderBitBucket: {
-		AuthURL:  "https://bitbucket.org/site/oauth2/authorize",
-		TokenURL: "https://bitbucket.org/site/oauth2/access_token",
-	},
-	codersdk.GitProviderGitLab: {
-		AuthURL:  "https://gitlab.com/oauth/authorize",
-		TokenURL: "https://gitlab.com/oauth/token",
-	},
-	codersdk.GitProviderGitHub: github.Endpoint,
-}
-
-// validateURL contains defaults for each provider.
-var validateURL = map[codersdk.GitProvider]string{
-	codersdk.GitProviderGitHub:    "https://api.github.com/user",
-	codersdk.GitProviderGitLab:    "https://gitlab.com/oauth/token/info",
-	codersdk.GitProviderBitBucket: "https://api.bitbucket.org/2.0/user",
-}
 
 // scope contains defaults for each Git provider.
 var scope = map[codersdk.GitProvider][]string{

@@ -1,6 +1,9 @@
 -- name: GetGitAuthLink :one
 SELECT * FROM git_auth_links WHERE provider_id = $1 AND user_id = $2;
 
+-- name: GetGitAuthLinks :many
+SELECT * FROM git_auth_links WHERE user_id = $1;
+
 -- name: InsertGitAuthLink :one
 INSERT INTO git_auth_links (
     provider_id,
@@ -20,10 +23,10 @@ INSERT INTO git_auth_links (
     $7
 ) RETURNING *;
 
--- name: UpdateGitAuthLink :exec
+-- name: UpdateGitAuthLink :one
 UPDATE git_auth_links SET
     updated_at = $3,
     oauth_access_token = $4,
     oauth_refresh_token = $5,
     oauth_expiry = $6
-WHERE provider_id = $1 AND user_id = $2;
+WHERE provider_id = $1 AND user_id = $2 RETURNING *;

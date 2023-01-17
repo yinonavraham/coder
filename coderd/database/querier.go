@@ -46,6 +46,7 @@ type sqlcQuerier interface {
 	// This will never count deleted users.
 	GetFilteredUserCount(ctx context.Context, arg GetFilteredUserCountParams) (int64, error)
 	GetGitAuthLink(ctx context.Context, arg GetGitAuthLinkParams) (GitAuthLink, error)
+	GetGitAuthLinks(ctx context.Context, userID uuid.UUID) ([]GitAuthLink, error)
 	GetGitSSHKey(ctx context.Context, userID uuid.UUID) (GitSSHKey, error)
 	GetGroupByID(ctx context.Context, id uuid.UUID) (Group, error)
 	GetGroupByOrgAndName(ctx context.Context, arg GetGroupByOrgAndNameParams) (Group, error)
@@ -170,7 +171,7 @@ type sqlcQuerier interface {
 	ParameterValue(ctx context.Context, id uuid.UUID) (ParameterValue, error)
 	ParameterValues(ctx context.Context, arg ParameterValuesParams) ([]ParameterValue, error)
 	UpdateAPIKeyByID(ctx context.Context, arg UpdateAPIKeyByIDParams) error
-	UpdateGitAuthLink(ctx context.Context, arg UpdateGitAuthLinkParams) error
+	UpdateGitAuthLink(ctx context.Context, arg UpdateGitAuthLinkParams) (GitAuthLink, error)
 	UpdateGitSSHKey(ctx context.Context, arg UpdateGitSSHKeyParams) (GitSSHKey, error)
 	UpdateGroupByID(ctx context.Context, arg UpdateGroupByIDParams) (Group, error)
 	UpdateMemberRoles(ctx context.Context, arg UpdateMemberRolesParams) (OrganizationMember, error)

@@ -32,6 +32,8 @@ type Config struct {
 	// returning it to the user. If omitted, tokens will
 	// not be validated before being returned.
 	ValidateURL string
+	// BaseURL is the root URL for all endpoints.
+	BaseURL string
 }
 
 // ConvertConfig converts the YAML configuration entry to the
@@ -88,25 +90,88 @@ func ConvertConfig(entries []codersdk.GitAuthConfig, accessURL *url.URL) ([]*Con
 			}
 		}
 
+		authURL := entry.AuthURL
+		tokenURL := entry.TokenURL
+		validateURL := entry.ValidateURL
+		baseURL := entry.BaseURL
+
+		if baseURL == "" {
+			baseURL = defaultBaseURL[typ]
+		}
+		parsedBase, err := url.Parse(baseURL)
+		if err != nil {
+			return nil, xerrors.Errorf("parse base url: %w", err)
+		}
+
+		if authURL == "" {
+			switch typ {
+			case codersdk.GitProviderGitHub:
+				authURL, err = parseURL(parsedBase, "/login/oauth/authorize")
+			case codersdk.GitProviderGitLab:
+				authURL, err = parseURL(parsedBase, "/oauth/authorize")
+			case codersdk.GitProviderBitBucket:
+				authURL, err = parseURL(parsedBase, "/site/oauth2/authorize")
+			case codersdk.GitProviderAzureDevops:
+				authURL, err = parseURL(parsedBase, "/oauth2/authorize")
+			default:
+				return nil, xerrors.Errorf("no base auth url for type %q", typ)
+			}
+			if err != nil {
+				return nil, xerrors.Errorf("parse base auth url: %w", err)
+			}
+		}
+		if tokenURL == "" {
+			switch typ {
+			case codersdk.GitProviderGitHub:
+				tokenURL, err = parseURL(parsedBase, "/login/oauth/access_token")
+			case codersdk.GitProviderGitLab:
+				tokenURL, err = parseURL(parsedBase, "/oauth/token")
+			case codersdk.GitProviderBitBucket:
+				tokenURL, err = parseURL(parsedBase, "/site/oauth2/access_token")
+			case codersdk.GitProviderAzureDevops:
+				tokenURL, err = parseURL(parsedBase, "/oauth2/token")
+			default:
+				return nil, xerrors.Errorf("no base token url for type %q", typ)
+			}
+			if err != nil {
+				return nil, xerrors.Errorf("parse base token url: %w", err)
+			}
+		}
+		if validateURL == "" {
+			switch typ {
+			case codersdk.GitProviderGitHub:
+				// If we're on hosted GitHub, use the subdomain!
+				if baseURL == defaultBaseURL[typ] {
+					validateURL = "https://api.github.com/user"
+					break
+				}
+				validateURL, err = parseURL(parsedBase, "/api/v3/user")
+			case codersdk.GitProviderGitLab:
+				validateURL, err = parseURL(parsedBase, "/oauth/token/info")
+			case codersdk.GitProviderBitBucket:
+				if baseURL == defaultBaseURL[typ] {
+					validateURL = "https://api.bitbucket.org/2.0/user"
+					break
+				}
+				// Validation is not implemented for self-hosted BitBucket server.
+			}
+			if err != nil {
+				return nil, xerrors.Errorf("parse validate url: %w", err)
+			}
+		}
+
 		oauth2Config := &oauth2.Config{
 			ClientID:     entry.ClientID,
 			ClientSecret: entry.ClientSecret,
-			Endpoint:     endpoint[typ],
-			RedirectURL:  authRedirect.String(),
-			Scopes:       scope[typ],
-		}
-
-		if entry.AuthURL != "" {
-			oauth2Config.Endpoint.AuthURL = entry.AuthURL
-		}
-		if entry.TokenURL != "" {
-			oauth2Config.Endpoint.TokenURL = entry.TokenURL
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  authURL,
+				TokenURL: tokenURL,
+			},
+			RedirectURL: authRedirect.String(),
+			Scopes:      scope[typ],
 		}
 		if entry.Scopes != nil && len(entry.Scopes) > 0 {
 			oauth2Config.Scopes = entry.Scopes
-		}
-		if entry.ValidateURL == "" {
-			entry.ValidateURL = validateURL[typ]
 		}
 
 		var oauthConfig httpmw.OAuth2Config = oauth2Config
@@ -121,8 +186,27 @@ func ConvertConfig(entries []codersdk.GitAuthConfig, accessURL *url.URL) ([]*Con
 			Regex:        regex,
 			Type:         typ,
 			NoRefresh:    entry.NoRefresh,
-			ValidateURL:  entry.ValidateURL,
+			ValidateURL:  validateURL,
+			BaseURL:      baseURL,
 		})
 	}
 	return configs, nil
+}
+
+// parseURL parses the path provided on the base but returns a string
+// instead of a URL for reducing duplicate code above.
+func parseURL(base *url.URL, path string) (string, error) {
+	parsed, err := base.Parse(path)
+	if err != nil {
+		return "", err
+	}
+	return parsed.String(), nil
+}
+
+// defaultBaseURL contains defaults to use in API clients.
+var defaultBaseURL = map[codersdk.GitProvider]string{
+	codersdk.GitProviderBitBucket:   "https://bitbucket.org",
+	codersdk.GitProviderGitHub:      "https://github.com",
+	codersdk.GitProviderGitLab:      "https://gitlab.com",
+	codersdk.GitProviderAzureDevops: "https://app.vssps.visualstudio.com",
 }
