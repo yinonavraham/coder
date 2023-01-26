@@ -1450,6 +1450,8 @@ type TemplateVersionParameter struct {
 	ValidationMax int32 `db:"validation_max" json:"validation_max"`
 	// Validation: error displayed when the regex does not match.
 	ValidationError string `db:"validation_error" json:"validation_error"`
+	// Git providers that must be authenticated for the parameter value to be consumable.
+	GitProviders []string `db:"git_providers" json:"git_providers"`
 }
 
 type User struct {

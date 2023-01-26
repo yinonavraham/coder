@@ -6294,6 +6294,9 @@ const docTemplate = `{
                 "auth_url": {
                     "type": "string"
                 },
+                "base_url": {
+                    "type": "string"
+                },
                 "client_id": {
                     "type": "string"
                 },

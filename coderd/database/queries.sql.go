@@ -3553,7 +3553,7 @@ func (q *sqlQuerier) UpdateTemplateMetaByID(ctx context.Context, arg UpdateTempl
 }
 
 const getTemplateVersionParameters = `-- name: GetTemplateVersionParameters :many
-SELECT template_version_id, name, description, type, mutable, default_value, icon, options, validation_regex, validation_min, validation_max, validation_error FROM template_version_parameters WHERE template_version_id = $1
+SELECT template_version_id, name, description, type, mutable, default_value, icon, options, validation_regex, validation_min, validation_max, validation_error, git_providers FROM template_version_parameters WHERE template_version_id = $1
 `
 
 func (q *sqlQuerier) GetTemplateVersionParameters(ctx context.Context, templateVersionID uuid.UUID) ([]TemplateVersionParameter, error) {
@@ -3578,6 +3578,7 @@ func (q *sqlQuerier) GetTemplateVersionParameters(ctx context.Context, templateV
 			&i.ValidationMin,
 			&i.ValidationMax,
 			&i.ValidationError,
+			pq.Array(&i.GitProviders),
 		); err != nil {
 			return nil, err
 		}
@@ -3622,7 +3623,7 @@ VALUES
         $10,
         $11,
         $12
-    ) RETURNING template_version_id, name, description, type, mutable, default_value, icon, options, validation_regex, validation_min, validation_max, validation_error
+    ) RETURNING template_version_id, name, description, type, mutable, default_value, icon, options, validation_regex, validation_min, validation_max, validation_error, git_providers
 `
 
 type InsertTemplateVersionParameterParams struct {
@@ -3669,6 +3670,7 @@ func (q *sqlQuerier) InsertTemplateVersionParameter(ctx context.Context, arg Ins
 		&i.ValidationMin,
 		&i.ValidationMax,
 		&i.ValidationError,
+		pq.Array(&i.GitProviders),
 	)
 	return i, err
 }

@@ -326,6 +326,7 @@ curl -X GET http://coder-server:8080/api/v2/config/deployment \
     "default": [
       {
         "auth_url": "string",
+        "base_url": "string",
         "client_id": "string",
         "id": "string",
         "no_refresh": true,
@@ -346,6 +347,7 @@ curl -X GET http://coder-server:8080/api/v2/config/deployment \
     "value": [
       {
         "auth_url": "string",
+        "base_url": "string",
         "client_id": "string",
         "id": "string",
         "no_refresh": true,

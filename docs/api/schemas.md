@@ -1454,6 +1454,7 @@ CreateParameterRequest is a structure used to create a new parameter value for a
     "default": [
       {
         "auth_url": "string",
+        "base_url": "string",
         "client_id": "string",
         "id": "string",
         "no_refresh": true,
@@ -1474,6 +1475,7 @@ CreateParameterRequest is a structure used to create a new parameter value for a
     "value": [
       {
         "auth_url": "string",
+        "base_url": "string",
         "client_id": "string",
         "id": "string",
         "no_refresh": true,
@@ -2188,6 +2190,7 @@ CreateParameterRequest is a structure used to create a new parameter value for a
   "default": [
     {
       "auth_url": "string",
+      "base_url": "string",
       "client_id": "string",
       "id": "string",
       "no_refresh": true,
@@ -2208,6 +2211,7 @@ CreateParameterRequest is a structure used to create a new parameter value for a
   "value": [
     {
       "auth_url": "string",
+      "base_url": "string",
       "client_id": "string",
       "id": "string",
       "no_refresh": true,
@@ -2558,6 +2562,7 @@ CreateParameterRequest is a structure used to create a new parameter value for a
 ```json
 {
   "auth_url": "string",
+  "base_url": "string",
   "client_id": "string",
   "id": "string",
   "no_refresh": true,
@@ -2574,6 +2579,7 @@ CreateParameterRequest is a structure used to create a new parameter value for a
 | Name           | Type            | Required | Restrictions | Description |
 | -------------- | --------------- | -------- | ------------ | ----------- |
 | `auth_url`     | string          | false    |              |             |
+| `base_url`     | string          | false    |              |             |
 | `client_id`    | string          | false    |              |             |
 | `id`           | string          | false    |              |             |
 | `no_refresh`   | boolean         | false    |              |             |
