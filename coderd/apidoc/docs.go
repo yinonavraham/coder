@@ -362,6 +362,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/debug/coordinator": {
+            "get": {
+                "security": [
+                    {
+                        "CoderSessionToken": []
+                    }
+                ],
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Debug"
+                ],
+                "summary": "Debug Info Wireguard Coordinator",
+                "operationId": "debug-info-wireguard-coordinator",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/entitlements": {
             "get": {
                 "security": [
@@ -382,6 +404,34 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/codersdk.Entitlements"
+                        }
+                    }
+                }
+            }
+        },
+        "/experiments": {
+            "get": {
+                "security": [
+                    {
+                        "CoderSessionToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "General"
+                ],
+                "summary": "Get experiments",
+                "operationId": "get-experiments",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/codersdk.Experiment"
+                            }
                         }
                     }
                 }
@@ -593,6 +643,31 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/codersdk.Group"
+                        }
+                    }
+                }
+            }
+        },
+        "/insights/daus": {
+            "get": {
+                "security": [
+                    {
+                        "CoderSessionToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Insights"
+                ],
+                "summary": "Get deployment DAUs",
+                "operationId": "get-deployment-daus",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/codersdk.DeploymentDAUsResponse"
                         }
                     }
                 }
@@ -2516,6 +2591,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/templateversions/{templateversion}/rich-parameters": {
+            "get": {
+                "security": [
+                    {
+                        "CoderSessionToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Templates"
+                ],
+                "summary": "Get rich parameters by template version",
+                "operationId": "get-rich-parameters-by-template-version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Template version ID",
+                        "name": "templateversion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/parameter.ComputedValue"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/templateversions/{templateversion}/schema": {
             "get": {
                 "security": [
@@ -3907,6 +4020,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspaceagents/me/report-lifecycle": {
+            "post": {
+                "security": [
+                    {
+                        "CoderSessionToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agents"
+                ],
+                "summary": "Submit workspace agent lifecycle state",
+                "operationId": "submit-workspace-agent-lifecycle-state",
+                "parameters": [
+                    {
+                        "description": "Workspace agent lifecycle request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/codersdk.PostWorkspaceAgentLifecycleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success"
+                    }
+                },
+                "x-apidocgen": {
+                    "skip": true
+                }
+            }
+        },
         "/workspaceagents/me/report-stats": {
             "post": {
                 "security": [
@@ -4265,6 +4414,43 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/codersdk.ProvisionerJobLog"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/workspacebuilds/{workspacebuild}/parameters": {
+            "get": {
+                "security": [
+                    {
+                        "CoderSessionToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Builds"
+                ],
+                "summary": "Get build parameters for workspace build",
+                "operationId": "get-build-parameters-for-workspace-build",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace build ID",
+                        "name": "workspacebuild",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/codersdk.WorkspaceBuildParameter"
                             }
                         }
                     }
@@ -5416,6 +5602,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/codersdk.CreateParameterRequest"
                     }
                 },
+                "rich_parameter_values": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/codersdk.WorkspaceBuildParameter"
+                    }
+                },
                 "workspace_name": {
                     "type": "string"
                 }
@@ -5435,6 +5627,18 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/codersdk.AuditAction"
+                        }
+                    ]
+                },
+                "build_reason": {
+                    "enum": [
+                        "autostart",
+                        "autostop",
+                        "initiator"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/codersdk.BuildReason"
                         }
                     ]
                 },
@@ -5530,6 +5734,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/codersdk.CreateParameterRequest"
                     }
                 },
+                "rich_parameter_values": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/codersdk.WorkspaceBuildParameter"
+                    }
+                },
                 "state": {
                     "type": "array",
                     "items": {
@@ -5623,6 +5833,17 @@ const docTemplate = `{
                 }
             }
         },
+        "codersdk.DangerousConfig": {
+            "type": "object",
+            "properties": {
+                "allow_path_app_sharing": {
+                    "$ref": "#/definitions/codersdk.DeploymentConfigField-bool"
+                },
+                "allow_path_app_site_owner_access": {
+                    "$ref": "#/definitions/codersdk.DeploymentConfigField-bool"
+                }
+            }
+        },
         "codersdk.DeploymentConfig": {
             "type": "object",
             "properties": {
@@ -5655,11 +5876,25 @@ const docTemplate = `{
                 "cache_directory": {
                     "$ref": "#/definitions/codersdk.DeploymentConfigField-string"
                 },
+                "dangerous": {
+                    "$ref": "#/definitions/codersdk.DangerousConfig"
+                },
                 "derp": {
                     "$ref": "#/definitions/codersdk.DERP"
                 },
-                "experimental": {
+                "disable_path_apps": {
                     "$ref": "#/definitions/codersdk.DeploymentConfigField-bool"
+                },
+                "experimental": {
+                    "description": "DEPRECATED: Use Experiments instead.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/codersdk.DeploymentConfigField-bool"
+                        }
+                    ]
+                },
+                "experiments": {
+                    "$ref": "#/definitions/codersdk.DeploymentConfigField-array_string"
                 },
                 "gitauth": {
                     "$ref": "#/definitions/codersdk.DeploymentConfigField-array_codersdk_GitAuthConfig"
@@ -5939,6 +6174,17 @@ const docTemplate = `{
                 }
             }
         },
+        "codersdk.DeploymentDAUsResponse": {
+            "type": "object",
+            "properties": {
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/codersdk.DAUEntry"
+                    }
+                }
+            }
+        },
         "codersdk.Entitlement": {
             "type": "string",
             "enum": [
@@ -5962,6 +6208,7 @@ const docTemplate = `{
                     }
                 },
                 "experimental": {
+                    "description": "DEPRECATED: use Experiments instead.",
                     "type": "boolean"
                 },
                 "features": {
@@ -5983,6 +6230,15 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "codersdk.Experiment": {
+            "type": "string",
+            "enum": [
+                "authz_querier"
+            ],
+            "x-enum-varnames": [
+                "ExperimentAuthzQuerier"
+            ]
         },
         "codersdk.Feature": {
             "type": "object",
@@ -6581,6 +6837,14 @@ const docTemplate = `{
                 "ParameterSourceSchemeNone",
                 "ParameterSourceSchemeData"
             ]
+        },
+        "codersdk.PostWorkspaceAgentLifecycleRequest": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/codersdk.WorkspaceAgentLifecycle"
+                }
+            }
         },
         "codersdk.PostWorkspaceAgentVersionRequest": {
             "description": "x-apidocgen:skip",
@@ -7510,6 +7774,10 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date-time"
                 },
+                "delay_login_until_ready": {
+                    "description": "DelayLoginUntilReady if true, the agent will delay logins until it is ready (e.g. executing startup script has ended).",
+                    "type": "boolean"
+                },
                 "directory": {
                     "type": "string"
                 },
@@ -7545,6 +7813,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/codersdk.DERPRegion"
                     }
                 },
+                "lifecycle_state": {
+                    "$ref": "#/definitions/codersdk.WorkspaceAgentLifecycle"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -7558,18 +7829,12 @@ const docTemplate = `{
                 "startup_script": {
                     "type": "string"
                 },
+                "startup_script_timeout_seconds": {
+                    "description": "StartupScriptTimeoutSeconds is the number of seconds to wait for the startup script to complete. If the script does not complete within this time, the agent lifecycle will be marked as start_timeout.",
+                    "type": "integer"
+                },
                 "status": {
-                    "enum": [
-                        "connecting",
-                        "connected",
-                        "disconnected",
-                        "timeout"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/codersdk.WorkspaceAgentStatus"
-                        }
-                    ]
+                    "$ref": "#/definitions/codersdk.WorkspaceAgentStatus"
                 },
                 "troubleshooting_url": {
                     "type": "string"
@@ -7613,6 +7878,23 @@ const docTemplate = `{
                 }
             }
         },
+        "codersdk.WorkspaceAgentLifecycle": {
+            "type": "string",
+            "enum": [
+                "created",
+                "starting",
+                "start_timeout",
+                "start_error",
+                "ready"
+            ],
+            "x-enum-varnames": [
+                "WorkspaceAgentLifecycleCreated",
+                "WorkspaceAgentLifecycleStarting",
+                "WorkspaceAgentLifecycleStartTimeout",
+                "WorkspaceAgentLifecycleStartError",
+                "WorkspaceAgentLifecycleReady"
+            ]
+        },
         "codersdk.WorkspaceAgentMetadata": {
             "type": "object",
             "properties": {
@@ -7643,6 +7925,9 @@ const docTemplate = `{
                 },
                 "startup_script": {
                     "type": "string"
+                },
+                "startup_script_timeout": {
+                    "type": "integer"
                 },
                 "vscode_port_proxy_uri": {
                     "type": "string"
@@ -7854,6 +8139,17 @@ const docTemplate = `{
                     "format": "uuid"
                 },
                 "workspace_owner_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "codersdk.WorkspaceBuildParameter": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }
