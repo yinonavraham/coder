@@ -37,6 +37,7 @@ type TemplateVersionParameter struct {
 	ValidationRegex string                           `json:"validation_regex"`
 	ValidationMin   int32                            `json:"validation_min"`
 	ValidationMax   int32                            `json:"validation_max"`
+	GitProviders    []string                         `json:"git_providers"`
 }
 
 // TemplateVersionParameterOption represents a selectable option for a template parameter.

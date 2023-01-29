@@ -1813,16 +1813,17 @@ func (q *fakeQuerier) GetTemplateVersionByTemplateIDAndName(_ context.Context, a
 	return database.TemplateVersion{}, sql.ErrNoRows
 }
 
-func (q *fakeQuerier) GetTemplateVersionParameters(_ context.Context, templateVersionID uuid.UUID) ([]database.TemplateVersionParameter, error) {
+func (q *fakeQuerier) GetTemplateVersionParameters(_ context.Context, templateVersionIDs []uuid.UUID) ([]database.TemplateVersionParameter, error) {
 	q.mutex.RLock()
 	defer q.mutex.RUnlock()
 
 	parameters := make([]database.TemplateVersionParameter, 0)
 	for _, param := range q.templateVersionParameters {
-		if param.TemplateVersionID != templateVersionID {
-			continue
+		for _, templateVersionID := range templateVersionIDs {
+			if templateVersionID == param.TemplateVersionID {
+				parameters = append(parameters, param)
+			}
 		}
-		parameters = append(parameters, param)
 	}
 	return parameters, nil
 }
@@ -2634,6 +2635,7 @@ func (q *fakeQuerier) InsertTemplateVersionParameter(_ context.Context, arg data
 		ValidationRegex:   arg.ValidationRegex,
 		ValidationMin:     arg.ValidationMin,
 		ValidationMax:     arg.ValidationMax,
+		GitProviders:      arg.GitProviders,
 	}
 	q.templateVersionParameters = append(q.templateVersionParameters, param)
 	return param, nil

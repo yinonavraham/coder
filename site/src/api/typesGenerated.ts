@@ -632,6 +632,23 @@ export interface Replica {
   readonly database_latency: number
 }
 
+// From codersdk/git.go
+export interface ResolvedGitRepo {
+  readonly name: string
+  readonly description: string
+  readonly owner: string
+  readonly ExternalURL: string
+  readonly CloneURL: string
+  readonly Stars?: number
+  readonly templates: ResolvedGitRepoTemplate[]
+}
+
+// From codersdk/git.go
+export interface ResolvedGitRepoTemplate extends Template {
+  readonly template_version: TemplateVersion
+  readonly parameter_name: string
+}
+
 // From codersdk/error.go
 export interface Response {
   readonly message: string
@@ -770,6 +787,7 @@ export interface TemplateVersionParameter {
   readonly validation_regex: string
   readonly validation_min: number
   readonly validation_max: number
+  readonly git_providers: string[]
 }
 
 // From codersdk/templateversions.go

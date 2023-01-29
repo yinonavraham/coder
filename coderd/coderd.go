@@ -384,6 +384,10 @@ func New(options *Options) *API {
 			r.Get("/{fileID}", api.fileByID)
 			r.Post("/", api.postFile)
 		})
+		r.Route("/git", func(r chi.Router) {
+			r.Use(apiKeyMiddleware)
+			r.Get("/repos", api.gitRepos)
+		})
 		r.Route("/organizations", func(r chi.Router) {
 			r.Use(
 				apiKeyMiddleware,

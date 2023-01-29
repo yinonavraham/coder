@@ -37,7 +37,7 @@ func (e *executor) basicEnv() []string {
 	// Only Linux reliably works with the Terraform plugin
 	// cache directory. It's unknown why this is.
 	if e.cachePath != "" && runtime.GOOS == "linux" {
-		env = append(env, "TF_PLUGIN_CACHE_DIR="+e.cachePath)
+		env = append(env, "TF_PLUGIN_CACHE_DIR="+os.Getenv("HOME")+"/.terraform.d/plugin-cache")
 	}
 	return env
 }

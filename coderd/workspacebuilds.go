@@ -449,7 +449,7 @@ func (api *API) postWorkspaceBuilds(rw http.ResponseWriter, r *http.Request) {
 		state = priorHistory.ProvisionerState
 	}
 
-	dbTemplateVersionParameters, err := api.Database.GetTemplateVersionParameters(ctx, createBuild.TemplateVersionID)
+	dbTemplateVersionParameters, err := api.Database.GetTemplateVersionParameters(ctx, []uuid.UUID{createBuild.TemplateVersionID})
 	if err != nil {
 		httpapi.Write(ctx, rw, http.StatusInternalServerError, codersdk.Response{
 			Message: "Internal error fetching template version parameters.",

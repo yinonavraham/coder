@@ -415,6 +415,7 @@ func ConvertResourcesAndParameters(modules []*tfjson.StateModule, rawGraph strin
 		if err != nil {
 			return nil, nil, xerrors.Errorf("decode map values for coder_parameter.%s: %w", resource.Name, err)
 		}
+
 		protoParam := &proto.RichParameter{
 			Name:         param.Name,
 			Description:  param.Description,
@@ -422,6 +423,7 @@ func ConvertResourcesAndParameters(modules []*tfjson.StateModule, rawGraph strin
 			Mutable:      param.Mutable,
 			DefaultValue: param.Default,
 			Icon:         param.Icon,
+			GitProviders: param.GitProviders,
 		}
 		if len(param.Validation) == 1 {
 			protoParam.ValidationRegex = param.Validation[0].Regex

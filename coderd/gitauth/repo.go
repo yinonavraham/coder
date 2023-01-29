@@ -16,6 +16,7 @@ type Repository struct {
 	// ExternalURL is a link to a repo.
 	// e.g. https://github.com/coder/coder
 	ExternalURL string
+	CloneURL    string
 	// Owner is the organization or namespace name.
 	// e.g. coder
 	Owner string
@@ -80,6 +81,7 @@ func Repositories(ctx context.Context, config *Config, opts RepositoriesOptions)
 				ListOptions: github.ListOptions{
 					Page: opts.Page,
 				},
+				Sort: "updated",
 			})
 			if err != nil {
 				return nil, false, xerrors.Errorf("list repositories: %w", err)
@@ -89,6 +91,7 @@ func Repositories(ctx context.Context, config *Config, opts RepositoriesOptions)
 		for _, repo := range result {
 			repos = append(repos, Repository{
 				ExternalURL: repo.GetHTMLURL(),
+				CloneURL:    repo.GetCloneURL(),
 				Owner:       repo.Owner.GetLogin(),
 				Name:        repo.GetName(),
 				Description: repo.GetDescription(),

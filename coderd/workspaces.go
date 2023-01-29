@@ -391,7 +391,7 @@ func (api *API) postWorkspacesByOrganization(rw http.ResponseWriter, r *http.Req
 		return
 	}
 
-	dbTemplateVersionParameters, err := api.Database.GetTemplateVersionParameters(ctx, templateVersion.ID)
+	dbTemplateVersionParameters, err := api.Database.GetTemplateVersionParameters(ctx, []uuid.UUID{templateVersion.ID})
 	if err != nil {
 		httpapi.Write(ctx, rw, http.StatusInternalServerError, codersdk.Response{
 			Message: "Internal error fetching template version parameters.",

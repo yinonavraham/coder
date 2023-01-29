@@ -223,7 +223,7 @@ func (api *API) templateVersionRichParameters(rw http.ResponseWriter, r *http.Re
 		})
 		return
 	}
-	dbTemplateVersionParameters, err := api.Database.GetTemplateVersionParameters(ctx, templateVersion.ID)
+	dbTemplateVersionParameters, err := api.Database.GetTemplateVersionParameters(ctx, []uuid.UUID{templateVersion.ID})
 	if err != nil {
 		httpapi.Write(ctx, rw, http.StatusInternalServerError, codersdk.Response{
 			Message: "Internal error fetching template version parameters.",
@@ -1415,6 +1415,7 @@ func convertTemplateVersionParameter(param database.TemplateVersionParameter) (c
 		ValidationMin:   param.ValidationMin,
 		ValidationMax:   param.ValidationMax,
 		ValidationError: param.ValidationError,
+		GitProviders:    param.GitProviders,
 	}, nil
 }
 
