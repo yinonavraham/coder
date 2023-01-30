@@ -1,12 +1,5 @@
 <div align="center">
-  <img src="./docs/images/logo.png" style="width: 128px">
-
-  <h1>
-  Self-Hosted Remote Development Environments
-  </h1>
-
-  <img src="./docs/images/banner.png" style="width: 650px">
-
+  <img src="./docs/images/banner.png">
   <br>
   <br>
 
