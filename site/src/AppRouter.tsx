@@ -74,6 +74,10 @@ const GeneralSettingsPage = lazy(
       "./pages/DeploySettingsPage/GeneralSettingsPage/GeneralSettingsPage"
     ),
 )
+const BuildSettingsPage = lazy(
+  () =>
+    import("./pages/DeploySettingsPage/BuildSettingsPage/BuildSettingsPage"),
+)
 const SecuritySettingsPage = lazy(
   () =>
     import(
@@ -188,6 +192,7 @@ export const AppRouter: FC = () => {
                 element={<DeploySettingsLayout />}
               >
                 <Route path="general" element={<GeneralSettingsPage />} />
+                <Route path="builds" element={<BuildSettingsPage />} />
                 <Route path="security" element={<SecuritySettingsPage />} />
                 <Route path="appearance" element={<AppearanceSettingsPage />} />
                 <Route path="network" element={<NetworkSettingsPage />} />

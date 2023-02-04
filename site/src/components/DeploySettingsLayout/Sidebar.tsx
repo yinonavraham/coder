@@ -4,6 +4,7 @@ import LaunchOutlined from "@material-ui/icons/LaunchOutlined"
 import LockRounded from "@material-ui/icons/LockOutlined"
 import Globe from "@material-ui/icons/PublicOutlined"
 import VpnKeyOutlined from "@material-ui/icons/VpnKeyOutlined"
+import CloudQueueIcon from "@material-ui/icons/CloudQueue"
 import { GitIcon } from "components/Icons/GitIcon"
 import { Stack } from "components/Stack/Stack"
 import { ElementType, PropsWithChildren, ReactNode, FC } from "react"
@@ -47,6 +48,12 @@ export const Sidebar: React.FC = () => {
         icon={<SidebarNavItemIcon icon={LaunchOutlined} />}
       >
         General
+      </SidebarNavItem>
+      <SidebarNavItem
+        href="builds"
+        icon={<SidebarNavItemIcon icon={CloudQueueIcon} />}
+      >
+        Builds
       </SidebarNavItem>
       <SidebarNavItem
         href="appearance"
