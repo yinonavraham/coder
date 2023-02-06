@@ -6383,6 +6383,202 @@ func (q *sqlQuerier) InsertWorkspaceResourceMetadata(ctx context.Context, arg In
 	return items, nil
 }
 
+const getWorkspaceBuildStatus = `-- name: GetWorkspaceBuildStatus :many
+SELECT CASE
+    WHEN
+		latest_build.started_at IS NULL
+	THEN 'pending'
+
+	WHEN
+		latest_build.started_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.completed_at IS NULL AND
+		latest_build.updated_at - INTERVAL '30 seconds' < NOW() AND
+		latest_build.transition = 'start'
+	THEN 'starting'
+
+	WHEN
+		latest_build.completed_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.error IS NULL AND
+		latest_build.transition = 'start'
+	THEN 'running'
+
+	WHEN
+		latest_build.started_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.completed_at IS NULL AND
+		latest_build.updated_at - INTERVAL '30 seconds' < NOW() AND
+		latest_build.transition = 'stop'
+	THEN 'stopping'
+
+	WHEN
+		latest_build.completed_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.error IS NULL AND
+		latest_build.transition = 'stop'
+	THEN 'stopped'
+
+	WHEN
+		(latest_build.canceled_at IS NOT NULL AND
+		latest_build.error IS NOT NULL) OR
+		(latest_build.completed_at IS NOT NULL AND
+		latest_build.error IS NOT NULL)
+	THEN 'failed'
+
+	WHEN
+		latest_build.canceled_at IS NOT NULL AND
+		latest_build.completed_at IS NULL
+	THEN 'canceling'
+
+	WHEN
+		latest_build.canceled_at IS NOT NULL AND
+		latest_build.completed_at IS NOT NULL
+	THEN 'canceled'
+
+	WHEN
+		latest_build.started_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.completed_at IS NOT NULL AND
+		latest_build.updated_at - INTERVAL '30 seconds' < NOW() AND
+		latest_build.transition = 'delete'
+	THEN 'deleted'
+
+	WHEN
+		latest_build.completed_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.error IS NULL AND
+		latest_build.transition = 'delete'
+	THEN 'deleting'
+
+	ELSE 'unknown'
+  END,
+  COUNT(workspaces.id) AS COUNT
+FROM
+	workspaces
+LEFT JOIN LATERAL (
+	SELECT
+		workspace_builds.transition,
+		provisioner_jobs.id AS provisioner_job_id,
+		provisioner_jobs.started_at,
+		provisioner_jobs.updated_at,
+		provisioner_jobs.canceled_at,
+		provisioner_jobs.completed_at,
+		provisioner_jobs.error
+	FROM
+		workspace_builds
+	LEFT JOIN
+		provisioner_jobs
+	ON
+		provisioner_jobs.id = workspace_builds.job_id
+	WHERE
+		workspace_builds.workspace_id = workspaces.id
+	ORDER BY
+		build_number DESC
+	LIMIT
+		1
+) latest_build ON TRUE
+GROUP BY CASE
+    WHEN
+		latest_build.started_at IS NULL
+	THEN 'pending'
+
+	WHEN
+		latest_build.started_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.completed_at IS NULL AND
+		latest_build.updated_at - INTERVAL '30 seconds' < NOW() AND
+		latest_build.transition = 'start'
+	THEN 'starting'
+
+	WHEN
+		latest_build.completed_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.error IS NULL AND
+		latest_build.transition = 'start'
+	THEN 'running'
+
+	WHEN
+		latest_build.started_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.completed_at IS NULL AND
+		latest_build.updated_at - INTERVAL '30 seconds' < NOW() AND
+		latest_build.transition = 'stop'
+	THEN 'stopping'
+
+	WHEN
+		latest_build.completed_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.error IS NULL AND
+		latest_build.transition = 'stop'
+	THEN 'stopped'
+
+	WHEN
+		(latest_build.canceled_at IS NOT NULL AND
+		latest_build.error IS NOT NULL) OR
+		(latest_build.completed_at IS NOT NULL AND
+		latest_build.error IS NOT NULL)
+	THEN 'failed'
+
+	WHEN
+		latest_build.canceled_at IS NOT NULL AND
+		latest_build.completed_at IS NULL
+	THEN 'canceling'
+
+	WHEN
+		latest_build.canceled_at IS NOT NULL AND
+		latest_build.completed_at IS NOT NULL
+	THEN 'canceled'
+
+	WHEN
+		latest_build.started_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.completed_at IS NOT NULL AND
+		latest_build.updated_at - INTERVAL '30 seconds' < NOW() AND
+		latest_build.transition = 'delete'
+	THEN 'deleted'
+
+	WHEN
+		latest_build.completed_at IS NOT NULL AND
+		latest_build.canceled_at IS NULL AND
+		latest_build.error IS NULL AND
+		latest_build.transition = 'delete'
+	THEN 'deleting'
+
+	ELSE 'unknown'
+  END
+`
+
+type GetWorkspaceBuildStatusRow struct {
+	Column1 interface{} `db:"column_1" json:"column_1"`
+	Count   int64       `db:"count" json:"count"`
+}
+
+// We can reduce this with an alias with the upcoming sqlc release
+// https://github.com/kyleconroy/sqlc/issues/1363
+func (q *sqlQuerier) GetWorkspaceBuildStatus(ctx context.Context) ([]GetWorkspaceBuildStatusRow, error) {
+	rows, err := q.db.QueryContext(ctx, getWorkspaceBuildStatus)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetWorkspaceBuildStatusRow
+	for rows.Next() {
+		var i GetWorkspaceBuildStatusRow
+		if err := rows.Scan(&i.Column1, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getWorkspaceByAgentID = `-- name: GetWorkspaceByAgentID :one
 SELECT
 	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at
