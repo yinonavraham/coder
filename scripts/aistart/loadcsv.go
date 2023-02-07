@@ -2,22 +2,79 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 	"time"
 
-	"github.com/coder/flog"
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
+	"golang.org/x/xerrors"
+
+	"github.com/coder/flog"
 )
 
 func connectDB() (*sql.DB, error) {
 	const envKey = "POSTGRES_URL"
 	url := os.Getenv(envKey)
 	if url == "" {
-		return nil, fmt.Errorf("no $%v provided", envKey)
+		return nil, xerrors.Errorf("no $%v provided", envKey)
 	}
 
 	return sql.Open("postgres", url)
+}
+
+type trainingRow struct {
+	WorkspaceID string `csv:"workspace_id"`
+	// HourOfDay ranges from 0 to 23
+	HourOfDay int `csv:"hour"`
+	// Day of Week ranges from 0 to 6
+	DayOfWeek int  `csv:"day"`
+	Used      bool `csv:"used"`
+}
+
+type dbRow struct {
+	Time        time.Time
+	WorkspaceID string
+}
+
+func (db dbRow) convert(used bool) trainingRow {
+	return trainingRow{
+		WorkspaceID: db.WorkspaceID,
+		HourOfDay:   db.Time.Hour(),
+		DayOfWeek:   int(db.Time.Weekday()),
+		Used:        used,
+	}
+}
+
+// generateTrainingRows accepts sparse input data from the DB and creates
+// trainingRows suitable to enter a prediction model.
+func generateTrainingRows(rs []dbRow) []trainingRow {
+	workspaceIDs := make(map[string]struct{})
+	for _, r := range rs {
+		workspaceIDs[r.WorkspaceID] = struct{}{}
+	}
+
+	var trainingRows []trainingRow
+
+	last := rs[0].Time
+	for _, r := range rs {
+		if !r.Time.Equal(last) && !last.IsZero() {
+			// We just skipped a time-slot, we must fill in the blanks.
+			for last.Before(r.Time) {
+				last = last.Add(time.Hour)
+				for wid := range workspaceIDs {
+					trainingRows = append(trainingRows, trainingRow{
+						WorkspaceID: wid,
+						HourOfDay:   last.Hour(),
+						DayOfWeek:   int(last.Weekday()),
+						Used:        false,
+					})
+				}
+			}
+		}
+		trainingRows = append(trainingRows, r.convert(true))
+	}
+
+	return trainingRows
 }
 
 func loadTrainingCSV() *cobra.Command {
@@ -28,28 +85,46 @@ func loadTrainingCSV() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			const q = `SELECT
-			date_trunc('hour', created_at) at_hour
+			const q = `
+			SELECT
+			date_trunc('hour', ag.created_at) at_hour,
+			 workspace_id
 		FROM
-			agent_stats
+					agent_stats ag
+		JOIN workspaces w ON
+			w.id = ag.workspace_id
+		WHERE
+			NOT w.deleted
 		GROUP BY
-			workspace_id, at_hour;
+			workspace_id,
+			user_id,
+			at_hour
+		ORDER BY
+			at_hour ASC;
 		`
 			rows, err := db.Query(q)
 			if err != nil {
 				return err
 			}
 
-			var times []time.Time
+			var rs []dbRow
 			for rows.Next() {
-				var t time.Time
-				err = rows.Scan(&t)
+				var r dbRow
+				err = rows.Scan(&r.Time, &r.WorkspaceID)
 				if err != nil {
-					return nil
+					return err
 				}
-				times = append(times, t)
+				rs = append(rs, r)
 			}
-			flog.Info("times: %+v", times)
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
+
+			flog.Info("loaded %v rows", len(rs))
+			trainingRows := generateTrainingRows(rs)
+			flog.Info("generated %v training rows", len(trainingRows))
+			gocsv.Marshal(trainingRows, os.Stdout)
 			return nil
 		},
 	}
