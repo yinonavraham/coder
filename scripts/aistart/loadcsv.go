@@ -27,8 +27,15 @@ type trainingRow struct {
 	// HourOfDay ranges from 0 to 23
 	HourOfDay int `csv:"hour"`
 	// Day of Week ranges from 0 to 6
-	DayOfWeek int  `csv:"day"`
-	Used      bool `csv:"used"`
+	DayOfWeek int `csv:"day"`
+	Used      int `csv:"used"`
+}
+
+func (t trainingRow) vectorize() vector {
+	return [][]float64{
+		{float64(t.HourOfDay) / 23, float64(t.DayOfWeek / 6)},
+		{float64(t.Used)},
+	}
 }
 
 type dbRow struct {
@@ -36,7 +43,7 @@ type dbRow struct {
 	WorkspaceID string
 }
 
-func (db dbRow) convert(used bool) trainingRow {
+func (db dbRow) convert(used int) trainingRow {
 	return trainingRow{
 		WorkspaceID: db.WorkspaceID,
 		HourOfDay:   db.Time.Hour(),
@@ -66,12 +73,12 @@ func generateTrainingRows(rs []dbRow) []trainingRow {
 						WorkspaceID: wid,
 						HourOfDay:   last.Hour(),
 						DayOfWeek:   int(last.Weekday()),
-						Used:        false,
+						Used:        0,
 					})
 				}
 			}
 		}
-		trainingRows = append(trainingRows, r.convert(true))
+		trainingRows = append(trainingRows, r.convert(1))
 	}
 
 	return trainingRows
@@ -124,8 +131,8 @@ func loadTrainingCSV() *cobra.Command {
 			flog.Info("loaded %v rows", len(rs))
 			trainingRows := generateTrainingRows(rs)
 			flog.Info("generated %v training rows", len(trainingRows))
-			gocsv.Marshal(trainingRows, os.Stdout)
-			return nil
+			err = gocsv.Marshal(trainingRows, os.Stdout)
+			return err
 		},
 	}
 }

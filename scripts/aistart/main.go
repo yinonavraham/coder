@@ -16,6 +16,7 @@ func main() {
 	}
 
 	cmd.AddCommand(loadTrainingCSV())
+	cmd.AddCommand(train())
 
 	cmd, err := cmd.ExecuteC()
 	if err != nil {
