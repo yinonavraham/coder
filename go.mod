@@ -66,6 +66,7 @@ require (
 	github.com/charmbracelet/charm v0.12.1
 	github.com/charmbracelet/lipgloss v0.6.0
 	github.com/cli/safeexec v1.0.0
+	github.com/coder/flog v1.0.0
 	github.com/coder/retry v1.3.0
 	github.com/coder/terraform-provider-coder v0.6.11
 	github.com/coreos/go-oidc/v3 v3.4.0
@@ -86,6 +87,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/go-ping/ping v1.1.0
 	github.com/go-playground/validator/v10 v10.11.0
+	github.com/gocarina/gocsv v0.0.0-20230123225133-763e25b40669
 	github.com/gofrs/flock v0.8.1
 	github.com/gohugoio/hugo v0.109.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -115,6 +117,7 @@ require (
 	github.com/moby/moby v20.10.23+incompatible
 	github.com/open-policy-agent/opa v0.44.0
 	github.com/ory/dockertest/v3 v3.9.1
+	github.com/patrikeh/go-deep v0.0.0-20220129152125-82b8db494fe5
 	github.com/pion/udp v0.1.1
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e
@@ -171,25 +174,17 @@ require (
 
 require (
 	cloud.google.com/go/longrunning v0.3.0 // indirect
-	github.com/coder/flog v1.0.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
-	github.com/gocarina/gocsv v0.0.0-20230123225133-763e25b40669 // indirect
-	github.com/goml/gobrain v0.0.0-20201212123421-2e2d98ca8249 // indirect
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320 // indirect
 	github.com/hashicorp/go-hclog v1.2.1 // indirect
-	github.com/hashicorp/go-plugin v1.4.4 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/logutils v1.0.0 // indirect
 	github.com/hashicorp/terraform-plugin-go v0.12.0 // indirect
 	github.com/hashicorp/terraform-plugin-log v0.7.0 // indirect
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.20.0 // indirect
-	github.com/hashicorp/terraform-registry-address v0.0.0-20220623143253-7d51757b572c // indirect
-	github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/oklog/run v1.0.0 // indirect
-	github.com/patrikeh/go-deep v0.0.0-20220129152125-82b8db494fe5 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect
