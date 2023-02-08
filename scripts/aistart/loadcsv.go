@@ -44,6 +44,18 @@ func (t trainingRow) vectorizeHourOfDay() []float64 {
 	return fs
 }
 
+func (t trainingRow) vectorizeWeekday() []float64 {
+	var fs []float64
+	for i := 0; i < 7; i++ {
+		if i == t.DayOfWeek {
+			fs = append(fs, 1)
+		} else {
+			fs = append(fs, 0)
+		}
+	}
+	return fs
+}
+
 type dbRow struct {
 	Time        time.Time
 	WorkspaceID string
