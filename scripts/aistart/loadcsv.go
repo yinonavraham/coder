@@ -44,20 +44,6 @@ func (t trainingRow) vectorizeHourOfDay() []float64 {
 	return fs
 }
 
-func (t trainingRow) vectorize() vector {
-	return [][]float64{
-		append(
-			[]float64{
-				float64(t.HoursSinceUsed) / 61,
-				float64(t.HourOfDay) / 23,
-				float64(t.DayOfWeek),
-			},
-			t.vectorizeHourOfDay()...,
-		),
-		{float64(t.Used)},
-	}
-}
-
 type dbRow struct {
 	Time        time.Time
 	WorkspaceID string

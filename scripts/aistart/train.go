@@ -8,43 +8,41 @@ import (
 	"text/tabwriter"
 
 	"github.com/gocarina/gocsv"
-	"github.com/goml/gobrain"
+	"github.com/patrikeh/go-deep"
+	"github.com/patrikeh/go-deep/training"
 	"github.com/spf13/cobra"
 
 	"github.com/coder/flog"
 )
 
-type vector [][]float64
+func vectorizeTrainingRows(rs []trainingRow) training.Examples {
+	var es training.Examples
 
-type pattern []vector
-
-func (p pattern) floats() [][][]float64 {
-	var r [][][]float64
-	for _, v := range p {
-		r = append(r, [][]float64(v))
-	}
-	return r
-}
-
-func vectorizeTrainingRows(rs []trainingRow) pattern {
-	var p pattern
+	var hoursSinceUseds []float64
+	// First pass for normalization.
 	for _, r := range rs {
-		p = append(p, r.vectorize())
+		hoursSinceUseds = append(hoursSinceUseds, float64(r.HoursSinceUsed))
 	}
-	return p
-}
+	deep.Normalize(hoursSinceUseds)
 
-func splitTrainTest(rat float64, p pattern) (train, test pattern) {
-	rng := rand.New(rand.NewSource(1))
-	perms := rng.Perm(len(p))
-	for i, v := range p {
-		if float64(perms[i])/float64(len(p)) > rat {
-			test = append(test, v)
-		} else {
-			train = append(train, v)
-		}
+	for i, r := range rs {
+		es = append(es,
+			training.Example{
+				Input: append(
+					[]float64{
+						hoursSinceUseds[i],
+						float64(r.HourOfDay) / 23,
+						float64(r.DayOfWeek),
+					},
+					r.vectorizeHourOfDay()...,
+				),
+				Response: []float64{
+					float64(r.Used),
+				},
+			},
+		)
 	}
-	return train, test
+	return es
 }
 
 func train() *cobra.Command {
@@ -60,22 +58,50 @@ func train() *cobra.Command {
 
 			all := vectorizeTrainingRows(rs)
 
-			train, test := splitTrainTest(0.5, all)
+			// Need determinism
+			rand.Seed(0)
+			train, test := all.Split(0.5)
+
+			numInputNeurons := len(
+				vectorizeTrainingRows([]trainingRow{{}})[0].Input,
+			)
+			nn := deep.NewNeural(&deep.Config{
+				/* Input dimensionality */
+				Inputs: numInputNeurons,
+				/* Two hidden layers consisting of two neurons each, and a single output */
+				Layout: []int{numInputNeurons, 2, 1},
+				/* Activation functions: Sigmoid, Tanh, ReLU, Linear */
+				Activation: deep.ActivationSigmoid,
+				/* Determines output layer activation & loss function:
+				ModeRegression: linear outputs with MSE loss
+				ModeMultiClass: softmax output with Cross Entropy loss
+				ModeMultiLabel: sigmoid output with Cross Entropy loss
+				ModeBinary: sigmoid output with binary CE loss */
+				Mode: deep.ModeBinary,
+				/* Weight initializers: {deep.NewNormal(μ, σ), deep.NewUniform(μ, σ)} */
+				Weight: deep.NewNormal(1.0, 0.0),
+				/* Apply bias */
+				Bias: true,
+			})
 
 			flog.Info("split train test: %v/%v", len(train), len(test))
 
-			ff := &gobrain.FeedForward{}
-			ff.Init(len((trainingRow{}).vectorize()[0]), 4, 1)
-			ff.Train(train.floats(), 3000, 0.01, 0.4, true)
+			const iterations = 100
+			// params: learning rate, momentum, alpha decay, nesterov
+			optimizer := training.NewSGD(0.05, 0.1, 1e-6, true)
+
+			// params: optimizer, verbosity (print stats at every 50th iteration)
+			trainer := training.NewTrainer(optimizer, iterations/10)
+			trainer.Train(nn, train, test, iterations)
+
 			var (
 				// confusionMatrix has actual values in the first index with
 				// predicted values in the second.
 				confusionMatrix [2][2]int
 			)
 			for _, v := range test {
-				want := v[1][0]
-				gotArr := ff.Update(v[0])
-				got := gotArr[0]
+				want := v.Response[0]
+				got := nn.Predict(v.Input)[0]
 				confusionMatrix[0][int(math.Round(want))]++
 				confusionMatrix[1][int(math.Round(got))]++
 			}
