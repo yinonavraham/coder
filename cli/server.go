@@ -892,8 +892,14 @@ func Server(vip *viper.Viper, newAPI func(context.Context, *coderd.Options) (*co
 				<-tunnelErr
 				cmd.Println("Done waiting for tunnel")
 			}
+			if err != nil {
+				return err
+			}
 
 			// Ensures a last report can be sent before exit!
+			if err != nil {
+				return err
+			}
 			options.Telemetry.Close()
 
 			// Trigger context cancellation for any remaining services.

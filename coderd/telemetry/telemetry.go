@@ -117,6 +117,7 @@ func (r *remoteReporter) Report(snapshot *Snapshot) {
 }
 
 func (r *remoteReporter) reportSync(snapshot *Snapshot) {
+	start := time.Now()
 	snapshot.DeploymentID = r.options.DeploymentID
 	data, err := json.Marshal(snapshot)
 	if err != nil {
@@ -141,7 +142,11 @@ func (r *remoteReporter) reportSync(snapshot *Snapshot) {
 		r.options.Logger.Debug(r.ctx, "bad response from telemetry server", slog.F("status", resp.StatusCode))
 		return
 	}
-	r.options.Logger.Debug(r.ctx, "submitted snapshot")
+	r.options.Logger.Debug(
+		r.ctx, "submitted snapshot",
+		slog.F("took", time.Since(start)),
+		slog.F("size", len(data)),
+	)
 }
 
 func (r *remoteReporter) Close() {
