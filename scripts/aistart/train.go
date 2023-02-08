@@ -35,7 +35,8 @@ func vectorizeTrainingRows(rs []trainingRow) pattern {
 }
 
 func splitTrainTest(rat float64, p pattern) (train, test pattern) {
-	perms := rand.Perm(len(p))
+	rng := rand.New(rand.NewSource(1))
+	perms := rng.Perm(len(p))
 	for i, v := range p {
 		if float64(perms[i])/float64(len(p)) > rat {
 			test = append(test, v)
@@ -64,14 +65,14 @@ func train() *cobra.Command {
 			flog.Info("split train test: %v/%v", len(train), len(test))
 
 			ff := &gobrain.FeedForward{}
-			ff.Init(2, 2, 1)
-			ff.Train(train.floats(), 50, 0.001, 0.4, true)
+			ff.Init(len((trainingRow{}).vectorize()[0]), 4, 1)
+			ff.Train(train.floats(), 3000, 0.01, 0.4, true)
 			var (
 				// confusionMatrix has actual values in the first index with
 				// predicted values in the second.
 				confusionMatrix [2][2]int
 			)
-			for _, v := range train {
+			for _, v := range test {
 				want := v[1][0]
 				gotArr := ff.Update(v[0])
 				got := gotArr[0]
@@ -82,8 +83,8 @@ func train() *cobra.Command {
 			_, _ = fmt.Fprintf(twr, "-\tOff\tOn\n")
 			_, _ = fmt.Fprintf(twr, "Actual\t%v\t%v\n", confusionMatrix[0][0], confusionMatrix[0][1])
 			_, _ = fmt.Fprintf(twr, "Predicted\t%v\t%v\n", confusionMatrix[1][0], confusionMatrix[1][1])
-			twr.Flush()
-			return nil
+			err = twr.Flush()
+			return err
 		},
 	}
 }

@@ -27,13 +27,33 @@ type trainingRow struct {
 	// HourOfDay ranges from 0 to 23
 	HourOfDay int `csv:"hour"`
 	// Day of Week ranges from 0 to 6
-	DayOfWeek int `csv:"day"`
-	Used      int `csv:"used"`
+	DayOfWeek      int `csv:"day"`
+	HoursSinceUsed int `csv:"hours_since_used"`
+	Used           int `csv:"used"`
+}
+
+func (t trainingRow) vectorizeHourOfDay() []float64 {
+	var fs []float64
+	for i := 0; i < 24; i++ {
+		if i == t.HourOfDay {
+			fs = append(fs, 1)
+		} else {
+			fs = append(fs, 0)
+		}
+	}
+	return fs
 }
 
 func (t trainingRow) vectorize() vector {
 	return [][]float64{
-		{float64(t.HourOfDay) / 23, float64(t.DayOfWeek / 6)},
+		append(
+			[]float64{
+				float64(t.HoursSinceUsed) / 61,
+				float64(t.HourOfDay) / 23,
+				float64(t.DayOfWeek),
+			},
+			t.vectorizeHourOfDay()...,
+		),
 		{float64(t.Used)},
 	}
 }
@@ -43,21 +63,15 @@ type dbRow struct {
 	WorkspaceID string
 }
 
-func (db dbRow) convert(used int) trainingRow {
-	return trainingRow{
-		WorkspaceID: db.WorkspaceID,
-		HourOfDay:   db.Time.Hour(),
-		DayOfWeek:   int(db.Time.Weekday()),
-		Used:        used,
-	}
-}
-
 // generateTrainingRows accepts sparse input data from the DB and creates
 // trainingRows suitable to enter a prediction model.
 func generateTrainingRows(rs []dbRow) []trainingRow {
-	workspaceIDs := make(map[string]struct{})
+	// WorkspaceIDs maps workspaces to the time they were previously seen.
+	// We first generate a map of IDs to zero so we can easily fill in
+	// missing hours.
+	workspaceIDs := make(map[string]time.Time)
 	for _, r := range rs {
-		workspaceIDs[r.WorkspaceID] = struct{}{}
+		workspaceIDs[r.WorkspaceID] = time.Time{}
 	}
 
 	var trainingRows []trainingRow
@@ -66,19 +80,40 @@ func generateTrainingRows(rs []dbRow) []trainingRow {
 	for _, r := range rs {
 		if !r.Time.Equal(last) && !last.IsZero() {
 			// We just skipped a time-slot, we must fill in the blanks.
-			for last.Before(r.Time) {
+			for {
 				last = last.Add(time.Hour)
+				if !last.Before(r.Time) {
+					break
+				}
 				for wid := range workspaceIDs {
+					var hoursSinceLastUsed int
+					if !workspaceIDs[wid].IsZero() {
+						hoursSinceLastUsed = int(last.Sub(workspaceIDs[wid]) / time.Hour)
+					}
 					trainingRows = append(trainingRows, trainingRow{
-						WorkspaceID: wid,
-						HourOfDay:   last.Hour(),
-						DayOfWeek:   int(last.Weekday()),
-						Used:        0,
+						WorkspaceID:    wid,
+						HourOfDay:      last.Hour(),
+						DayOfWeek:      int(last.Weekday()),
+						HoursSinceUsed: hoursSinceLastUsed,
+						Used:           0,
 					})
 				}
 			}
 		}
-		trainingRows = append(trainingRows, r.convert(1))
+		workspaceLastSeen := workspaceIDs[r.WorkspaceID]
+		workspaceIDs[r.WorkspaceID] = r.Time
+
+		var hoursSinceLastSeen int
+		if !workspaceLastSeen.IsZero() {
+			hoursSinceLastSeen = int(r.Time.Sub(workspaceLastSeen) / time.Hour)
+		}
+		trainingRows = append(trainingRows, trainingRow{
+			WorkspaceID:    r.WorkspaceID,
+			HourOfDay:      r.Time.Hour(),
+			DayOfWeek:      int(r.Time.Weekday()),
+			HoursSinceUsed: hoursSinceLastSeen,
+			Used:           1,
+		})
 	}
 
 	return trainingRows
@@ -101,7 +136,7 @@ func loadTrainingCSV() *cobra.Command {
 		JOIN workspaces w ON
 			w.id = ag.workspace_id
 		WHERE
-			NOT w.deleted
+			NOT w.deleted AND w.id = '0170be1c-735f-4a69-8223-8ef86af56ef5'
 		GROUP BY
 			workspace_id,
 			user_id,
