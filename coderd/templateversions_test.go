@@ -527,14 +527,14 @@ func TestTemplateVersionLogs(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 	defer cancel()
 
-	logs, closer, err := client.TemplateVersionLogsAfter(ctx, version.ID, 0)
+	logs, errs, closer, err := client.TemplateVersionLogsAfter(ctx, version.ID, 0)
 	require.NoError(t, err)
 	defer closer.Close()
-	for {
-		_, ok := <-logs
-		if !ok {
-			return
-		}
+	for log := range logs {
+		t.Logf("got log: [%s] %s %s", log.Level, log.Stage, log.Output)
+	}
+	for err := range errs {
+		require.NoError(t, err, "unexpected error")
 	}
 }
 
@@ -698,7 +698,7 @@ func TestTemplateVersionDryRun(t *testing.T) {
 		require.Equal(t, job.ID, newJob.ID)
 
 		// Stream logs
-		logs, closer, err := client.TemplateVersionDryRunLogsAfter(ctx, version.ID, job.ID, 0)
+		logs, errs, closer, err := client.TemplateVersionDryRunLogsAfter(ctx, version.ID, job.ID, 0)
 		require.NoError(t, err)
 		defer closer.Close()
 
@@ -707,8 +707,20 @@ func TestTemplateVersionDryRun(t *testing.T) {
 			defer close(logsDone)
 
 			logCount := 0
-			for range logs {
-				logCount++
+		LOOP:
+			for {
+				select {
+				case _, ok := <-logs:
+					logCount++
+					if !ok {
+						break LOOP
+					}
+				case err, ok := <-errs:
+					if !ok {
+						break LOOP
+					}
+					assert.NoError(t, err, "unexpected error")
+				}
 			}
 			assert.GreaterOrEqual(t, logCount, 1, "unexpected log count")
 		}()

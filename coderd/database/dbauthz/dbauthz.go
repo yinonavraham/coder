@@ -46,12 +46,12 @@ func logNotAuthorizedError(ctx context.Context, logger slog.Logger, err error) e
 	if err != nil && xerrors.As(err, &internalError) {
 		e := new(topdown.Error)
 		if xerrors.As(err, &e) || e.Code == topdown.CancelErr {
-			// For some reason rego changes a cancelled context to a topdown.CancelErr. We
-			// expect to check for cancelled context errors if the user cancels the request,
+			// For some reason rego changes a canceled context to a topdown.CancelErr. We
+			// expect to check for canceled context errors if the user cancels the request,
 			// so we should change the error to a context.Canceled error.
 			//
 			// NotAuthorizedError is == to sql.ErrNoRows, which is not correct
-			// if it's actually a cancelled context.
+			// if it's actually a canceled context.
 			internalError.SetInternal(context.Canceled)
 			return internalError
 		}

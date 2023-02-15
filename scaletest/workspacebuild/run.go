@@ -156,7 +156,7 @@ func waitForBuild(ctx context.Context, w io.Writer, client *codersdk.Client, bui
 
 	_, _ = fmt.Fprintln(w, "\nBuild started! Streaming logs below:")
 
-	logs, closer, err := client.WorkspaceBuildLogsAfter(ctx, buildID, 0)
+	logs, errs, closer, err := client.WorkspaceBuildLogsAfter(ctx, buildID, 0)
 	if err != nil {
 		return xerrors.Errorf("start streaming build logs: %w", err)
 	}
@@ -167,6 +167,8 @@ func waitForBuild(ctx context.Context, w io.Writer, client *codersdk.Client, bui
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+		case <-errs:
+			return xerrors.Errorf("streaming build logs: %w", err)
 		case log, ok := <-logs:
 			if !ok {
 				build, err := client.WorkspaceBuild(ctx, buildID)

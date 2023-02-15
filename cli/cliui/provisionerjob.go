@@ -22,7 +22,7 @@ func WorkspaceBuild(ctx context.Context, writer io.Writer, client *codersdk.Clie
 			build, err := client.WorkspaceBuild(ctx, build)
 			return build.Job, err
 		},
-		Logs: func() (<-chan codersdk.ProvisionerJobLog, io.Closer, error) {
+		Logs: func() (<-chan codersdk.ProvisionerJobLog, <-chan error, io.Closer, error) {
 			return client.WorkspaceBuildLogsAfter(ctx, build, 0)
 		},
 	})
@@ -31,7 +31,7 @@ func WorkspaceBuild(ctx context.Context, writer io.Writer, client *codersdk.Clie
 type ProvisionerJobOptions struct {
 	Fetch  func() (codersdk.ProvisionerJob, error)
 	Cancel func() error
-	Logs   func() (<-chan codersdk.ProvisionerJobLog, io.Closer, error)
+	Logs   func() (<-chan codersdk.ProvisionerJobLog, <-chan error, io.Closer, error)
 
 	FetchInterval time.Duration
 	// Verbose determines whether debug and trace logs will be shown.
@@ -132,7 +132,7 @@ func ProvisionerJob(ctx context.Context, writer io.Writer, opts ProvisionerJobOp
 	printStage()
 	updateJob()
 
-	logs, closer, err := opts.Logs()
+	logs, errs, closer, err := opts.Logs()
 	if err != nil {
 		return xerrors.Errorf("begin streaming logs: %w", err)
 	}
@@ -165,6 +165,9 @@ func ProvisionerJob(ctx context.Context, writer io.Writer, opts ProvisionerJobOp
 			return ctx.Err()
 		case <-ticker.C:
 			updateJob()
+		case err := <-errs:
+			flushLogBuffer()
+			return err
 		case log, ok := <-logs:
 			if !ok {
 				updateJob()

@@ -41,15 +41,14 @@ func TestProvisionerJobLogs(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 		defer cancel()
 
-		logs, closer, err := client.WorkspaceBuildLogsAfter(ctx, workspace.LatestBuild.ID, 0)
+		logs, errs, closer, err := client.WorkspaceBuildLogsAfter(ctx, workspace.LatestBuild.ID, 0)
 		require.NoError(t, err)
 		defer closer.Close()
-		for {
-			log, ok := <-logs
+		for log := range logs {
 			t.Logf("got log: [%s] %s %s", log.Level, log.Stage, log.Output)
-			if !ok {
-				return
-			}
+		}
+		for range errs {
+			require.NoError(t, err, "unexpected error")
 		}
 	})
 
@@ -79,14 +78,14 @@ func TestProvisionerJobLogs(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 		defer cancel()
 
-		logs, closer, err := client.WorkspaceBuildLogsAfter(ctx, workspace.LatestBuild.ID, 0)
+		logs, errs, closer, err := client.WorkspaceBuildLogsAfter(ctx, workspace.LatestBuild.ID, 0)
 		require.NoError(t, err)
 		defer closer.Close()
-		for {
-			_, ok := <-logs
-			if !ok {
-				return
-			}
+		for log := range logs {
+			t.Logf("got log: [%s] %s %s", log.Level, log.Stage, log.Output)
+		}
+		for err := range errs {
+			require.NoError(t, err, "unexpected error")
 		}
 	})
 

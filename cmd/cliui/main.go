@@ -101,10 +101,12 @@ func main() {
 				Fetch: func() (codersdk.ProvisionerJob, error) {
 					return job, nil
 				},
-				Logs: func() (<-chan codersdk.ProvisionerJobLog, io.Closer, error) {
+				Logs: func() (<-chan codersdk.ProvisionerJobLog, <-chan error, io.Closer, error) {
 					logs := make(chan codersdk.ProvisionerJobLog)
+					errs := make(chan error)
 					go func() {
 						defer close(logs)
+						defer close(errs)
 						ticker := time.NewTicker(100 * time.Millisecond)
 						defer ticker.Stop()
 						count := 0
@@ -144,7 +146,7 @@ func main() {
 							}
 						}
 					}()
-					return logs, io.NopCloser(strings.NewReader("")), nil
+					return logs, errs, io.NopCloser(strings.NewReader("")), nil
 				},
 				Cancel: func() error {
 					job.Status = codersdk.ProvisionerJobCanceling

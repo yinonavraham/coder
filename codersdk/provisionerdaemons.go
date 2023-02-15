@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -113,18 +114,18 @@ func (c *Client) provisionerJobLogsBefore(ctx context.Context, path string, befo
 }
 
 // provisionerJobLogsAfter streams logs that occurred after a specific time.
-func (c *Client) provisionerJobLogsAfter(ctx context.Context, path string, after int64) (<-chan ProvisionerJobLog, io.Closer, error) {
+func (c *Client) provisionerJobLogsAfter(ctx context.Context, path string, after int64) (<-chan ProvisionerJobLog, <-chan error, io.Closer, error) {
 	afterQuery := ""
 	if after != 0 {
 		afterQuery = fmt.Sprintf("&after=%d", after)
 	}
 	followURL, err := c.URL.Parse(fmt.Sprintf("%s?follow%s", path, afterQuery))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("create cookie jar: %w", err)
+		return nil, nil, nil, xerrors.Errorf("create cookie jar: %w", err)
 	}
 	jar.SetCookies(followURL, []*http.Cookie{{
 		Name:  SessionTokenCookie,
@@ -139,22 +140,27 @@ func (c *Client) provisionerJobLogsAfter(ctx context.Context, path string, after
 	})
 	if err != nil {
 		if res == nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
-		return nil, nil, ReadBodyAsError(res)
+		return nil, nil, nil, ReadBodyAsError(res)
 	}
 	logs := make(chan ProvisionerJobLog)
 	closed := make(chan struct{})
+	errCh := make(chan error)
 	ctx, wsNetConn := websocketNetConn(ctx, conn, websocket.MessageText)
 	decoder := json.NewDecoder(wsNetConn)
 	go func() {
 		defer close(closed)
 		defer close(logs)
+		defer close(errCh)
 		defer conn.Close(websocket.StatusGoingAway, "")
 		var log ProvisionerJobLog
 		for {
 			err = decoder.Decode(&log)
 			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					errCh <- err
+				}
 				return
 			}
 			select {
@@ -164,7 +170,7 @@ func (c *Client) provisionerJobLogsAfter(ctx context.Context, path string, after
 			}
 		}
 	}()
-	return logs, closeFunc(func() error {
+	return logs, errCh, closeFunc(func() error {
 		_ = wsNetConn.Close()
 		<-closed
 		return nil

@@ -622,7 +622,7 @@ It is recommended that all rate limits are disabled on the server before running
 					Cancel: func() error {
 						return client.CancelTemplateVersionDryRun(cmd.Context(), templateVersion.ID, dryRun.ID)
 					},
-					Logs: func() (<-chan codersdk.ProvisionerJobLog, io.Closer, error) {
+					Logs: func() (<-chan codersdk.ProvisionerJobLog, <-chan error, io.Closer, error) {
 						return client.TemplateVersionDryRunLogsAfter(cmd.Context(), templateVersion.ID, dryRun.ID, 0)
 					},
 					// Don't show log output for the dry-run unless there's an error.

@@ -125,6 +125,7 @@ func newProvisionerJob(t *testing.T) provisionerJobTest {
 	}
 	jobLock := sync.Mutex{}
 	logs := make(chan codersdk.ProvisionerJobLog, 1)
+	errs := make(chan error, 1)
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cliui.ProvisionerJob(cmd.Context(), cmd.OutOrStdout(), cliui.ProvisionerJobOptions{
@@ -137,8 +138,8 @@ func newProvisionerJob(t *testing.T) provisionerJobTest {
 				Cancel: func() error {
 					return nil
 				},
-				Logs: func() (<-chan codersdk.ProvisionerJobLog, io.Closer, error) {
-					return logs, closeFunc(func() error {
+				Logs: func() (<-chan codersdk.ProvisionerJobLog, <-chan error, io.Closer, error) {
+					return logs, errs, closeFunc(func() error {
 						return nil
 					}), nil
 				},

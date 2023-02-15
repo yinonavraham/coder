@@ -524,19 +524,23 @@ func TestWorkspaceBuildLogs(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 	defer cancel()
 
-	logs, closer, err := client.WorkspaceBuildLogsAfter(ctx, workspace.LatestBuild.ID, 0)
+	logs, errs, closer, err := client.WorkspaceBuildLogsAfter(ctx, workspace.LatestBuild.ID, 0)
 	require.NoError(t, err)
 	defer closer.Close()
+	var outputs []string
+LOOP:
 	for {
-		log, ok := <-logs
-		if !ok {
-			break
-		}
-		if log.Output == "example" {
-			return
+		select {
+		case <-ctx.Done():
+			break LOOP
+		case log := <-logs:
+			outputs = append(outputs, log.Output)
+		case err := <-errs:
+			require.NoError(t, err, "unexpected error from logs channel")
+			break LOOP
 		}
 	}
-	require.Fail(t, "example message never happened")
+	require.Contains(t, outputs, "example", "example message never happened")
 }
 
 func TestWorkspaceBuildState(t *testing.T) {

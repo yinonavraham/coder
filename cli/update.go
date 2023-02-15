@@ -75,19 +75,25 @@ func update() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			logs, closer, err := client.WorkspaceBuildLogsAfter(cmd.Context(), build.ID, 0)
+			logs, errs, closer, err := client.WorkspaceBuildLogsAfter(cmd.Context(), build.ID, 0)
 			if err != nil {
 				return err
 			}
 			defer closer.Close()
 			for {
-				log, ok := <-logs
-				if !ok {
+				select {
+				case log, ok := <-logs:
+					if !ok {
+						break
+					}
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output: %s\n", log.Output)
+				case err := <-errs:
+					if err != nil {
+						_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Error: %s\n", err.Error())
+					}
 					break
 				}
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output: %s\n", log.Output)
 			}
-			return nil
 		},
 	}
 
