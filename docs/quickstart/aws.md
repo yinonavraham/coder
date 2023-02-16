@@ -23,7 +23,7 @@ Be sure to add a keypair so that you can connect over SSH to further [configure 
 After launching the instance, wait 30 seconds and navigate to the public IPv4 address. You should be redirected to a public tunnel URL.
 
 <video playsinline loop>
-  <source src="https://github.com/coder/coder/blob/main/docs/images/quickstart/aws/launch.mp4" type="video/mp4">
+  <source src="https://github.com/coder/coder/blob/main/docs/images/quickstart/aws/launch.mp4?raw=true" type="video/mp4">
 Your browser does not support the video tag.
 </video>
 
@@ -35,8 +35,14 @@ That's all! Use the UI to create your first user, template, and workspace. We re
 
 Coder is primarily configured by server-side flags and environment variables. Given you created or added key-pairs when launching the instance, you can [configure your Coder deployment](../admin/configure.md) by logging in via SSH or using the console:
 
-```sh
+```console
 ssh ubuntu@<ec2-public-IPv4>
+
+# Edit Coder configuration
+sudo vim /etc/coder.d/coder.env
+
+# Restart the Coder server
+sudo service coder restart
 ```
 
 ## Give developers EC2 workspaces (optional)
