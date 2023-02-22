@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"embed"
 	_ "embed"
+	"github.com/coder/coder/coderd/util/slice"
 	"golang.org/x/xerrors"
 	"html/template"
 	"strings"
@@ -21,7 +22,8 @@ func buildTemplate(input ContainerInput) (file, error) {
 	}
 
 	tpl = tpl.Funcs(template.FuncMap{
-		"join": strings.Join,
+		"join":     strings.Join,
+		"contains": slice.Contains[string],
 	})
 
 	var buf bytes.Buffer
