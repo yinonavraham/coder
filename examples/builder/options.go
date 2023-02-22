@@ -1,4 +1,4 @@
-package quickstart
+package builder
 
 type KubeOptions struct {
 	Os, Arch  string

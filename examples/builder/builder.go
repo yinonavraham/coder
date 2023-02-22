@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"embed"
 	_ "embed"
-	"github.com/coder/coder/coderd/util/slice"
-	"golang.org/x/xerrors"
 	"html/template"
 	"strings"
 	"time"
+
+	"golang.org/x/xerrors"
+
+	"github.com/coder/coder/coderd/util/slice"
 )
 
 //go:embed templates/*.tmpl
