@@ -1,0 +1,15 @@
+{{- define "readme" -}}
+---
+name: {{ .Data.Readme.Name }}
+description: {{ .Data.Readme.Desc }}
+tags: [{{ join .Data.Readme.Tags "," }}]
+icon: /icon/docker.png
+---
+
+# {{ .Template.Platform }} Template
+
+// TODO: Put in a url to get back to the wizard with pre-filled values
+
+
+
+{{ end }}
