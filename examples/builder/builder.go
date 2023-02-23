@@ -20,7 +20,31 @@ var templates embed.FS
 type TemplateInput struct {
 	TemplateName string
 
-	Kubernetes KubeOptions
+	Kubernetes *KubeOptions
+	Docker     *DockerOptions
+}
+
+func (in TemplateInput) build(tpl *template.Template) (tf file, readme ReadmeInput, err error) {
+	inputs := 0
+	if in.Kubernetes != nil {
+		inputs = inputs + 1
+	}
+	if in.Docker != nil {
+		inputs = inputs + 1
+	}
+
+	if inputs != 1 {
+		return file{}, ReadmeInput{}, xerrors.Errorf("expect only 1 input, got %d", inputs)
+	}
+
+	switch {
+	case in.Kubernetes != nil:
+		return buildKube(tpl, *in.Kubernetes)
+	case in.Docker != nil:
+		return buildDocker(tpl, *in.Docker)
+	default:
+		return file{}, ReadmeInput{}, xerrors.Errorf("no input provided")
+	}
 }
 
 type ReadmeInput struct {
@@ -44,11 +68,12 @@ func buildTemplate(input TemplateInput) ([]byte, error) {
 	var out bytes.Buffer
 	tarWriter := tar.NewWriter(&out)
 
-	tf, readme, err := buildKube(tpl, input.Kubernetes)
+	tf, readme, err := input.build(tpl)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO: Should this just be in build?
 	md, err := buildReadme(tpl, readme)
 	if err != nil {
 		return nil, err
@@ -90,6 +115,25 @@ func buildKube(tpl *template.Template, input KubeOptions) (file, ReadmeInput, er
 		}, nil
 }
 
+func buildDocker(tpl *template.Template, input DockerOptions) (file, ReadmeInput, error) {
+	var out bytes.Buffer
+	err := tpl.ExecuteTemplate(&out, "docker", input)
+	if err != nil {
+		return file{}, ReadmeInput{}, xerrors.Errorf("execute docker template: %w", err)
+	}
+
+	return file{
+			name:    "main.tf",
+			content: out.Bytes(),
+		}, ReadmeInput{
+			Platform:    "Docker",
+			Name:        "Local Docker based template",
+			Description: "Local development inside a docker container.",
+			Tags:        []string{"local", "docker"},
+			Icon:        "/icon/docker.png",
+		}, nil
+}
+
 func buildReadme(tpl *template.Template, input ReadmeInput) (file, error) {
 	var out bytes.Buffer
 	err := tpl.ExecuteTemplate(&out, "readme", input)
@@ -124,4 +168,12 @@ func writeFiles(w *tar.Writer, files ...file) error {
 	}
 
 	return nil
+}
+
+// Move these to options.go
+type DockerOptions struct {
+	Image      string
+	Env        map[string]string
+	HomeVolume bool
+	Apps       []string
 }
