@@ -148,7 +148,9 @@ type DeploymentConfig struct {
 	SessionDuration                 *DeploymentConfigField[time.Duration]   `json:"max_session_expiry" typescript:",notnull"`
 	DisableSessionExpiryRefresh     *DeploymentConfigField[bool]            `json:"disable_session_expiry_refresh" typescript:",notnull"`
 	DisablePasswordAuth             *DeploymentConfigField[bool]            `json:"disable_password_auth" typescript:",notnull"`
-	ConfigPath                      *DeploymentConfigField[string]          `json:"config_path" typescript:",notnull"`
+
+	WriteConfig *DeploymentConfigField[bool]   `json:"write_config" typescript:",notnull"`
+	ConfigPath  *DeploymentConfigField[string] `json:"config_path" typescript:",notnull"`
 
 	// DEPRECATED: Use HTTPAddress or TLS.Address instead.
 	Address *DeploymentConfigField[string] `json:"address" typescript:",notnull"`

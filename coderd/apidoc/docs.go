@@ -6104,6 +6104,9 @@ const docTemplate = `{
                 "cache_directory": {
                     "$ref": "#/definitions/codersdk.DeploymentConfigField-string"
                 },
+                "config_path": {
+                    "$ref": "#/definitions/codersdk.DeploymentConfigField-string"
+                },
                 "dangerous": {
                     "$ref": "#/definitions/codersdk.DangerousConfig"
                 },
@@ -6213,6 +6216,9 @@ const docTemplate = `{
                 },
                 "wildcard_access_url": {
                     "$ref": "#/definitions/codersdk.DeploymentConfigField-string"
+                },
+                "write_config": {
+                    "$ref": "#/definitions/codersdk.DeploymentConfigField-bool"
                 }
             }
         },

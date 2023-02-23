@@ -167,6 +167,12 @@ func newConfig() *codersdk.DeploymentConfig {
 			Shorthand: "c",
 			Default:   "",
 		},
+		WriteConfig: &codersdk.DeploymentConfigField[bool]{
+			Name:    "Write Config",
+			Usage:   "If provided, coder server write out a YAML config to the path provided by --config and then immediately abort.",
+			Flag:    "write-config",
+			Default: false,
+		},
 		InMemoryDatabase: &codersdk.DeploymentConfigField[bool]{
 			Name:   "In Memory Database",
 			Usage:  "Controls whether data will be stored in an in-memory database.",
@@ -595,6 +601,20 @@ func Config(configPath string, vip *viper.Viper) (*codersdk.DeploymentConfig, er
 	setConfig("", vip, &dc)
 
 	return dc, nil
+}
+
+// WriteConfig writes the config to the given path.
+func WriteConfig(configPath string, vip *viper.Viper) error {
+	if _, err := os.Stat(configPath); err == nil {
+		return xerrors.Errorf("config file already exists at %s", configPath)
+	}
+
+	vip.SetConfigFile(configPath)
+	err := vip.WriteConfig()
+	if err != nil {
+		return xerrors.Errorf("writing deployment config: %w", err)
+	}
+	return nil
 }
 
 func setConfig(prefix string, vip *viper.Viper, target interface{}) {

@@ -332,6 +332,8 @@ export interface DeploymentConfig {
   readonly max_session_expiry: DeploymentConfigField<number>
   readonly disable_session_expiry_refresh: DeploymentConfigField<boolean>
   readonly disable_password_auth: DeploymentConfigField<boolean>
+  readonly write_config: DeploymentConfigField<boolean>
+  readonly config_path: DeploymentConfigField<string>
   readonly address: DeploymentConfigField<string>
   readonly experimental: DeploymentConfigField<boolean>
 }

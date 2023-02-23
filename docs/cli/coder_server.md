@@ -46,6 +46,14 @@ The directory to cache temporary files. If unspecified and $CACHE_DIRECTORY is s
 | Consumes | <code>$CODER_CACHE_DIRECTORY</code> |
 | Default | <code>~/.cache/coder</code> |
 
+### --config, -c
+
+If provided, coder server will use this configuration file in addition to provided flags.
+<br/>
+| | |
+| --- | --- |
+| Consumes | <code>$CODER_CONFIG_PATH</code> |
+
 ### --dangerous-allow-path-app-sharing
 
 Allow workspace apps that are not served from subdomains to be shared. Path-based app sharing is DISABLED by default for security purposes. Path-based apps can make requests to the Coder API and pose a security risk when the workspace serves malicious JavaScript. Path-based apps can be disabled entirely with --disable-path-apps for further security.
@@ -658,3 +666,12 @@ Specifies the wildcard hostname to use for workspace applications in the form "\
 | | |
 | --- | --- |
 | Consumes | <code>$CODER_WILDCARD_ACCESS_URL</code> |
+
+### --write-config
+
+If provided, coder server write out a YAML config to the path provided by --config and then immediately abort.
+<br/>
+| | |
+| --- | --- |
+| Consumes | <code>$CODER_WRITE_CONFIG</code> |
+| Default | <code>false</code> |

@@ -97,6 +97,15 @@ func Server(vip *viper.Viper, newAPI func(context.Context, *coderd.Options) (*co
 			go dumpHandler(ctx)
 
 			configPath, _ := cmd.Flags().GetString("config")
+
+			justWriteConfig, _ := cmd.Flags().GetBool("write-config")
+			if justWriteConfig {
+				if configPath == "" {
+					return xerrors.Errorf("--config must be set when writing config")
+				}
+				return deployment.WriteConfig(configPath, vip)
+			}
+
 			cfg, err := deployment.Config(configPath, vip)
 			if err != nil {
 				return xerrors.Errorf("getting deployment config: %w", err)
@@ -968,8 +977,11 @@ func Server(vip *viper.Viper, newAPI func(context.Context, *coderd.Options) (*co
 	postgresBuiltinServeCmd.Flags().BoolVar(&pgRawURL, "raw-url", false, "Output the raw connection URL instead of a psql command.")
 
 	createAdminUserCommand := newCreateAdminUserCommand()
-	root.AddCommand(postgresBuiltinURLCmd, postgresBuiltinServeCmd, createAdminUserCommand)
-
+	root.AddCommand(
+		postgresBuiltinURLCmd,
+		postgresBuiltinServeCmd,
+		createAdminUserCommand,
+	)
 	deployment.AttachFlags(root.Flags(), vip, false)
 
 	return root
