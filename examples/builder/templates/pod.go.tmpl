@@ -1,3 +1,4 @@
+{{- define "docker" }}
 terraform {
   required_providers {
     coder = {
@@ -12,10 +13,11 @@ terraform {
 }
 
 {{- if .Namespace.UserEditable }}
-variable "namespace" {
-  type        = string
-  sensitive   = true
-  description = "The Kubernetes namespace to create workspaces in (must exist prior to creating workspaces)"
+data "coder_parameter" "namespace" {
+  name = "namespace"
+  default = {{ .Resources.CPU.Value | quote }}
+  description = "The namespace where your pod will be created."
+  type = string
 }
 {{- end }}
 
@@ -111,7 +113,11 @@ resource "coder_app" "code-server" {
 resource "kubernetes_persistent_volume_claim" "home" {
   metadata {
     name      = "coder-${lower(data.coder_workspace.me.owner)}-${lower(data.coder_workspace.me.name)}-home"
-    namespace = var.namespace
+	{{- if .Namespace.UserEditable }}
+		namespace = data.coder_parameter.namespace.value
+	{{- else }}
+		namespace = {{ .Namespace.Value | quote }}
+	{{- end }}
     labels = {
       "app.kubernetes.io/name"     = "coder-pvc"
       "app.kubernetes.io/instance" = "coder-pvc-${lower(data.coder_workspace.me.owner)}-${lower(data.coder_workspace.me.name)}"
@@ -147,7 +153,11 @@ resource "kubernetes_pod" "main" {
   count = data.coder_workspace.me.start_count
   metadata {
     name      = "coder-${lower(data.coder_workspace.me.owner)}-${lower(data.coder_workspace.me.name)}"
-    namespace = var.namespace
+	{{- if .Namespace.UserEditable }}
+		namespace = data.coder_parameter.namespace.value
+	{{- else }}
+		namespace = {{ .Namespace.Value | quote }}
+	{{- end }}
     labels = {
       "app.kubernetes.io/name"     = "coder-workspace"
       "app.kubernetes.io/instance" = "coder-workspace-${lower(data.coder_workspace.me.owner)}-${lower(data.coder_workspace.me.name)}"
@@ -221,3 +231,4 @@ resource "kubernetes_pod" "main" {
     }
   }
 }
+{{- end }}
