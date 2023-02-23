@@ -37,8 +37,8 @@ data "coder_parameter" "cpu" {
   type = number
 
 	validation {
-		min = {{ .Resources.Memory.Min }}
-		max = {{ .Resources.Memory.Max }}
+		min = {{ .Resources.CPU.Min }}
+		max = {{ .Resources.CPU.Max }}
 	}
 }
 {{- end }}
@@ -56,7 +56,7 @@ data "coder_parameter" "memory" {
 	}
 {{- end }}
 
-{{- if .Resources.Disk.UserEditable }}
+{{- if and .HomePVC .Resources.Disk.UserEditable }}
 data "coder_parameter" "cpu" {
   name = "cpu"
   default = {{ .Resources.Disk.Value | quote }}
@@ -76,8 +76,8 @@ provider "kubernetes" {}
 data "coder_workspace" "me" {}
 
 resource "coder_agent" "main" {
-  os   = "linux"
-  arch = "amd64"
+  os   = {{ .Os | quote }}
+  arch = {{ .Arch | quote }}
 
   login_before_ready     = false
   startup_script_timeout = 180
@@ -107,6 +107,7 @@ resource "coder_app" "code-server" {
   }
 }
 
+{{- if .HomePVC }}
 resource "kubernetes_persistent_volume_claim" "home" {
   metadata {
     name      = "coder-${lower(data.coder_workspace.me.owner)}-${lower(data.coder_workspace.me.name)}-home"
@@ -131,11 +132,16 @@ resource "kubernetes_persistent_volume_claim" "home" {
     access_modes = ["ReadWriteOnce"]
     resources {
       requests = {
-        storage = "${var.home_disk_size}Gi"
+			{{- if .Resources.Disk.UserEditable }}
+        storage = "${data.coder_parameter.disk.value}Gi"
+			{{- else }}
+				storage = "{{ .Resources.Disk.Value }}Gi"
+			{{- end }}
       }
     }
   }
 }
+{{- end }}
 
 resource "kubernetes_pod" "main" {
   count = data.coder_workspace.me.start_count
@@ -164,7 +170,7 @@ resource "kubernetes_pod" "main" {
     }
     container {
       name              = "dev"
-      image             = "codercom/enterprise-base:ubuntu"
+      image             = {{ .Image | quote }}
       image_pull_policy = "Always"
       command           = ["sh", "-c", coder_agent.main.init_script]
       security_context {
@@ -174,13 +180,16 @@ resource "kubernetes_pod" "main" {
         name  = "CODER_AGENT_TOKEN"
         value = coder_agent.main.token
       }
+		{{- if .HomePVC }}
       volume_mount {
         mount_path = "/home/coder"
         name       = "home"
         read_only  = false
       }
+		{{- end }}
     }
 
+	{{- if .HomePVC }}
     volume {
       name = "home"
       persistent_volume_claim {
@@ -188,6 +197,7 @@ resource "kubernetes_pod" "main" {
         read_only  = false
       }
     }
+	{{- end }}
 
 
     affinity {
