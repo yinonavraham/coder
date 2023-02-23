@@ -8,7 +8,19 @@ import (
 )
 
 func TestBuilder(t *testing.T) {
-	out, err := buildTemplate(ContainerInput{})
+	out, err := buildTemplate(TemplateInput{
+		TemplateName: "test",
+		Kubernetes: KubeOptions{
+			Os:        "",
+			Arch:      "",
+			Namespace: Variable{},
+			Image:     "",
+			Resources: Resources{},
+			Env:       nil,
+			HomePVC:   false,
+		},
+	})
 	require.NoError(t, err)
-	fmt.Println(out)
+	// This output is a tar file
+	fmt.Println(string(out))
 }
