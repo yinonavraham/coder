@@ -96,7 +96,8 @@ func Server(vip *viper.Viper, newAPI func(context.Context, *coderd.Options) (*co
 
 			go dumpHandler(ctx)
 
-			cfg, err := deployment.Config(cmd.Flags(), vip)
+			configPath, _ := cmd.Flags().GetString("config")
+			cfg, err := deployment.Config(configPath, vip)
 			if err != nil {
 				return xerrors.Errorf("getting deployment config: %w", err)
 			}

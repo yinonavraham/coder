@@ -16,7 +16,6 @@ import (
 
 	"github.com/coder/coder/buildinfo"
 	"github.com/coder/coder/cli/cliui"
-	"github.com/coder/coder/cli/config"
 	"github.com/coder/coder/codersdk"
 )
 
@@ -160,6 +159,13 @@ func newConfig() *codersdk.DeploymentConfig {
 			Usage:   "The directory to cache temporary files. If unspecified and $CACHE_DIRECTORY is set, it will be used for compatibility with systemd.",
 			Flag:    "cache-dir",
 			Default: DefaultCacheDir(),
+		},
+		ConfigPath: &codersdk.DeploymentConfigField[string]{
+			Name:      "Config file path",
+			Usage:     "If provided, coder server will use this configuration file in addition to provided flags.",
+			Flag:      "config",
+			Shorthand: "c",
+			Default:   "",
 		},
 		InMemoryDatabase: &codersdk.DeploymentConfigField[bool]{
 			Name:   "In Memory Database",
@@ -574,17 +580,13 @@ func newConfig() *codersdk.DeploymentConfig {
 }
 
 //nolint:revive
-func Config(flagset *pflag.FlagSet, vip *viper.Viper) (*codersdk.DeploymentConfig, error) {
+func Config(configPath string, vip *viper.Viper) (*codersdk.DeploymentConfig, error) {
 	dc := newConfig()
-	flg, err := flagset.GetString(config.FlagName)
-	if err != nil {
-		return nil, xerrors.Errorf("get global config from flag: %w", err)
-	}
-	vip.SetEnvPrefix("coder")
+	vip.SetEnvPrefix("CODER")
 
-	if flg != "" {
-		vip.SetConfigFile(flg + "/server.yaml")
-		err = vip.ReadInConfig()
+	if configPath != "" {
+		vip.SetConfigFile(configPath)
+		err := vip.ReadInConfig()
 		if err != nil && !xerrors.Is(err, os.ErrNotExist) {
 			return dc, xerrors.Errorf("reading deployment config: %w", err)
 		}

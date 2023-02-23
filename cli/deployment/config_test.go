@@ -256,7 +256,7 @@ func TestConfig(t *testing.T) {
 			for key, value := range tc.Env {
 				t.Setenv(key, value)
 			}
-			config, err := deployment.Config(flagSet, viper)
+			config, err := deployment.Config("", viper)
 			require.NoError(t, err)
 			tc.Valid(config)
 		})
