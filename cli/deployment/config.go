@@ -19,7 +19,7 @@ import (
 	"github.com/coder/coder/codersdk"
 )
 
-func newConfig() *codersdk.DeploymentConfig {
+func DefaultConfig() *codersdk.DeploymentConfig {
 	return &codersdk.DeploymentConfig{
 		AccessURL: &codersdk.DeploymentConfigField[string]{
 			Name:  "Access URL",
@@ -587,7 +587,7 @@ func newConfig() *codersdk.DeploymentConfig {
 
 //nolint:revive
 func Config(configPath string, vip *viper.Viper) (*codersdk.DeploymentConfig, error) {
-	dc := newConfig()
+	dc := DefaultConfig()
 	vip.SetEnvPrefix("CODER")
 
 	if configPath != "" {
@@ -756,7 +756,7 @@ func readSliceFromViper[T any](vip *viper.Viper, key string, value any) []T {
 }
 
 func NewViper() *viper.Viper {
-	dc := newConfig()
+	dc := DefaultConfig()
 	vip := viper.New()
 	vip.SetEnvPrefix("coder")
 	vip.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
@@ -800,7 +800,7 @@ func setViperDefaults(prefix string, vip *viper.Viper, target interface{}) {
 
 //nolint:revive
 func AttachFlags(flagset *pflag.FlagSet, vip *viper.Viper, enterprise bool) {
-	setFlags("", flagset, vip, newConfig(), enterprise)
+	setFlags("", flagset, vip, DefaultConfig(), enterprise)
 }
 
 //nolint:revive
