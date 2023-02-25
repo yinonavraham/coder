@@ -36,7 +36,6 @@ func DefaultConfig() *codersdk.DeploymentConfig {
 			Usage: "Specifies whether to redirect requests that do not match the access URL host.",
 			Flag:  "redirect-to-access-url",
 		},
-		// DEPRECATED: Use HTTPAddress or TLS.Address instead.
 		Address: &codersdk.DeploymentConfigField[string]{
 			Name:      "Address",
 			Usage:     "Bind address of the server.",
@@ -44,8 +43,9 @@ func DefaultConfig() *codersdk.DeploymentConfig {
 			Shorthand: "a",
 			// Deprecated, so we don't have a default. If set, it will overwrite
 			// HTTPAddress and TLS.Address and print a warning.
-			Hidden:  true,
-			Default: "",
+			DeprecationWarning: "Use --http-address or --tls-address instead.",
+			Hidden:             true,
+			Default:            "",
 		},
 		HTTPAddress: &codersdk.DeploymentConfigField[string]{
 			Name:    "Address",
@@ -490,13 +490,13 @@ func DefaultConfig() *codersdk.DeploymentConfig {
 				Default:     512,
 			},
 		},
-		// DEPRECATED: use Experiments instead.
 		Experimental: &codersdk.DeploymentConfigField[bool]{
-			Name:    "Experimental",
-			Usage:   "Enable experimental features. Experimental features are not ready for production.",
-			Flag:    "experimental",
-			Default: false,
-			Hidden:  true,
+			Name:               "Experimental",
+			Usage:              "Enable experimental features. Experimental features are not ready for production.",
+			Flag:               "experimental",
+			Default:            false,
+			Hidden:             true,
+			DeprecationWarning: "The --experimental flag is deprecated. Use --experiments instead.",
 		},
 		Experiments: &codersdk.DeploymentConfigField[[]string]{
 			Name:    "Experiments",

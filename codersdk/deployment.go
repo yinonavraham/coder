@@ -152,10 +152,9 @@ type DeploymentConfig struct {
 	WriteConfig *DeploymentConfigField[bool]   `json:"write_config" typescript:",notnull"`
 	ConfigPath  *DeploymentConfigField[string] `json:"config_path" typescript:",notnull"`
 
-	// DEPRECATED: Use HTTPAddress or TLS.Address instead.
-	Address *DeploymentConfigField[string] `json:"address" typescript:",notnull"`
-	// DEPRECATED: Use Experiments instead.
-	Experimental *DeploymentConfigField[bool] `json:"experimental" typescript:",notnull"`
+	// DEPRECATED
+	Address      *DeploymentConfigField[string] `json:"address" typescript:",notnull"`
+	Experimental *DeploymentConfigField[bool]   `json:"experimental" typescript:",notnull"`
 }
 
 type DERP struct {
@@ -292,13 +291,14 @@ type DeploymentConfigField[T Flaggable] struct {
 	// backwards compatibility with old environment variable names.
 	//
 	// NOTE: this is not supported for array flags.
-	EnvOverride string `json:"-"`
-	Shorthand   string `json:"shorthand"`
-	Enterprise  bool   `json:"enterprise"`
-	Hidden      bool   `json:"hidden"`
-	Secret      bool   `json:"secret"`
-	Default     T      `json:"default"`
-	Value       T      `json:"value"`
+	EnvOverride        string `json:"-"`
+	Shorthand          string `json:"shorthand"`
+	Enterprise         bool   `json:"enterprise"`
+	Hidden             bool   `json:"hidden"`
+	Secret             bool   `json:"secret"`
+	Default            T      `json:"default"`
+	Value              T      `json:"value"`
+	DeprecationWarning string `json:"deprecation_warning,omitempty"`
 }
 
 // MarshalJSON removes the Value field from the JSON output of any fields marked Secret.

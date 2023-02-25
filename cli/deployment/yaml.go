@@ -1,6 +1,7 @@
 package deployment
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/mitchellh/go-wordwrap"
 )
 
 func scalarNode(v any) (*yaml.Node, error) {
@@ -36,15 +38,22 @@ func scalarNode(v any) (*yaml.Node, error) {
 	}, nil
 }
 
+func valueOrDefault(v reflect.Value) reflect.Value {
+	if val := v.FieldByName("Value"); !val.IsZero() {
+		return val
+	}
+	return v.FieldByName("Default")
+}
+
 func yamlDeploymentField(field reflect.Value) (*yaml.Node, error) {
-	valueField := field.FieldByName("Value")
-	valueKind := valueField.Kind()
+	valueKind := field.FieldByName("Value").Kind()
+	effectiveValue := valueOrDefault(field)
 
 	switch valueKind {
 	case reflect.Slice:
 		var content []*yaml.Node
-		for i := 0; i < valueField.Len(); i++ {
-			vi := valueField.Index(i)
+		for i := 0; i < effectiveValue.Len(); i++ {
+			vi := effectiveValue.Index(i)
 			n, err := scalarNode(vi.Interface())
 			if err != nil {
 				return nil, xerrors.Errorf("converting scalar slice element: %w", err)
@@ -56,7 +65,7 @@ func yamlDeploymentField(field reflect.Value) (*yaml.Node, error) {
 			Content: content,
 		}, nil
 	case reflect.Bool, reflect.Int, reflect.Int64, reflect.String:
-		return scalarNode(valueField.Interface())
+		return scalarNode(effectiveValue.Interface())
 	default:
 		return nil, xerrors.Errorf("unsupported kind: %s", valueKind.String())
 	}
@@ -84,18 +93,33 @@ func MarshalYAML(config any) (*yaml.Node, error) {
 			fieldName   = configValue.Type().Field(i).Name
 		)
 
+		switch fieldName {
+		case "ConfigPath", "WriteConfig":
+			// These make no sense in the rendered YAML.
+			continue
+		}
+
 		switch {
 		case strings.HasPrefix(typeName, "codersdk.DeploymentConfigField["):
+			if configField.FieldByName("Hidden").Bool() && configField.FieldByName("Value").IsZero() {
+				continue
+			}
 			node, err := yamlDeploymentField(configField)
 			if err != nil {
 				merr = multierror.Append(merr, err)
 				continue
 			}
+			comment := configField.FieldByName("Usage").String()
+			if def := configField.FieldByName("Default"); !def.IsZero() {
+				comment += fmt.Sprintf(" (default: %v)", def.Interface())
+			}
 			// Write field name.
 			document.Content = append(document.Content, &yaml.Node{
-				Kind:        yaml.ScalarNode,
-				Value:       fieldName,
-				HeadComment: configField.FieldByName("Usage").String(),
+				Kind:  yaml.ScalarNode,
+				Value: fieldName,
+				HeadComment: wordwrap.WrapString(
+					comment, 80,
+				),
 			})
 
 			// Write node contents.
@@ -110,6 +134,7 @@ func MarshalYAML(config any) (*yaml.Node, error) {
 				)
 				continue
 			}
+			// Write field name.
 			document.Content = append(document.Content, &yaml.Node{
 				Kind:  yaml.ScalarNode,
 				Value: fieldName,
