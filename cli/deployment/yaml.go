@@ -10,12 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/hashicorp/go-multierror"
-
-	"github.com/coder/coder/codersdk"
 )
-
-// func goNameToYAML(name string) string {
-// }
 
 func scalarNode(v any) (*yaml.Node, error) {
 	var valueStr string
@@ -67,15 +62,21 @@ func yamlDeploymentField(field reflect.Value) (*yaml.Node, error) {
 	}
 }
 
-// MarshalYAML converts the deployment config to its MarshalYAML representation.
-func MarshalYAML(config *codersdk.DeploymentConfig) ([]byte, error) {
+// MarshalYAML converts the deployment config to it's yaml representation.
+// It accepts `any` because it calls itself recursively on its values.
+func MarshalYAML(config any) (*yaml.Node, error) {
 	var (
-		document = yaml.Node{
+		document = &yaml.Node{
 			Kind: yaml.MappingNode,
 		}
-		configValue = reflect.ValueOf(config).Elem()
+		configValue = reflect.ValueOf(config)
 		merr        *multierror.Error
 	)
+
+	if configValue.Kind() == reflect.Ptr {
+		configValue = configValue.Elem()
+	}
+
 	for i := 0; i < configValue.NumField(); i++ {
 		var (
 			configField = configValue.Field(i).Elem()
@@ -85,28 +86,38 @@ func MarshalYAML(config *codersdk.DeploymentConfig) ([]byte, error) {
 
 		switch {
 		case strings.HasPrefix(typeName, "codersdk.DeploymentConfigField["):
+			node, err := yamlDeploymentField(configField)
+			if err != nil {
+				merr = multierror.Append(merr, err)
+				continue
+			}
 			// Write field name.
 			document.Content = append(document.Content, &yaml.Node{
 				Kind:        yaml.ScalarNode,
 				Value:       fieldName,
 				HeadComment: configField.FieldByName("Usage").String(),
 			})
-			node, err := yamlDeploymentField(configField)
+
+			// Write node contents.
+			document.Content = append(document.Content, node)
+		case configField.Kind() == reflect.Struct:
+			// Recursively resolve configuration group values.
+			node, err := MarshalYAML(configField.Interface())
 			if err != nil {
-				merr = multierror.Append(merr, err)
+				merr = multierror.Append(
+					merr,
+					xerrors.Errorf("marshal group %s: %w", fieldName, err),
+				)
 				continue
 			}
-			// Write node contents.
+			document.Content = append(document.Content, &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Value: fieldName,
+			})
 			document.Content = append(document.Content, node)
 		default:
 			merr = multierror.Append(merr, xerrors.Errorf("unsupported type: %s", typeName))
 		}
 	}
-	byt, err := yaml.Marshal(document)
-	if err != nil {
-		merr = multierror.Append(
-			merr, xerrors.Errorf("marshal failed: %w\n%+v", err, document),
-		)
-	}
-	return byt, merr.ErrorOrNil()
+	return document, merr.ErrorOrNil()
 }

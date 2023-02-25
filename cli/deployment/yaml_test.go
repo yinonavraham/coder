@@ -17,7 +17,12 @@ func TestMarshalYAML(t *testing.T) {
 		config := deployment.DefaultConfig()
 		// For testing array marshaling.
 		config.ProxyTrustedHeaders.Value = []string{"X-Forwarded-For", "X-Forwarded-Proto"}
-		byt, err := deployment.MarshalYAML(config)
+		y, err := deployment.MarshalYAML(config)
+		require.NoError(t, err)
+
+		byt, err := yaml.Marshal(y)
+		require.NoError(t, err)
+
 		t.Logf("yaml:\n%s", string(byt))
 		require.NoError(t, err)
 	})
