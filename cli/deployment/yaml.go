@@ -110,9 +110,11 @@ func MarshalYAML(config any) (*yaml.Node, error) {
 				continue
 			}
 			comment := configField.FieldByName("Usage").String()
-			if def := configField.FieldByName("Default"); !def.IsZero() {
-				comment += fmt.Sprintf(" (default: %v)", def.Interface())
+
+			if def := fmt.Sprintf("%v", configField.FieldByName("Default")); len(def) > 0 {
+				comment += fmt.Sprintf(" (default: %+v)", def)
 			}
+
 			// Write field name.
 			document.Content = append(document.Content, &yaml.Node{
 				Kind:  yaml.ScalarNode,
@@ -145,4 +147,75 @@ func MarshalYAML(config any) (*yaml.Node, error) {
 		}
 	}
 	return document, merr.ErrorOrNil()
+}
+
+func unmarshalScalar(v reflect.Value, node *yaml.Node) error {
+	switch v.Kind() {
+	case reflect.Int, reflect.Int64:
+		i, err := strconv.Atoi(node.Value)
+		if err != nil {
+			return xerrors.Errorf("parsing int: %w", err)
+		}
+		v.SetInt(int64(i))
+	case reflect.Bool:
+		b, err := strconv.ParseBool(node.Value)
+		if err != nil {
+			return xerrors.Errorf("parsing bool: %w", err)
+		}
+		v.SetBool(b)
+	case reflect.String:
+		v.SetString(node.Value)
+	case reflect.Slice:
+		if node.Kind != yaml.SequenceNode {
+			return xerrors.Errorf("expected sequence node, got %s", node.Kind)
+		}
+		for i := 0; i < len(node.Content); i++ {
+			vi := reflect.New(v.Type().Elem())
+			if err := unmarshalScalar(vi.Elem(), node.Content[i]); err != nil {
+				return xerrors.Errorf("unmarshaling slice element: %w", err)
+			}
+			v.Set(reflect.Append(v, vi.Elem()))
+		}
+	default:
+		return xerrors.Errorf("unsupported kind: %s", v.Kind().String())
+	}
+	return nil
+}
+
+// UnmarshalYAML reads the deployment config (or a portion of it)
+// from a yaml node.
+func UnmarshalYAML(config any, body *yaml.Node) error {
+	if body.Kind != yaml.MappingNode {
+		return xerrors.Errorf("expected mapping node, got %s", body.Kind)
+	}
+	var (
+		// YAML parsing switches between field name and field value mode.
+		nameMode  = true
+		fieldName string
+	)
+	for i := 0; i < len(body.Content); i++ {
+		node := body.Content[i]
+		if nameMode {
+			if node.Kind != yaml.ScalarNode {
+				return xerrors.Errorf(
+					"expected scalar node (field name), got %s, value: %v",
+					node.Kind, node.Value,
+				)
+			}
+			fieldName = node.Value
+			nameMode = false
+		} else {
+			// We're in value mode.
+			field := reflect.ValueOf(config).Elem().FieldByName(fieldName)
+			if field.IsZero() {
+				return xerrors.Errorf("unknown field: %s", fieldName)
+			}
+			switch node.Kind {
+			case yaml.ScalarNode:
+				if err := unmarshalScalar(field, node); err != nil {
+					return xerrors.Errorf("unmarshal scalar %v: %w", fieldName, err)
+				}
+			}
+		}
+	}
 }
