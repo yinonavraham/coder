@@ -102,7 +102,7 @@ export const MemoizedMarkdown = memo(Markdown)
 
 const useStyles = makeStyles((theme) => ({
   markdown: {
-    fontSize: 16,
+    fontSize: 14,
     lineHeight: "24px",
 
     "& h1, & h2, & h3, & h4, & h5, & h6": {

@@ -15,6 +15,7 @@ export type UserAutocompleteProps = {
   onChange: (user: User | null) => void
   label?: string
   className?: string
+  disabled?: boolean
 }
 
 export const UserAutocomplete: FC<UserAutocompleteProps> = ({
@@ -22,6 +23,7 @@ export const UserAutocomplete: FC<UserAutocompleteProps> = ({
   onChange,
   label,
   className,
+  disabled,
 }) => {
   const styles = useStyles()
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false)
@@ -41,7 +43,7 @@ export const UserAutocomplete: FC<UserAutocompleteProps> = ({
     (event: ChangeEvent<HTMLInputElement>) => {
       sendSearch("SEARCH", { query: event.target.value })
     },
-    1000,
+    100,
   )
 
   return (
@@ -50,6 +52,7 @@ export const UserAutocomplete: FC<UserAutocompleteProps> = ({
       options={searchResults}
       loading={searchState.matches("searching")}
       value={value}
+      disabled={disabled}
       id="user-autocomplete"
       open={isAutocompleteOpen}
       onOpen={() => {
@@ -68,7 +71,7 @@ export const UserAutocomplete: FC<UserAutocompleteProps> = ({
       getOptionSelected={(option: User, value: User) =>
         option.username === value.username
       }
-      getOptionLabel={(option) => option.email}
+      getOptionLabel={(option) => option.username}
       renderOption={(option: User) => (
         <AvatarData
           title={option.username}

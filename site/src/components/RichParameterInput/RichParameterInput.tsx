@@ -8,6 +8,8 @@ import { FC, useState } from "react"
 import { TemplateVersionParameter } from "../../api/typesGenerated"
 import { colors } from "theme/colors"
 import { MemoizedMarkdown } from "components/Markdown/Markdown"
+import Lock from "@material-ui/icons/Lock"
+import { Button } from "@material-ui/core"
 
 const isBoolean = (parameter: TemplateVersionParameter) => {
   return parameter.type === "bool"
@@ -25,32 +27,31 @@ const ParameterLabel: FC<ParameterLabelProps> = ({ index, parameter }) => {
     <span>
       <span className={styles.labelNameWithIcon}>
         {parameter.icon && (
-          <span className={styles.iconWrapper}>
-            <img
-              className={styles.icon}
-              alt="Parameter icon"
-              src={parameter.icon}
-              style={{
-                pointerEvents: "none",
-              }}
-            />
-          </span>
+          <img
+            className={styles.icon}
+            alt="Parameter icon"
+            src={parameter.icon}
+            style={{
+              pointerEvents: "none",
+            }}
+          />
         )}
         <span className={styles.labelName}>
           <label htmlFor={`rich_parameter_values[${index}].value`}>
             {parameter.name}
           </label>
         </span>
+        {!parameter.mutable && (
+          <div className={styles.labelImmutable}>
+            <Lock />
+            This parameter cannot be changed after creation.
+          </div>
+        )}
       </span>
       {parameter.description && (
         <span className={styles.labelDescription}>
           <MemoizedMarkdown>{parameter.description}</MemoizedMarkdown>
         </span>
-      )}
-      {!parameter.mutable && (
-        <div className={styles.labelImmutable}>
-          This parameter cannot be changed after creating workspace.
-        </div>
       )}
     </span>
   )
@@ -127,36 +128,32 @@ const RichParameterField: React.FC<RichParameterInputProps> = ({
 
   if (parameter.options.length > 0) {
     return (
-      <RadioGroup
-        defaultValue={parameterValue}
-        onChange={(event) => {
-          onChange(event.target.value)
-        }}
-      >
+      <div className={styles.optionGrid}>
         {parameter.options.map((option) => (
-          <FormControlLabel
-            disabled={disabled}
+          <Button
             key={option.name}
-            value={option.value}
-            control={<Radio color="primary" size="small" disableRipple />}
-            label={
-              <span>
-                {option.icon && (
-                  <img
-                    className={styles.optionIcon}
-                    alt="Parameter icon"
-                    src={option.icon}
-                    style={{
-                      pointerEvents: "none",
-                    }}
-                  />
-                )}
-                {option.name}
-              </span>
-            }
-          />
+            onClick={() => {
+              setParameterValue(option.value)
+              onChange(option.value)
+            }}
+            className={`${styles.optionButton} ${
+              parameterValue === option.value ? "active" : ""
+            }`}
+          >
+            {option.icon && (
+              <img
+                className={styles.optionIcon}
+                alt="Parameter icon"
+                src={option.icon}
+                style={{
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+            {option.name}
+          </Button>
         ))}
-      </RadioGroup>
+      </div>
     )
   }
 
@@ -184,24 +181,34 @@ const optionIconSize = 24
 
 const useStyles = makeStyles((theme) => ({
   labelName: {
+    fontSize: 16,
+    fontWeight: 500,
+    color: theme.palette.text.primary,
+    display: "block",
+  },
+  labelNameWithIcon: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  },
+  labelDescription: {
     fontSize: 14,
     color: theme.palette.text.secondary,
     display: "block",
-    marginBottom: theme.spacing(1.0),
-  },
-  labelNameWithIcon: {
-    marginBottom: theme.spacing(0.5),
-  },
-  labelDescription: {
-    fontSize: 16,
-    color: theme.palette.text.primary,
-    display: "block",
-    fontWeight: 600,
+    fontWeight: 400,
   },
   labelImmutable: {
-    marginTop: theme.spacing(0.5),
-    marginBottom: theme.spacing(0.5),
-    color: colors.yellow[7],
+    color: colors.gray[7],
+    display: "flex",
+    alignItems: "center",
+    fontSize: 12,
+    marginLeft: 4,
+
+    "& svg": {
+      width: 16,
+      height: 16,
+      marginRight: 2,
+    },
   },
   input: {
     display: "flex",
@@ -212,18 +219,26 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     gap: theme.spacing(1),
   },
-  iconWrapper: {
-    float: "left",
-  },
   icon: {
     maxHeight: iconSize,
     width: iconSize,
-    marginRight: theme.spacing(1.0),
+  },
+  optionGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    gap: 16,
   },
   optionIcon: {
     maxHeight: optionIconSize,
     width: optionIconSize,
     marginRight: theme.spacing(1.0),
-    float: "left",
+  },
+  optionButton: {
+    height: "unset",
+    minHeight: 52,
+
+    "&.active": {
+      outline: `2px solid ${theme.palette.primary.main}`,
+    },
   },
 }))

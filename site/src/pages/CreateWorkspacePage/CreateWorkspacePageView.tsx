@@ -6,16 +6,16 @@ import { RichParameterInput } from "components/RichParameterInput/RichParameterI
 import { Stack } from "components/Stack/Stack"
 import { UserAutocomplete } from "components/UserAutocomplete/UserAutocomplete"
 import { FormikContextType, FormikTouched, useFormik } from "formik"
-import { FC, useEffect, useState } from "react"
+import { FC, Fragment, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { getFormHelpers, nameValidator, onChangeTrimmed } from "util/formUtils"
 import * as Yup from "yup"
 import { AlertBanner } from "components/AlertBanner/AlertBanner"
 import { makeStyles } from "@material-ui/core/styles"
 import { FullPageHorizontalForm } from "components/FullPageForm/FullPageHorizontalForm"
-import { SelectedTemplate } from "./SelectedTemplate"
 import { Loader } from "components/Loader/Loader"
 import { GitAuth } from "components/GitAuth/GitAuth"
+import FormLabel from "@material-ui/core/FormLabel"
 
 export enum CreateWorkspaceErrors {
   GET_TEMPLATES_ERROR = "getTemplatesError",
@@ -202,63 +202,171 @@ export const CreateWorkspacePageView: FC<
   }
 
   return (
-    <FullPageHorizontalForm title="New workspace" onCancel={props.onCancel}>
+    <FullPageHorizontalForm
+      title="Create a new workspace"
+      detail="Workspaces contain the IDEs, dependencies, and configuration information needed for software development."
+      onCancel={props.onCancel}
+    >
       <form onSubmit={form.handleSubmit}>
-        <Stack direction="column" spacing={10} className={styles.formSections}>
-          {/* General info */}
-          <div className={styles.formSection}>
-            <div className={styles.formSectionInfo}>
-              <h2 className={styles.formSectionInfoTitle}>General info</h2>
-              <p className={styles.formSectionInfoDescription}>
-                The template and name of your new workspace.
-              </p>
-            </div>
-
+        <Stack direction="column" spacing={4} className={styles.formSections}>
+          <div className={styles.ownerAndName}>
             <Stack
-              direction="column"
+              className={styles.ownerAndNameFields}
+              direction="row"
               spacing={1}
-              className={styles.formSectionFields}
             >
-              {props.selectedTemplate && (
-                <SelectedTemplate template={props.selectedTemplate} />
-              )}
+              <UserAutocomplete
+                value={props.owner}
+                onChange={props.setOwner}
+                label={t("ownerLabel")}
+                disabled={!props.canCreateForUser}
+              />
+
+              <span className={styles.ownerAndNameSeparator}>/</span>
 
               <TextField
                 {...getFieldHelpers("name")}
+                // We don't want to show the error message here!
+                helperText={undefined}
                 disabled={form.isSubmitting}
                 onChange={onChangeTrimmed(form)}
                 autoFocus
                 fullWidth
-                label={t("nameLabel")}
+                label="Name"
                 variant="outlined"
               />
             </Stack>
+            <FormLabel className={styles.ownerAndNameLabel}>
+              The best workspace names are easy to type. You{"'"}ll connect to
+              workspaces by name!
+            </FormLabel>
           </div>
 
-          {/* Workspace owner */}
-          {props.canCreateForUser && (
+          <hr className={styles.separator} />
+
+          {/* Template params */}
+          {props.templateSchema && props.templateSchema.length > 0 && (
             <div className={styles.formSection}>
               <div className={styles.formSectionInfo}>
-                <h2 className={styles.formSectionInfoTitle}>Workspace owner</h2>
+                <h2 className={styles.formSectionInfoTitle}>Template params</h2>
                 <p className={styles.formSectionInfoDescription}>
-                  The user that is going to own this workspace. If you are
-                  admin, you can create workspace for others.
+                  Those values are provided by your template&lsquo;s Terraform
+                  configuration.
                 </p>
               </div>
 
               <Stack
                 direction="column"
-                spacing={1}
+                spacing={4} // Spacing here is diff because the fields here don't have the MUI floating label spacing
                 className={styles.formSectionFields}
               >
-                <UserAutocomplete
-                  value={props.owner}
-                  onChange={props.setOwner}
-                  label={t("ownerLabel")}
-                />
+                {props.templateSchema
+                  // We only want to show schema that have redisplay_value equals true
+                  .filter((schema) => schema.redisplay_value)
+                  .map((schema) => (
+                    <Fragment key={schema.id}>
+                      <ParameterInput
+                        disabled={form.isSubmitting}
+                        defaultValue={parameterValues[schema.name]}
+                        onChange={(value) => {
+                          setParameterValues({
+                            ...parameterValues,
+                            [schema.name]: value,
+                          })
+                        }}
+                        schema={schema}
+                      />
+                      <hr className={styles.separator} />
+                    </Fragment>
+                  ))}
               </Stack>
             </div>
           )}
+
+          {/* Immutable rich parameters */}
+          {props.templateParameters &&
+            props.templateParameters.filter((p) => !p.mutable).length > 0 && (
+              <div className={styles.formSection}>
+                <Stack
+                  direction="column"
+                  spacing={4} // Spacing here is diff because the fields here don't have the MUI floating label spacing
+                  className={styles.formSectionFields}
+                >
+                  {props.templateParameters.map(
+                    (parameter, index) =>
+                      !parameter.mutable && (
+                        <Fragment key={parameter.name}>
+                          <RichParameterInput
+                            {...getFieldHelpers(
+                              "rich_parameter_values[" + index + "].value",
+                            )}
+                            disabled={form.isSubmitting}
+                            index={index}
+                            key={parameter.name}
+                            onChange={(value) => {
+                              form.setFieldValue(
+                                "rich_parameter_values." + index,
+                                {
+                                  name: parameter.name,
+                                  value: value,
+                                },
+                              )
+                            }}
+                            parameter={parameter}
+                            initialValue={workspaceBuildParameterValue(
+                              initialRichParameterValues,
+                              parameter,
+                            )}
+                          />
+                          <hr className={styles.separator} />
+                        </Fragment>
+                      ),
+                  )}
+                </Stack>
+              </div>
+            )}
+
+          {/* Mutable rich parameters */}
+          {props.templateParameters &&
+            props.templateParameters.filter((p) => p.mutable).length > 0 && (
+              <div className={styles.formSection}>
+                <Stack
+                  direction="column"
+                  spacing={4} // Spacing here is diff because the fields here don't have the MUI floating label spacing
+                  className={styles.formSectionFields}
+                >
+                  {props.templateParameters.map(
+                    (parameter, index) =>
+                      parameter.mutable && (
+                        <Fragment key={parameter.name}>
+                          <RichParameterInput
+                            {...getFieldHelpers(
+                              "rich_parameter_values[" + index + "].value",
+                            )}
+                            disabled={form.isSubmitting}
+                            index={index}
+                            onChange={(value) => {
+                              form.setFieldValue(
+                                "rich_parameter_values." + index,
+                                {
+                                  name: parameter.name,
+                                  value: value,
+                                },
+                              )
+                            }}
+                            parameter={parameter}
+                            initialValue={workspaceBuildParameterValue(
+                              initialRichParameterValues,
+                              parameter,
+                            )}
+                          />
+                          <hr className={styles.separator} />
+                        </Fragment>
+                      ),
+                  )}
+                </Stack>
+              </div>
+            )}
 
           {/* Template git auth */}
           {props.templateGitAuth && props.templateGitAuth.length > 0 && (
@@ -291,144 +399,6 @@ export const CreateWorkspacePageView: FC<
             </div>
           )}
 
-          {/* Template params */}
-          {props.templateSchema && props.templateSchema.length > 0 && (
-            <div className={styles.formSection}>
-              <div className={styles.formSectionInfo}>
-                <h2 className={styles.formSectionInfoTitle}>Template params</h2>
-                <p className={styles.formSectionInfoDescription}>
-                  Those values are provided by your template&lsquo;s Terraform
-                  configuration.
-                </p>
-              </div>
-
-              <Stack
-                direction="column"
-                spacing={4} // Spacing here is diff because the fields here don't have the MUI floating label spacing
-                className={styles.formSectionFields}
-              >
-                {props.templateSchema
-                  // We only want to show schema that have redisplay_value equals true
-                  .filter((schema) => schema.redisplay_value)
-                  .map((schema) => (
-                    <ParameterInput
-                      disabled={form.isSubmitting}
-                      key={schema.id}
-                      defaultValue={parameterValues[schema.name]}
-                      onChange={(value) => {
-                        setParameterValues({
-                          ...parameterValues,
-                          [schema.name]: value,
-                        })
-                      }}
-                      schema={schema}
-                    />
-                  ))}
-              </Stack>
-            </div>
-          )}
-
-          {/* Immutable rich parameters */}
-          {props.templateParameters &&
-            props.templateParameters.filter((p) => !p.mutable).length > 0 && (
-              <div className={styles.formSection}>
-                <div className={styles.formSectionInfo}>
-                  <h2 className={styles.formSectionInfoTitle}>
-                    Immutable parameters
-                  </h2>
-                  <p className={styles.formSectionInfoDescription}>
-                    Those values are provided by your template&lsquo;s Terraform
-                    configuration. Values cannot be changed after creating the
-                    workspace.
-                  </p>
-                </div>
-
-                <Stack
-                  direction="column"
-                  spacing={4} // Spacing here is diff because the fields here don't have the MUI floating label spacing
-                  className={styles.formSectionFields}
-                >
-                  {props.templateParameters.map(
-                    (parameter, index) =>
-                      !parameter.mutable && (
-                        <RichParameterInput
-                          {...getFieldHelpers(
-                            "rich_parameter_values[" + index + "].value",
-                          )}
-                          disabled={form.isSubmitting}
-                          index={index}
-                          key={parameter.name}
-                          onChange={(value) => {
-                            form.setFieldValue(
-                              "rich_parameter_values." + index,
-                              {
-                                name: parameter.name,
-                                value: value,
-                              },
-                            )
-                          }}
-                          parameter={parameter}
-                          initialValue={workspaceBuildParameterValue(
-                            initialRichParameterValues,
-                            parameter,
-                          )}
-                        />
-                      ),
-                  )}
-                </Stack>
-              </div>
-            )}
-
-          {/* Mutable rich parameters */}
-          {props.templateParameters &&
-            props.templateParameters.filter((p) => p.mutable).length > 0 && (
-              <div className={styles.formSection}>
-                <div className={styles.formSectionInfo}>
-                  <h2 className={styles.formSectionInfoTitle}>
-                    Mutable parameters
-                  </h2>
-                  <p className={styles.formSectionInfoDescription}>
-                    Those values are provided by your template&lsquo;s Terraform
-                    configuration. Values can be changed after creating the
-                    workspace.
-                  </p>
-                </div>
-
-                <Stack
-                  direction="column"
-                  spacing={4} // Spacing here is diff because the fields here don't have the MUI floating label spacing
-                  className={styles.formSectionFields}
-                >
-                  {props.templateParameters.map(
-                    (parameter, index) =>
-                      parameter.mutable && (
-                        <RichParameterInput
-                          {...getFieldHelpers(
-                            "rich_parameter_values[" + index + "].value",
-                          )}
-                          disabled={form.isSubmitting}
-                          index={index}
-                          key={parameter.name}
-                          onChange={(value) => {
-                            form.setFieldValue(
-                              "rich_parameter_values." + index,
-                              {
-                                name: parameter.name,
-                                value: value,
-                              },
-                            )
-                          }}
-                          parameter={parameter}
-                          initialValue={workspaceBuildParameterValue(
-                            initialRichParameterValues,
-                            parameter,
-                          )}
-                        />
-                      ),
-                  )}
-                </Stack>
-              </div>
-            )}
           <FormFooter
             styles={formFooterStyles}
             onCancel={props.onCancel}
@@ -442,6 +412,35 @@ export const CreateWorkspacePageView: FC<
 }
 
 const useStyles = makeStyles((theme) => ({
+  ownerAndName: {},
+
+  ownerAndNameFields: {
+    display: "grid",
+    gridTemplateColumns: "0.5fr 0fr 1fr",
+    alignItems: "center",
+    gap: 16,
+  },
+
+  ownerAndNameSeparator: {
+    fontSize: 16,
+    fontWeight: 400,
+    marginTop: 16,
+    color: theme.palette.text.secondary,
+  },
+
+  ownerAndNameLabel: {
+    fontSize: 14,
+    display: "block",
+    marginTop: theme.spacing(0.5),
+  },
+
+  separator: {
+    width: "100%",
+    height: 1,
+    background: theme.palette.divider,
+    border: "none",
+  },
+
   formSections: {
     [theme.breakpoints.down("sm")]: {
       gap: theme.spacing(8),

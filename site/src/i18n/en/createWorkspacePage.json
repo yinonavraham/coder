@@ -1,6 +1,5 @@
 {
   "templateLabel": "Template",
-  "nameLabel": "Workspace Name",
   "ownerLabel": "Owner",
   "createWorkspace": "Create workspace",
   "validationRequiredParameter": "Parameter is required.",
