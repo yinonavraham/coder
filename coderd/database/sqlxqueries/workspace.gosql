@@ -1,0 +1,32 @@
+{{ define "GetWorkspaceBuildByID" }}
+	SELECT
+		workspace_builds.*,
+		workspaces.organization_id AS organization_id,
+		workspaces.owner_id AS workspace_owner_id
+	FROM
+		workspace_builds
+	INNER JOIN
+		workspaces ON workspace_builds.workspace_id = workspaces.id
+	WHERE
+		workspace_builds.id = @build_id
+	LIMIT
+		1;
+{{ end }}
+
+{{ define "GetWorkspaceBuildByJobID" }}
+	SELECT
+		workspace_builds.*,
+		workspaces.organization_id AS organization_id,
+		workspaces.owner_id AS workspace_owner_id
+	FROM
+		workspace_builds
+	INNER JOIN
+		workspaces ON workspace_builds.workspace_id = workspaces.id
+	WHERE
+		workspace_builds.job_id = @job_id
+	LIMIT
+		1;
+{{ end }}
+
+
+

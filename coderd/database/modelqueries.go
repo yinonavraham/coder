@@ -177,6 +177,17 @@ func (q *sqlQuerier) GetTemplateGroupRoles(ctx context.Context, id uuid.UUID) ([
 
 type workspaceQuerier interface {
 	GetAuthorizedWorkspaces(ctx context.Context, arg GetWorkspacesParams, prepared rbac.PreparedAuthorized) ([]GetWorkspacesRow, error)
+	GetWorkspaceBuildByID(ctx context.Context, id uuid.UUID) (WorkspaceBuildWithOwners, error)
+}
+
+type WorkspaceBuildWithOwners struct {
+	WorkspaceBuild
+	OrganizationID uuid.UUID `db:"organization_id" json:"organization_id"`
+	OwnerID        uuid.UUID `db:"owner_id" json:"owner_id"`
+}
+
+func (q *sqlQuerier) GetWorkspaceBuildByID(ctx context.Context, id uuid.UUID) (WorkspaceBuildWithOwners, error) {
+	return sqlxGet[WorkspaceBuildWithOwners](ctx, q, "GetWorkspaceBuildByID", id)
 }
 
 // GetAuthorizedWorkspaces returns all workspaces that the user is authorized to access.

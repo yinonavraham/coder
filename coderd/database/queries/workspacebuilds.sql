@@ -1,23 +1,3 @@
--- name: GetWorkspaceBuildByID :one
-SELECT
-	*
-FROM
-	workspace_builds
-WHERE
-	id = $1
-LIMIT
-	1;
-
--- name: GetWorkspaceBuildByJobID :one
-SELECT
-	*
-FROM
-	workspace_builds
-WHERE
-	job_id = $1
-LIMIT
-	1;
-
 -- name: GetWorkspaceBuildsCreatedAfter :many
 SELECT * FROM workspace_builds WHERE created_at > $1;
 
