@@ -141,7 +141,35 @@ func (o Organization) RBACObject() rbac.Object {
 }
 
 func (p ProvisionerDaemon) RBACObject() rbac.Object {
-	return rbac.ResourceProvisionerDaemon.WithID(p.ID)
+	obj := rbac.ResourceProvisionerDaemon.WithID(p.ID)
+	// if scope, scopeFound := p.Tags[provisionerdserver.TagScope]; scopeFound {
+	// 	switch scope {
+	// 	case provisionerdserver.ScopeOrg:
+	// 		// TODO: Handle OrgID appropriately
+	// 		obj = obj.InOrg(uuid.Nil)
+	// 	case provisionerdserver.ScopeUser:
+	// 		if userID, userFound := p.Tags[provisionerdserver.TagOwner]; userFound {
+	// 			obj = obj.WithOwner(userID)
+	// 		}
+	// 	}
+	// }
+	return obj
+}
+
+func (p ProvisionerJob) RBACObject() rbac.Object {
+	obj := rbac.ResourceProvisionerJob.WithID(p.ID)
+	// if scope, scopeFound := p.Tags[provisionerdserver.TagScope]; scopeFound {
+	// 	switch scope {
+	// 	case provisionerdserver.ScopeOrg:
+	// 		// TODO: Handle OrgID appropriately
+	// 		obj = obj.InOrg(uuid.Nil)
+	// 	case provisionerdserver.ScopeUser:
+	// 		if userID, userFound := p.Tags[provisionerdserver.TagOwner]; userFound {
+	// 			obj = obj.WithOwner(userID)
+	// 		}
+	// 	}
+	// }
+	return obj
 }
 
 func (f File) RBACObject() rbac.Object {
