@@ -979,9 +979,10 @@ flags, and YAML configuration. The precedence is as follows:
 				}
 			}()
 			provisionerdMetrics := provisionerd.NewMetrics(options.PrometheusRegistry)
+			addEchoProvisioner := flag.Lookup("test.v") != nil
 			for i := int64(0); i < cfg.Provisioner.Daemons.Value(); i++ {
 				daemonCacheDir := filepath.Join(cacheDir, fmt.Sprintf("provisioner-%d", i))
-				daemon, err := newProvisionerDaemon(ctx, coderAPI, provisionerdMetrics, logger, cfg, daemonCacheDir, errCh, false)
+				daemon, err := newProvisionerDaemon(ctx, coderAPI, provisionerdMetrics, logger, cfg, daemonCacheDir, errCh, addEchoProvisioner)
 				if err != nil {
 					return xerrors.Errorf("create provisioner daemon: %w", err)
 				}

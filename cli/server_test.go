@@ -26,10 +26,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
+	"cdr.dev/slog/sloggers/slogtest"
+
+	"github.com/coder/coder/agent"
 	"github.com/coder/coder/cli"
 	"github.com/coder/coder/cli/clitest"
 	"github.com/coder/coder/cli/config"
@@ -37,6 +41,9 @@ import (
 	"github.com/coder/coder/coderd/database/postgres"
 	"github.com/coder/coder/coderd/telemetry"
 	"github.com/coder/coder/codersdk"
+	"github.com/coder/coder/codersdk/agentsdk"
+	"github.com/coder/coder/provisioner/echo"
+	"github.com/coder/coder/provisionersdk/proto"
 	"github.com/coder/coder/pty/ptytest"
 	"github.com/coder/coder/testutil"
 )
@@ -1345,6 +1352,78 @@ func TestServer(t *testing.T) {
 			waitFile(t, fi2, testutil.WaitSuperLong)
 			waitFile(t, fi3, testutil.WaitSuperLong)
 		})
+	})
+	t.Run("BuiltinDERP", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancelFunc := context.WithCancel(context.Background())
+		defer cancelFunc()
+		root, cfg := clitest.New(t,
+			"server",
+			"--http-address", ":0",
+			"--cache-dir", t.TempDir(),
+			"--in-memory",
+			"--verbose",
+		)
+		pty := ptytest.New(t)
+		root.SetOutput(pty.Output())
+		root.SetErr(pty.Output())
+		errC := make(chan error, 1)
+		go func() {
+			errC <- root.ExecuteContext(ctx)
+		}()
+		accessURL := waitAccessURL(t, cfg)
+		client := codersdk.New(accessURL)
+
+		user := coderdtest.CreateFirstUser(t, client)
+		agentToken := uuid.NewString()
+		version := coderdtest.CreateTemplateVersion(t, client, user.OrganizationID, &echo.Responses{
+			Parse:         echo.ParseComplete,
+			ProvisionPlan: echo.ProvisionComplete,
+			ProvisionApply: []*proto.Provision_Response{{
+				Type: &proto.Provision_Response_Complete{
+					Complete: &proto.Provision_Complete{
+						Resources: []*proto.Resource{{
+							Name: "dev",
+							Type: "google_compute_instance",
+							Agents: []*proto.Agent{{
+								Id: uuid.NewString(),
+								Auth: &proto.Agent_Token{
+									Token: agentToken,
+								},
+							}},
+						}},
+					},
+				},
+			}},
+		})
+		_ = coderdtest.AwaitTemplateVersionJob(t, client, version.ID)
+		template := coderdtest.CreateTemplate(t, client, user.OrganizationID, version.ID)
+		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
+		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
+		agentClient := agentsdk.New(client.URL)
+		agentClient.SetSessionToken(agentToken)
+		agentCloser := agent.New(agent.Options{
+			Client: agentClient,
+			Logger: slogtest.Make(t, nil).Named("agent"),
+		})
+		defer func() {
+			_ = agentCloser.Close()
+		}()
+		resources := coderdtest.AwaitWorkspaceAgents(t, client, workspace.ID)
+
+		conn, err := client.DialWorkspaceAgent(ctx, resources[0].Agents[0].ID, &codersdk.DialWorkspaceAgentOptions{
+			BlockEndpoints: true,
+		})
+		require.NoError(t, err)
+		defer conn.Close()
+		reached := conn.AwaitReachable(ctx)
+		require.True(t, reached, "agent should be reachable")
+
+		_ = conn.Close()
+		_ = agentCloser.Close()
+		cancelFunc()
+		require.NoError(t, <-errC)
 	})
 }
 
