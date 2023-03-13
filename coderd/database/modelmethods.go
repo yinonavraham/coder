@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/coderd/rbac"
 )
 
@@ -142,31 +143,31 @@ func (o Organization) RBACObject() rbac.Object {
 
 func (p ProvisionerDaemon) RBACObject() rbac.Object {
 	obj := rbac.ResourceProvisionerDaemon.WithID(p.ID)
-	// if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound {
-	// 	switch scope {
-	// 	case provisionertags.ScopeOrganization:
-	// 		// There is only one org, so we can ignore this.
-	// 	case provisionertags.ScopeUser:
-	// 		if userID, userFound := p.Tags[provisionertags.TagOwner]; userFound {
-	// 			obj = obj.WithOwner(userID)
-	// 		}
-	// 	}
-	// }
+	if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound {
+		switch scope {
+		case provisionertags.ScopeOrganization:
+			// There is only one org, so we can ignore this.
+		case provisionertags.ScopeUser:
+			if userID, userFound := p.Tags[provisionertags.TagOwner]; userFound {
+				obj = obj.WithOwner(userID)
+			}
+		}
+	}
 	return obj
 }
 
 func (p ProvisionerJob) RBACObject() rbac.Object {
 	obj := rbac.ResourceProvisionerJob.WithID(p.ID)
-	// if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound {
-	// 	switch scope {
-	// 	case provisionertags.ScopeOrganization:
-	// 	// There is only one org, so we can ignore this.
-	// 	case provisionertags.ScopeUser:
-	// 		if userID, userFound := p.Tags[provisionertags.TagOwner]; userFound {
-	// 			obj = obj.WithOwner(userID)
-	// 		}
-	// 	}
-	// }
+	if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound {
+		switch scope {
+		case provisionertags.ScopeOrganization:
+		// There is only one org, so we can ignore this.
+		case provisionertags.ScopeUser:
+			if userID, userFound := p.Tags[provisionertags.TagOwner]; userFound {
+				obj = obj.WithOwner(userID)
+			}
+		}
+	}
 	return obj
 }
 
