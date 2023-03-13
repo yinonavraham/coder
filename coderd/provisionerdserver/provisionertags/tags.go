@@ -1,4 +1,4 @@
-package provisionerdserver
+package provisionertags
 
 import "github.com/google/uuid"
 
@@ -10,11 +10,11 @@ const (
 	ScopeOrganization = "organization"
 )
 
-// MutateTags adjusts the "owner" tag dependent on the "scope".
+// Mutate adjusts the "owner" tag dependent on the "scope".
 // If the scope is "user", the "owner" is changed to the user ID.
 // This is for user-scoped provisioner daemons, where users should
 // own their own operations.
-func MutateTags(userID uuid.UUID, tags map[string]string) map[string]string {
+func Mutate(userID uuid.UUID, tags map[string]string) map[string]string {
 	if tags == nil {
 		tags = map[string]string{}
 	}

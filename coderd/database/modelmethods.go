@@ -142,13 +142,12 @@ func (o Organization) RBACObject() rbac.Object {
 
 func (p ProvisionerDaemon) RBACObject() rbac.Object {
 	obj := rbac.ResourceProvisionerDaemon.WithID(p.ID)
-	// if scope, scopeFound := p.Tags[provisionerdserver.TagScope]; scopeFound {
+	// if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound {
 	// 	switch scope {
-	// 	case provisionerdserver.ScopeOrg:
-	// 		// TODO: Handle OrgID appropriately
-	// 		obj = obj.InOrg(uuid.Nil)
-	// 	case provisionerdserver.ScopeUser:
-	// 		if userID, userFound := p.Tags[provisionerdserver.TagOwner]; userFound {
+	// 	case provisionertags.ScopeOrganization:
+	// 		// There is only one org, so we can ignore this.
+	// 	case provisionertags.ScopeUser:
+	// 		if userID, userFound := p.Tags[provisionertags.TagOwner]; userFound {
 	// 			obj = obj.WithOwner(userID)
 	// 		}
 	// 	}
@@ -158,13 +157,12 @@ func (p ProvisionerDaemon) RBACObject() rbac.Object {
 
 func (p ProvisionerJob) RBACObject() rbac.Object {
 	obj := rbac.ResourceProvisionerJob.WithID(p.ID)
-	// if scope, scopeFound := p.Tags[provisionerdserver.TagScope]; scopeFound {
+	// if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound {
 	// 	switch scope {
-	// 	case provisionerdserver.ScopeOrg:
-	// 		// TODO: Handle OrgID appropriately
-	// 		obj = obj.InOrg(uuid.Nil)
-	// 	case provisionerdserver.ScopeUser:
-	// 		if userID, userFound := p.Tags[provisionerdserver.TagOwner]; userFound {
+	// 	case provisionertags.ScopeOrganization:
+	// 	// There is only one org, so we can ignore this.
+	// 	case provisionertags.ScopeUser:
+	// 		if userID, userFound := p.Tags[provisionertags.TagOwner]; userFound {
 	// 			obj = obj.WithOwner(userID)
 	// 		}
 	// 	}

@@ -70,6 +70,10 @@ var (
 		Type: "provisioner_daemon",
 	}
 
+	ResourceProvisionerJob = Object{
+		Type: "provisioner_job",
+	}
+
 	// ResourceOrganization CRUD. Has an org owner on all but 'create'.
 	//	create/delete = make or delete organizations
 	// 	read = view org information (Can add user owner for read)

@@ -26,6 +26,7 @@ import (
 	"github.com/coder/coder/coderd/httpapi"
 	"github.com/coder/coder/coderd/httpmw"
 	"github.com/coder/coder/coderd/provisionerdserver"
+	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/coderd/rbac"
 	"github.com/coder/coder/coderd/schedule"
 	"github.com/coder/coder/codersdk"
@@ -139,9 +140,9 @@ func (api *API) provisionerDaemonServe(rw http.ResponseWriter, r *http.Request) 
 	// for jobs that they own, but only authorized users can create
 	// globally scoped provisioners that attach to all jobs.
 	apiKey := httpmw.APIKey(r)
-	tags = provisionerdserver.MutateTags(apiKey.UserID, tags)
+	tags = provisionertags.Mutate(apiKey.UserID, tags)
 
-	if tags[provisionerdserver.TagScope] == provisionerdserver.ScopeOrganization {
+	if tags[provisionertags.TagScope] == provisionertags.ScopeOrganization {
 		if !api.AGPL.Authorize(r, rbac.ActionCreate, rbac.ResourceProvisionerDaemon) {
 			httpapi.Write(ctx, rw, http.StatusForbidden, codersdk.Response{
 				Message: "You aren't allowed to create provisioner daemons for the organization.",

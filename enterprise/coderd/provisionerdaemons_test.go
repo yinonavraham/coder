@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/coder/coder/coderd/coderdtest"
-	"github.com/coder/coder/coderd/provisionerdserver"
+	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/coderd/rbac"
 	"github.com/coder/coder/codersdk"
 	"github.com/coder/coder/enterprise/coderd/coderdenttest"
@@ -63,7 +63,7 @@ func TestProvisionerDaemonServe(t *testing.T) {
 		_, err := another.ServeProvisionerDaemon(context.Background(), user.OrganizationID, []codersdk.ProvisionerType{
 			codersdk.ProvisionerTypeEcho,
 		}, map[string]string{
-			provisionerdserver.TagScope: provisionerdserver.ScopeOrganization,
+			provisionertags.TagScope: provisionertags.ScopeOrganization,
 		})
 		require.Error(t, err)
 		var apiError *codersdk.Error
@@ -84,7 +84,7 @@ func TestProvisionerDaemonServe(t *testing.T) {
 		_, err := another.ServeProvisionerDaemon(context.Background(), user.OrganizationID, []codersdk.ProvisionerType{
 			codersdk.ProvisionerTypeEcho,
 		}, map[string]string{
-			provisionerdserver.TagScope: provisionerdserver.ScopeOrganization,
+			provisionertags.TagScope: provisionertags.ScopeOrganization,
 		})
 		require.Error(t, err)
 		var apiError *codersdk.Error
@@ -102,7 +102,7 @@ func TestProvisionerDaemonServe(t *testing.T) {
 			},
 		})
 		closer := coderdtest.NewExternalProvisionerDaemon(t, client, user.OrganizationID, map[string]string{
-			provisionerdserver.TagScope: provisionerdserver.ScopeUser,
+			provisionertags.TagScope: provisionertags.ScopeUser,
 		})
 		defer closer.Close()
 
@@ -151,7 +151,7 @@ func TestProvisionerDaemonServe(t *testing.T) {
 			FileID:        file.ID,
 			Provisioner:   codersdk.ProvisionerTypeEcho,
 			ProvisionerTags: map[string]string{
-				provisionerdserver.TagScope: provisionerdserver.ScopeUser,
+				provisionertags.TagScope: provisionertags.ScopeUser,
 			},
 		})
 		require.NoError(t, err)
@@ -160,7 +160,7 @@ func TestProvisionerDaemonServe(t *testing.T) {
 		another, _ := coderdtest.CreateAnotherUser(t, client, user.OrganizationID)
 		_ = closer.Close()
 		closer = coderdtest.NewExternalProvisionerDaemon(t, another, user.OrganizationID, map[string]string{
-			provisionerdserver.TagScope: provisionerdserver.ScopeUser,
+			provisionertags.TagScope: provisionertags.ScopeUser,
 		})
 		defer closer.Close()
 		workspace := coderdtest.CreateWorkspace(t, another, user.OrganizationID, template.ID)

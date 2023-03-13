@@ -16,7 +16,7 @@ import (
 	"github.com/coder/coder/coderd/coderdtest"
 	"github.com/coder/coder/coderd/database"
 	"github.com/coder/coder/coderd/gitauth"
-	"github.com/coder/coder/coderd/provisionerdserver"
+	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/codersdk"
 	"github.com/coder/coder/examples"
 	"github.com/coder/coder/provisioner/echo"
@@ -127,7 +127,7 @@ func TestPostTemplateVersionsByOrganization(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Equal(t, "bananas", version.Name)
-		require.Equal(t, provisionerdserver.ScopeOrganization, version.Job.Tags[provisionerdserver.TagScope])
+		require.Equal(t, provisionertags.ScopeOrganization, version.Job.Tags[provisionertags.TagScope])
 
 		require.Len(t, auditor.AuditLogs, 2)
 		assert.Equal(t, database.AuditActionCreate, auditor.AuditLogs[1].Action)

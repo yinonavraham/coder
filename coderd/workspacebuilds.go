@@ -20,6 +20,7 @@ import (
 	"github.com/coder/coder/coderd/httpapi"
 	"github.com/coder/coder/coderd/httpmw"
 	"github.com/coder/coder/coderd/provisionerdserver"
+	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/coderd/rbac"
 	"github.com/coder/coder/codersdk"
 )
@@ -442,7 +443,7 @@ func (api *API) postWorkspaceBuilds(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tags := provisionerdserver.MutateTags(workspace.OwnerID, templateVersionJob.Tags)
+	tags := provisionertags.Mutate(workspace.OwnerID, templateVersionJob.Tags)
 
 	// Store prior build number to compute new build number
 	var priorBuildNum int32
