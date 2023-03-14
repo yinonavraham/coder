@@ -10,6 +10,7 @@ import (
 
 	"github.com/coder/coder/coderd/database"
 	"github.com/coder/coder/coderd/database/dbgen"
+	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/coderd/rbac"
 	"github.com/coder/coder/coderd/util/slice"
 )
@@ -1177,14 +1178,28 @@ func (s *MethodTestSuite) TestWorkspace() {
 		app := dbgen.WorkspaceApp(s.T(), db, database.WorkspaceApp{AgentID: agt.ID})
 		check.Args(app.ID).Asserts(ws, rbac.ActionRead).Returns(ws)
 	}))
-}
-
-func (s *MethodTestSuite) TestExtraMethods() {
 	s.Run("GetProvisionerDaemons", s.Subtest(func(db database.Store, check *expects) {
-		d, err := db.InsertProvisionerDaemon(context.Background(), database.InsertProvisionerDaemonParams{
-			ID: uuid.New(),
-		})
-		s.NoError(err, "insert provisioner daemon")
-		check.Args().Asserts(d, rbac.ActionRead)
+		d1 := dbgen.ProvisionerDaemon(s.T(), db, database.ProvisionerDaemon{})
+		d2 := dbgen.ProvisionerDaemon(s.T(), db, database.ProvisionerDaemon{})
+		check.Args().
+			Asserts(d1, rbac.ActionRead, d2, rbac.ActionRead).
+			Returns([]database.ProvisionerDaemon{d1, d2})
+	}))
+	s.Run("Org/InsertProvisionerDaemon", s.Subtest(func(db database.Store, check *expects) {
+		pid := uuid.New()
+		check.Args(database.InsertProvisionerDaemonParams{
+			ID: pid,
+		}).Asserts(rbac.ResourceProvisionerDaemon.WithID(pid), rbac.ActionCreate)
+	}))
+	s.Run("User/InsertProvisionerDaemon", s.Subtest(func(db database.Store, check *expects) {
+		pid := uuid.New()
+		oid := uuid.New()
+		check.Args(database.InsertProvisionerDaemonParams{
+			ID: pid,
+			Tags: map[string]string{
+				provisionertags.TagScope: provisionertags.ScopeUser,
+				provisionertags.TagOwner: oid.String(),
+			},
+		}).Asserts(rbac.ResourceProvisionerDaemon.WithID(pid).WithOwner(oid.String()), rbac.ActionCreate)
 	}))
 }

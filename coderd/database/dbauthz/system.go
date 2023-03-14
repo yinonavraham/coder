@@ -354,7 +354,7 @@ func (q *querier) UpdateProvisionerJobByID(ctx context.Context, arg database.Upd
 	return q.db.UpdateProvisionerJobByID(ctx, arg)
 }
 
-// TODO: We need to create a ProvisionerJob resource type
+// InsertProvisionerJob is a system-level function.
 func (q *querier) InsertProvisionerJob(ctx context.Context, arg database.InsertProvisionerJobParams) (database.ProvisionerJob, error) {
 	// if err := q.authorizeContext(ctx, rbac.ActionCreate, rbac.ResourceSystem); err != nil {
 	// return database.ProvisionerJob{}, err
@@ -362,20 +362,12 @@ func (q *querier) InsertProvisionerJob(ctx context.Context, arg database.InsertP
 	return q.db.InsertProvisionerJob(ctx, arg)
 }
 
-// TODO: We need to create a ProvisionerJob resource type
+// InsertProvisionerJobLogs is done by provisionerd.
 func (q *querier) InsertProvisionerJobLogs(ctx context.Context, arg database.InsertProvisionerJobLogsParams) ([]database.ProvisionerJobLog, error) {
 	// if err := q.authorizeContext(ctx, rbac.ActionCreate, rbac.ResourceSystem); err != nil {
 	// return nil, err
 	// }
 	return q.db.InsertProvisionerJobLogs(ctx, arg)
-}
-
-// TODO: We need to create a ProvisionerDaemon resource type
-func (q *querier) InsertProvisionerDaemon(ctx context.Context, arg database.InsertProvisionerDaemonParams) (database.ProvisionerDaemon, error) {
-	// if err := q.authorizeContext(ctx, rbac.ActionCreate, rbac.ResourceSystem); err != nil {
-	// return database.ProvisionerDaemon{}, err
-	// }
-	return q.db.InsertProvisionerDaemon(ctx, arg)
 }
 
 func (q *querier) InsertTemplateVersionParameter(ctx context.Context, arg database.InsertTemplateVersionParameterParams) (database.TemplateVersionParameter, error) {

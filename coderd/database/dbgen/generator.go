@@ -17,6 +17,7 @@ import (
 	"github.com/tabbed/pqtype"
 
 	"github.com/coder/coder/coderd/database"
+	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/cryptorand"
 )
 
@@ -437,6 +438,27 @@ func ParameterValue(t testing.TB, db database.Store, seed database.ParameterValu
 	})
 	require.NoError(t, err, "insert parameter value")
 	return scheme
+}
+
+func ProvisionerDaemon(t testing.TB, db database.Store, seed database.ProvisionerDaemon) database.ProvisionerDaemon {
+	params := database.InsertProvisionerDaemonParams{
+		ID:           takeFirst(seed.ID, uuid.New()),
+		CreatedAt:    takeFirst(seed.CreatedAt, database.Now()),
+		Name:         takeFirst(seed.Name, namesgenerator.GetRandomName(1)),
+		Provisioners: seed.Provisioners,
+		Tags:         seed.Tags,
+	}
+	// takeFirst doesn't work for slices or maps.
+	if len(params.Provisioners) == 0 {
+		params.Provisioners = []database.ProvisionerType{database.ProvisionerTypeEcho}
+	}
+	if len(params.Tags) == 0 {
+		params.Tags = map[string]string{provisionertags.TagScope: provisionertags.ScopeOrganization}
+	}
+
+	daemon, err := db.InsertProvisionerDaemon(context.Background(), params)
+	require.NoError(t, err, "insert provisioner daemon")
+	return daemon
 }
 
 func WorkspaceAgentStat(t testing.TB, db database.Store, orig database.WorkspaceAgentStat) database.WorkspaceAgentStat {

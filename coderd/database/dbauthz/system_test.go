@@ -269,12 +269,6 @@ func (s *MethodTestSuite) TestSystemFunctions() {
 			JobID: j.ID,
 		}).Asserts( /*rbac.ResourceSystem, rbac.ActionCreate*/ )
 	}))
-	s.Run("InsertProvisionerDaemon", s.Subtest(func(db database.Store, check *expects) {
-		// TODO: we need to create a ProvisionerDaemon resource
-		check.Args(database.InsertProvisionerDaemonParams{
-			ID: uuid.New(),
-		}).Asserts( /*rbac.ResourceSystem, rbac.ActionCreate*/ )
-	}))
 	s.Run("InsertTemplateVersionParameter", s.Subtest(func(db database.Store, check *expects) {
 		v := dbgen.TemplateVersion(s.T(), db, database.TemplateVersion{})
 		check.Args(database.InsertTemplateVersionParameterParams{

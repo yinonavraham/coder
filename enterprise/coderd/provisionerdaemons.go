@@ -100,7 +100,7 @@ func (api *API) provisionerDaemons(rw http.ResponseWriter, r *http.Request) {
 // @Router /organizations/{organization}/provisionerdaemons/serve [get]
 func (api *API) provisionerDaemonServe(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
+	org := httpmw.OrganizationParam(r)
 	tags := map[string]string{}
 	if r.URL.Query().Has("tag") {
 		for _, tag := range r.URL.Query()["tag"] {
@@ -143,7 +143,7 @@ func (api *API) provisionerDaemonServe(rw http.ResponseWriter, r *http.Request) 
 	tags = provisionertags.Mutate(apiKey.UserID, tags)
 
 	if tags[provisionertags.TagScope] == provisionertags.ScopeOrganization {
-		if !api.AGPL.Authorize(r, rbac.ActionCreate, rbac.ResourceProvisionerDaemon) {
+		if !api.AGPL.Authorize(r, rbac.ActionCreate, rbac.ResourceProvisionerDaemon.InOrg(org.ID)) {
 			httpapi.Write(ctx, rw, http.StatusForbidden, codersdk.Response{
 				Message: "You aren't allowed to create provisioner daemons for the organization.",
 			})

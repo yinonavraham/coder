@@ -11,6 +11,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/coder/coder/coderd/database"
+	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/coderd/rbac"
 	"github.com/coder/coder/coderd/util/slice"
 )
@@ -398,6 +399,20 @@ func (q *querier) InsertOrganizationMember(ctx context.Context, arg database.Ins
 
 	obj := rbac.ResourceOrganizationMember.InOrg(arg.OrganizationID).WithID(arg.UserID)
 	return insert(q.log, q.auth, obj, q.db.InsertOrganizationMember)(ctx, arg)
+}
+
+func (q *querier) InsertProvisionerDaemon(ctx context.Context, arg database.InsertProvisionerDaemonParams) (database.ProvisionerDaemon, error) {
+	// Provisionerd ownership and scope is stored on the tags field.
+	var ownerID string
+	if scope, scopeFound := arg.Tags[provisionertags.TagScope]; scopeFound && scope == provisionertags.ScopeUser {
+		if owner, ownerFound := arg.Tags[provisionertags.TagOwner]; ownerFound {
+			ownerID = owner
+		}
+	}
+	if err := q.authorizeContext(ctx, rbac.ActionCreate, rbac.ResourceProvisionerDaemon.WithID(arg.ID).WithOwner(ownerID)); err != nil {
+		return database.ProvisionerDaemon{}, err
+	}
+	return q.db.InsertProvisionerDaemon(ctx, arg)
 }
 
 func (q *querier) UpdateMemberRoles(ctx context.Context, arg database.UpdateMemberRolesParams) (database.OrganizationMember, error) {

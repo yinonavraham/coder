@@ -4,6 +4,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/google/uuid"
+
 	"github.com/coder/coder/coderd/provisionerdserver/provisionertags"
 	"github.com/coder/coder/coderd/rbac"
 )
@@ -142,18 +144,19 @@ func (o Organization) RBACObject() rbac.Object {
 }
 
 func (p ProvisionerDaemon) RBACObject() rbac.Object {
-	obj := rbac.ResourceProvisionerDaemon.WithID(p.ID)
-	if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound {
-		switch scope {
-		case provisionertags.ScopeOrganization:
-			// There is only one org, so we can ignore this.
-		case provisionertags.ScopeUser:
-			if userID, userFound := p.Tags[provisionertags.TagOwner]; userFound {
-				obj = obj.WithOwner(userID)
-			}
+	// HACK: We set the owner of the provisioner to the user who created it if the
+	// provisioner is scoped to a user. Otherwise, the provisioner is org-scoped.
+	// This should really set with InOrg() but the organization ID is not stored
+	// on the ProvisionerDaemon itself. Additionally, we only have one org so it does
+	// not make sense to over-complicate this right now.
+	ownerID := uuid.Nil.String()
+	if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound && scope == provisionertags.ScopeUser {
+		if userID, userIDFound := p.Tags[provisionertags.TagOwner]; userIDFound {
+			ownerID = userID
 		}
 	}
-	return obj
+
+	return rbac.ResourceProvisionerDaemon.WithID(p.ID).WithOwner(ownerID)
 }
 
 // NOTE: Provisioner jobs are not first-class RBAC objects. Access to them is controlled

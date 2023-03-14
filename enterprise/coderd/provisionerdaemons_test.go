@@ -60,15 +60,13 @@ func TestProvisionerDaemonServe(t *testing.T) {
 			},
 		})
 		another, _ := coderdtest.CreateAnotherUser(t, client, user.OrganizationID, rbac.RoleOrgAdmin(user.OrganizationID))
-		_, err := another.ServeProvisionerDaemon(context.Background(), user.OrganizationID, []codersdk.ProvisionerType{
+		srv, err := another.ServeProvisionerDaemon(context.Background(), user.OrganizationID, []codersdk.ProvisionerType{
 			codersdk.ProvisionerTypeEcho,
 		}, map[string]string{
 			provisionertags.TagScope: provisionertags.ScopeOrganization,
 		})
-		require.Error(t, err)
-		var apiError *codersdk.Error
-		require.ErrorAs(t, err, &apiError)
-		require.Equal(t, http.StatusForbidden, apiError.StatusCode())
+		require.NoError(t, err)
+		srv.DRPCConn().Close()
 	})
 
 	t.Run("OrganizationNoPerms", func(t *testing.T) {
@@ -90,6 +88,7 @@ func TestProvisionerDaemonServe(t *testing.T) {
 		var apiError *codersdk.Error
 		require.ErrorAs(t, err, &apiError)
 		require.Equal(t, http.StatusForbidden, apiError.StatusCode())
+		require.Contains(t, apiError.Message, "You aren't allowed to create provisioner daemons for the organization.")
 	})
 
 	t.Run("UserLocal", func(t *testing.T) {
