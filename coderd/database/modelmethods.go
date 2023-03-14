@@ -156,20 +156,9 @@ func (p ProvisionerDaemon) RBACObject() rbac.Object {
 	return obj
 }
 
-func (p ProvisionerJob) RBACObject() rbac.Object {
-	obj := rbac.ResourceProvisionerJob.WithID(p.ID)
-	if scope, scopeFound := p.Tags[provisionertags.TagScope]; scopeFound {
-		switch scope {
-		case provisionertags.ScopeOrganization:
-		// There is only one org, so we can ignore this.
-		case provisionertags.ScopeUser:
-			if userID, userFound := p.Tags[provisionertags.TagOwner]; userFound {
-				obj = obj.WithOwner(userID)
-			}
-		}
-	}
-	return obj
-}
+// NOTE: Provisioner jobs are not first-class RBAC objects. Access to them is controlled
+// by the workspace or template they are associated with.
+// func (p ProvisionerJob) RBACObject() rbac.Object {}
 
 func (f File) RBACObject() rbac.Object {
 	return rbac.ResourceFile.
