@@ -3,9 +3,12 @@ package clibase
 import (
 	"context"
 	"errors"
+	"flag"
+	"fmt"
 	"io"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/spf13/pflag"
 	"golang.org/x/xerrors"
@@ -55,6 +58,45 @@ func (c *Cmd) Walk(fn func(*Cmd)) {
 	}
 }
 
+// PrepareAll performs initialization and linting on the command and all its children.
+func (c *Cmd) PrepareAll() error {
+	if c.Use == "" {
+		return xerrors.New("command must have a Use field so that it has a name")
+	}
+	var merr error
+	for _, opt := range c.Options {
+		if opt.Name == "" {
+			switch {
+			case opt.Flag != "":
+				opt.Name = opt.Flag
+			case opt.Env != "":
+				opt.Name = opt.Env
+			case opt.YAML != "":
+				opt.Name = opt.YAML
+			default:
+				merr = errors.Join(merr, xerrors.Errorf("option must have a Name, Flag, Env or YAML field"))
+			}
+		}
+		if opt.Description != "" {
+			// Enforce that description uses sentence form.
+			if unicode.IsLower(rune(opt.Description[0])) {
+				merr = errors.Join(merr, xerrors.Errorf("option %q description should start with a capital letter", opt.Name))
+			}
+			if !strings.HasSuffix(opt.Description, ".") {
+				merr = errors.Join(merr, xerrors.Errorf("option %q description should end with a period", opt.Name))
+			}
+		}
+	}
+	for _, child := range c.Children {
+		child.Parent = c
+		err := child.PrepareAll()
+		if err != nil {
+			merr = errors.Join(merr, xerrors.Errorf("command %v: %w", child.Name(), err))
+		}
+	}
+	return merr
+}
+
 // Name returns the first word in the Use string.
 func (c *Cmd) Name() string {
 	return strings.Split(c.Use, " ")[0]
@@ -64,7 +106,6 @@ func (c *Cmd) Name() string {
 // as seen on the command line.
 func (c *Cmd) FullName() string {
 	var names []string
-
 	if c.Parent != nil {
 		names = append(names, c.Parent.FullName())
 	}
@@ -77,7 +118,7 @@ func (c *Cmd) FullName() string {
 func (c *Cmd) FullUsage() string {
 	var uses []string
 	if c.Parent != nil {
-		uses = append(uses, c.Parent.FullUsage())
+		uses = append(uses, c.Parent.FullName())
 	}
 	uses = append(uses, c.Use)
 	return strings.Join(uses, " ")
@@ -115,28 +156,17 @@ type Invocation struct {
 // fields with OS defaults.
 func (i *Invocation) WithOS() *Invocation {
 	return i.with(func(i *Invocation) {
-		if i.Stdout == nil {
-			i.Stdout = os.Stdout
-		}
-		if i.Stderr == nil {
-			i.Stderr = os.Stderr
-		}
-		if i.Stdin == nil {
-			i.Stdin = os.Stdin
-		}
-		if i.Args == nil {
-			i.Args = os.Args[1:]
-		}
-		if i.Environ == nil {
-			i.Environ = ParseEnviron(os.Environ(), "")
-		}
+		i.Stdout = os.Stdout
+		i.Stderr = os.Stderr
+		i.Stdin = os.Stdin
+		i.Args = os.Args[1:]
+		i.Environ = ParseEnviron(os.Environ(), "")
 	})
 }
 
 func (i *Invocation) Context() context.Context {
 	if i.ctx == nil {
-		// Consider returning context.Background() instead?
-		panic("context not set, has WithContext() or Run() been called?")
+		return context.Background()
 	}
 	return i.ctx
 }
@@ -153,6 +183,18 @@ type runState struct {
 	commandDepth int
 
 	flagParseErr error
+}
+
+func copyFlagSetWithout(fs *pflag.FlagSet, without string) *pflag.FlagSet {
+	fs2 := pflag.NewFlagSet("", pflag.ContinueOnError)
+	fs2.Usage = func() {}
+	fs.VisitAll(func(f *pflag.Flag) {
+		if f.Name == without {
+			return
+		}
+		fs2.AddFlag(f)
+	})
+	return fs2
 }
 
 // run recursively executes the command and its children.
@@ -173,6 +215,7 @@ func (i *Invocation) run(state *runState) error {
 
 	children := make(map[string]*Cmd)
 	for _, child := range i.Command.Children {
+		child.Parent = i.Command
 		for _, name := range append(child.Aliases, child.Name()) {
 			if _, ok := children[name]; ok {
 				return xerrors.Errorf("duplicate command name: %s", name)
@@ -187,7 +230,15 @@ func (i *Invocation) run(state *runState) error {
 		i.parsedFlags.Usage = func() {}
 	}
 
-	i.parsedFlags.AddFlagSet(i.Command.Options.FlagSet())
+	// If we find a duplicate flag, we want the deeper command's flag to override
+	// the shallow one. Unfortunately, pflag has no way to remove a flag, so we
+	// have to create a copy of the flagset without a value.
+	i.Command.Options.FlagSet().VisitAll(func(f *pflag.Flag) {
+		if i.parsedFlags.Lookup(f.Name) != nil {
+			i.parsedFlags = copyFlagSetWithout(i.parsedFlags, f.Name)
+		}
+		i.parsedFlags.AddFlag(f)
+	})
 
 	var parsedArgs []string
 
@@ -201,19 +252,13 @@ func (i *Invocation) run(state *runState) error {
 	// Run child command if found (next child only)
 	// We must do subcommand detection after flag parsing so we don't mistake flag
 	// values for subcommand names.
-	if len(parsedArgs) > 0 {
-		nextArg := parsedArgs[0]
+	if len(parsedArgs) > state.commandDepth {
+		nextArg := parsedArgs[state.commandDepth]
 		if child, ok := children[nextArg]; ok {
 			child.Parent = i.Command
 			i.Command = child
 			state.commandDepth++
-			err = i.run(state)
-			if err != nil {
-				return xerrors.Errorf(
-					"subcommand %s: %w", child.Name(), err,
-				)
-			}
-			return nil
+			return i.run(state)
 		}
 	}
 
@@ -266,9 +311,25 @@ func (i *Invocation) run(state *runState) error {
 
 	err = mw(i.Command.Handler)(i)
 	if err != nil {
-		return xerrors.Errorf("running command %s: %w", i.Command.FullName(), err)
+		return &RunCommandError{
+			Cmd: i.Command,
+			Err: err,
+		}
 	}
 	return nil
+}
+
+type RunCommandError struct {
+	Cmd *Cmd
+	Err error
+}
+
+func (e *RunCommandError) Unwrap() error {
+	return e.Err
+}
+
+func (e *RunCommandError) Error() string {
+	return fmt.Sprintf("running command %q: %+v", e.Cmd.FullName(), e.Err)
 }
 
 // findArg returns the index of the first occurrence of arg in args, skipping
@@ -314,10 +375,21 @@ func findArg(want string, args []string, fs *pflag.FlagSet) (int, error) {
 // If two command share a flag name, the first command wins.
 //
 //nolint:revive
-func (i *Invocation) Run() error {
-	return i.run(&runState{
+func (i *Invocation) Run() (err error) {
+	defer func() {
+		// Pflag is panicky, so additional context is helpful in tests.
+		if flag.Lookup("test.v") == nil {
+			return
+		}
+		if r := recover(); r != nil {
+			err = xerrors.Errorf("panic recovered for %s: %v", i.Command.FullName(), r)
+			panic(err)
+		}
+	}()
+	err = i.run(&runState{
 		allArgs: i.Args,
 	})
+	return err
 }
 
 // WithContext returns a copy of the Invocation with the given context.
@@ -378,6 +450,9 @@ func RequireRangeArgs(start, end int) MiddlewareFunc {
 			case start == end && got != start:
 				switch start {
 				case 0:
+					if len(i.Command.Children) > 0 {
+						return xerrors.Errorf("unrecognized subcommand %q", i.Args[0])
+					}
 					return xerrors.Errorf("wanted no args but got %v %v", got, i.Args)
 				default:
 					return xerrors.Errorf(

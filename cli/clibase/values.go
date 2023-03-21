@@ -344,16 +344,50 @@ func (s *Struct[T]) UnmarshalJSON(b []byte) error {
 // DiscardValue does nothing but implements the pflag.Value interface.
 // It's useful in cases where you want to accept an option, but access the
 // underlying value directly instead of through the Option methods.
-type DiscardValue struct{}
+var DiscardValue discardValue
 
-func (DiscardValue) Set(string) error {
+type discardValue struct{}
+
+func (discardValue) Set(string) error {
 	return nil
 }
 
-func (DiscardValue) String() string {
+func (discardValue) String() string {
 	return ""
 }
 
-func (DiscardValue) Type() string {
+func (discardValue) Type() string {
 	return "discard"
+}
+
+var _ pflag.Value = (*Enum)(nil)
+
+type Enum struct {
+	Choices []string
+	Value   *string
+}
+
+func EnumOf(v *string, choices ...string) *Enum {
+	return &Enum{
+		Choices: choices,
+		Value:   v,
+	}
+}
+
+func (e *Enum) Set(v string) error {
+	for _, c := range e.Choices {
+		if v == c {
+			*e.Value = v
+			return nil
+		}
+	}
+	return xerrors.Errorf("invalid choice: %s, should be one of %v", v, e.Choices)
+}
+
+func (e *Enum) Type() string {
+	return fmt.Sprintf("enum[%v]", strings.Join(e.Choices, "|"))
+}
+
+func (e *Enum) String() string {
+	return *e.Value
 }
