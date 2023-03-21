@@ -497,6 +497,27 @@ type Arg struct {
 	Value Value
 }
 
+func (a Arg) String() string {
+	var sb strings.Builder
+	openBracket, closeBracket := "<", ">"
+	if a.Optional {
+		openBracket, closeBracket = "[", "]"
+	}
+	_, _ = sb.WriteString(openBracket)
+	switch vv := a.Value.(type) {
+	case *Enum:
+		_, _ = sb.WriteString(strings.Join(vv.Choices, "|"))
+	default:
+		_, _ = sb.WriteString(a.Name)
+	}
+
+	if _, isSlice := a.Value.(SliceValue); isSlice {
+		_, _ = sb.WriteString("...")
+	}
+	_, _ = sb.WriteString(closeBracket)
+	return sb.String()
+}
+
 // Use describes the use of a command.
 // It produces a message of form
 //
@@ -516,23 +537,7 @@ func (u *Use) String() string {
 	var sb strings.Builder
 	_, _ = sb.WriteString(u.Name)
 	for _, arg := range u.Args {
-		_, _ = sb.WriteString(" ")
-		openBracket, closeBracket := "<", ">"
-		if arg.Optional {
-			openBracket, closeBracket = "[", "]"
-		}
-		_, _ = sb.WriteString(openBracket)
-		switch vv := arg.Value.(type) {
-		case *Enum:
-			_, _ = sb.WriteString(strings.Join(vv.Choices, "|"))
-		default:
-			_, _ = sb.WriteString(arg.Name)
-		}
-
-		if _, isSlice := arg.Value.(SliceValue); isSlice {
-			_, _ = sb.WriteString("...")
-		}
-		_, _ = sb.WriteString(closeBracket)
+		_, _ = fmt.Fprintf(&sb, " %s", arg)
 	}
 	return sb.String()
 }
