@@ -475,27 +475,25 @@ func TestCommand_Help(t *testing.T) {
 	})
 }
 
-func TestUse_Render(t *testing.T) {
+func TestUse_String(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name    string
-		use     clibase.Use
-		want    string
-		wantErr bool
+		name string
+		use  clibase.Use
+		want string
 	}{
-		{"Empty", clibase.Use{}, "", true},
-		{"JustName", clibase.Use{Name: "coder"}, "coder", false},
+		{"Empty", clibase.Use{}, ""},
+		{"JustName", clibase.Use{Name: "coder"}, "coder"},
 		{
 			"OneArg",
 			clibase.Use{Name: "coder", Args: []clibase.Arg{
 				{Name: "arg"},
 			}},
 			"coder <arg>",
-			false,
 		},
 		{
-			"Slice",
+			"EnumThenSlice",
 			clibase.Use{
 				Name: "coder",
 				Args: []clibase.Arg{
@@ -510,18 +508,13 @@ func TestUse_Render(t *testing.T) {
 				},
 			},
 			"coder <stop|force-stop> <workspaces...>",
-			false,
 		},
 	} {
 		tc := tc
 		t.Run(tc.use.Name, func(t *testing.T) {
 			t.Parallel()
 
-			u, err := tc.use.Render()
-			if tc.wantErr {
-				require.Error(t, err)
-				return
-			}
+			u := tc.use.String()
 			require.Equal(t, tc.want, u)
 		})
 	}

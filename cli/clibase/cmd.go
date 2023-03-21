@@ -512,10 +512,7 @@ func (u *Use) Parse(args ...string) error {
 	return nil
 }
 
-func (u *Use) Render() (string, error) {
-	if u.Name == "" {
-		return "", xerrors.New("missing name")
-	}
+func (u *Use) String() string {
 	var sb strings.Builder
 	_, _ = sb.WriteString(u.Name)
 	for _, arg := range u.Args {
@@ -537,7 +534,7 @@ func (u *Use) Render() (string, error) {
 		}
 		_, _ = sb.WriteString(closeBracket)
 	}
-	return sb.String(), nil
+	return sb.String()
 }
 
 // HandlerFunc handles an Invocation of a command.
