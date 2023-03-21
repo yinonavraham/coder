@@ -475,20 +475,54 @@ func TestCommand_Help(t *testing.T) {
 	})
 }
 
-func TestParseUse(t *testing.T) {
+func TestUse_Render(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Empty", func(t *testing.T) {
-		t.Parallel()
+	for _, tc := range []struct {
+		name    string
+		use     clibase.Use
+		want    string
+		wantErr bool
+	}{
+		{"Empty", clibase.Use{}, "", true},
+		{"JustName", clibase.Use{Name: "coder"}, "coder", false},
+		{
+			"OneArg",
+			clibase.Use{Name: "coder", Args: []clibase.Arg{
+				{Name: "arg"},
+			}},
+			"coder <arg>",
+			false,
+		},
+		{
+			"Slice",
+			clibase.Use{
+				Name: "coder",
+				Args: []clibase.Arg{
+					{
+						Name:  "operation",
+						Value: clibase.EnumOf(nil, "stop", "force-stop"),
+					},
+					{
+						Name:  "workspaces",
+						Value: clibase.StringsOf(nil),
+					},
+				},
+			},
+			"coder <stop|force-stop> <workspaces...>",
+			false,
+		},
+	} {
+		tc := tc
+		t.Run(tc.use.Name, func(t *testing.T) {
+			t.Parallel()
 
-		_, err := clibase.ParseUse("")
-		require.Error(t, err)
-	})
-	t.Run("JustName", func(t *testing.T) {
-		t.Parallel()
-
-		u, err := clibase.ParseUse("coder")
-		require.NoError(t, err)
-		require.Equal(t, "coder", u.Name)
-	})
+			u, err := tc.use.Render()
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.Equal(t, tc.want, u)
+		})
+	}
 }

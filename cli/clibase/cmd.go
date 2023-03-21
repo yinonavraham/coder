@@ -488,13 +488,13 @@ func RequireRangeArgs(start, end int) MiddlewareFunc {
 	}
 }
 
-// Argument describes an argument to a command.
-type Argument struct {
+// Arg describes an argument to a command.
+type Arg struct {
 	// Name is the name of the argument.
-	Name string
+	Name     string
+	Optional bool
 	// Value contains the value of the argument.
-	Value    Value
-	Variadic bool
+	Value Value
 }
 
 // Use describes the use of a command.
@@ -504,41 +504,40 @@ type Argument struct {
 type Use struct {
 	// name is the name of the command.
 	Name string
-	Args []Argument
+	Args []Arg
 }
 
-func (u *Use) String() string {
+func (u *Use) Parse(args ...string) error {
+	// asdfsadf
+	return nil
+}
+
+func (u *Use) Render() (string, error) {
+	if u.Name == "" {
+		return "", xerrors.New("missing name")
+	}
 	var sb strings.Builder
 	_, _ = sb.WriteString(u.Name)
 	for _, arg := range u.Args {
-		_ = sb.WriteByte(' ')
-		_, _ = sb.WriteString(arg.Name)
-	}
-	return sb.String()
-}
-
-func ParseUse(u string) (*Use, error) {
-	var (
-		name string
-		args []Argument
-	)
-	for i, part := range strings.Split(u, " ") {
-		if i == 0 {
-			name = part
-			continue
+		_, _ = sb.WriteString(" ")
+		openBracket, closeBracket := "<", ">"
+		if arg.Optional {
+			openBracket, closeBracket = "[", "]"
 		}
-		args = append(args, Argument{
-			Name:     part,
-			Optional: strings.HasPrefix(part, "["),
-		})
+		_, _ = sb.WriteString(openBracket)
+		switch vv := arg.Value.(type) {
+		case *Enum:
+			_, _ = sb.WriteString(strings.Join(vv.Choices, "|"))
+		default:
+			_, _ = sb.WriteString(arg.Name)
+		}
+
+		if _, isSlice := arg.Value.(SliceValue); isSlice {
+			_, _ = sb.WriteString("...")
+		}
+		_, _ = sb.WriteString(closeBracket)
 	}
-	if name == "" {
-		return nil, xerrors.Errorf("empty name")
-	}
-	return &Use{
-		Name: name,
-		Args: args,
-	}, nil
+	return sb.String(), nil
 }
 
 // HandlerFunc handles an Invocation of a command.
