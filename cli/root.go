@@ -463,7 +463,8 @@ var templateFunctions = template.FuncMap{
 func usageHeader(s string) string {
 	// Customizes the color of headings to make subcommands more visually
 	// appealing.
-	return cliui.Styles.Placeholder.Render(s)
+	return s
+	// return cliui.Styles.Placeholder.Render(s)
 }
 
 func isWorkspaceCommand(cmd *cobra.Command) bool {
@@ -523,13 +524,8 @@ func usageTemplateCobra() string {
 {{end}}
 
 {{- if .HasAvailableLocalFlags}}
-{{usageHeader "Flags:"}}
-{{.LocalFlags.FlagUsagesWrapped 100 | trimTrailingWhitespaces}}
-{{end}}
-
-{{- if .HasAvailableInheritedFlags}}
-{{usageHeader "Global Flags:"}}
-{{.InheritedFlags.FlagUsagesWrapped 100 | trimTrailingWhitespaces}}
+{{usageHeader "Options"}}
+{{.LocalFlags.FlagUsagesWrapped 86 | trimTrailingWhitespaces}}
 {{end}}
 
 {{- if .HasHelpSubCommands}}

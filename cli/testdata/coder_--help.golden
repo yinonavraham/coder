@@ -47,22 +47,37 @@ Workspace Commands:
   stop           Stop a workspace
   update         Will update and start a given workspace if it is out of date.
 
-Flags:
-      --global-config coder   Path to the global coder config directory.
-                              Consumes $CODER_CONFIG_DIR (default "~/.config/coderv2")
-      --header stringArray    HTTP headers added to all requests. Provide as "Key=Value".
-                              Consumes $CODER_HEADER
-  -h, --help                  help for coder
-      --no-feature-warning    Suppress warnings about unlicensed features.
-                              Consumes $CODER_NO_FEATURE_WARNING
-      --no-version-warning    Suppress warning when client and server versions do not match.
-                              Consumes $CODER_NO_VERSION_WARNING
-      --token string          Specify an authentication token. For security reasons setting
-                              CODER_SESSION_TOKEN is preferred.
-                              Consumes $CODER_SESSION_TOKEN
-      --url string            URL to a deployment.
-                              Consumes $CODER_URL
-  -v, --verbose               Enable verbose output.
-                              Consumes $CODER_VERBOSE
+Options
+      --global-config coder   (default "~/.config/coderv2")
+          $$CODER_CONFIG_DIR
+          Path to the global coder config directory.
+          
+      --header stringArray  
+          $$CODER_HEADER
+          HTTP headers added to all requests. Provide as "Key=Value".
+          
+  -h, --help  
+          help for coder.
+          
+      --no-feature-warning  
+          $$CODER_NO_FEATURE_WARNING
+          Suppress warnings about unlicensed features.
+          
+      --no-version-warning  
+          $$CODER_NO_VERSION_WARNING
+          Suppress warning when client and server versions do not match.
+          
+      --token string  
+          $$CODER_SESSION_TOKEN
+          Specify an authentication token. For security reasons setting
+          CODER_SESSION_TOKEN is preferred.
+          
+      --url string  
+          $$CODER_URL
+          URL to a deployment.
+          
+  -v, --verbose  
+          $$CODER_VERBOSE
+          Enable verbose output.
 
 Use "coder [command] --help" for more information about a command.

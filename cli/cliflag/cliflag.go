@@ -10,7 +10,6 @@
 package cliflag
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -18,8 +17,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-
-	"github.com/coder/coder/cli/cliui"
 )
 
 // IsSetBool returns the value of the boolean flag if it is set.
@@ -174,11 +171,10 @@ func DurationVarP(flagset *pflag.FlagSet, ptr *time.Duration, name string, short
 func fmtUsage(u string, env string) string {
 	if env != "" {
 		// Avoid double dotting.
-		dot := "."
-		if strings.HasSuffix(u, ".") {
-			dot = ""
-		}
-		u = fmt.Sprintf("%s%s\n"+cliui.Styles.Placeholder.Render("Consumes $%s"), u, dot, env)
+		parts := strings.Split(u, "\n")
+		parts[0] = "$$" + env + "\n" + parts[0]
+		u = strings.Join(parts, "\n")
+		// u = fmt.Sprintf("%s%s\n"+cliui.Styles.Placeholder.Render("Consumes $%s"), u, dot, env)
 	}
 
 	return u
