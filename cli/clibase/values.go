@@ -15,6 +15,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Value interface {
+	pflag.Value
+}
+
 // NoOptDefValuer describes behavior when no
 // option is passed into the flag.
 //
@@ -109,9 +113,13 @@ func (String) Type() string {
 	return "string"
 }
 
-var _ pflag.SliceValue = &Strings{}
+type SliceValue interface {
+	pflag.SliceValue
+}
 
-// Strings is a slice of strings that implements pflag.Value and pflag.SliceValue.
+var _ SliceValue = &Strings{}
+
+// Strings is a slice of strings that implements Value and pflag.SliceValue.
 type Strings []string
 
 func StringsOf(ss *[]string) *Strings {
@@ -341,7 +349,7 @@ func (s *Struct[T]) UnmarshalJSON(b []byte) error {
 	return json.Unmarshal(b, &s.Value)
 }
 
-// DiscardValue does nothing but implements the pflag.Value interface.
+// DiscardValue does nothing but implements the Value interface.
 // It's useful in cases where you want to accept an option, but access the
 // underlying value directly instead of through the Option methods.
 var DiscardValue discardValue
@@ -360,7 +368,7 @@ func (discardValue) Type() string {
 	return "discard"
 }
 
-var _ pflag.Value = (*Enum)(nil)
+var _ Value = (*Enum)(nil)
 
 type Enum struct {
 	Choices []string

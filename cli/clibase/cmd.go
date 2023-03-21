@@ -488,5 +488,58 @@ func RequireRangeArgs(start, end int) MiddlewareFunc {
 	}
 }
 
+// Argument describes an argument to a command.
+type Argument struct {
+	// Name is the name of the argument.
+	Name string
+	// Value contains the value of the argument.
+	Value    Value
+	Variadic bool
+}
+
+// Use describes the use of a command.
+// It produces a message of form
+//
+//	<name> <arg1> <arg2> ...
+type Use struct {
+	// name is the name of the command.
+	Name string
+	Args []Argument
+}
+
+func (u *Use) String() string {
+	var sb strings.Builder
+	_, _ = sb.WriteString(u.Name)
+	for _, arg := range u.Args {
+		_ = sb.WriteByte(' ')
+		_, _ = sb.WriteString(arg.Name)
+	}
+	return sb.String()
+}
+
+func ParseUse(u string) (*Use, error) {
+	var (
+		name string
+		args []Argument
+	)
+	for i, part := range strings.Split(u, " ") {
+		if i == 0 {
+			name = part
+			continue
+		}
+		args = append(args, Argument{
+			Name:     part,
+			Optional: strings.HasPrefix(part, "["),
+		})
+	}
+	if name == "" {
+		return nil, xerrors.Errorf("empty name")
+	}
+	return &Use{
+		Name: name,
+		Args: args,
+	}, nil
+}
+
 // HandlerFunc handles an Invocation of a command.
 type HandlerFunc func(i *Invocation) error

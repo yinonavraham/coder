@@ -474,3 +474,21 @@ func TestCommand_Help(t *testing.T) {
 		require.Contains(t, stdio.Stdout.String(), "abdracadabra")
 	})
 }
+
+func TestParseUse(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Empty", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := clibase.ParseUse("")
+		require.Error(t, err)
+	})
+	t.Run("JustName", func(t *testing.T) {
+		t.Parallel()
+
+		u, err := clibase.ParseUse("coder")
+		require.NoError(t, err)
+		require.Equal(t, "coder", u.Name)
+	})
+}
