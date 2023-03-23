@@ -166,7 +166,7 @@ var usageTemplate = template.Must(
 				var sb strings.Builder
 				_, _ = fmt.Fprintf(
 					&sb, "%s%s%s",
-					strings.Repeat(" ", 2), cmd.Name(), strings.Repeat(" ", maxNameLength-len(cmd.Name())+4),
+					strings.Repeat(" ", 2), cmd.Name(), strings.Repeat(" ", maxNameLength-len(cmd.Name())+1),
 				)
 
 				// This is the point at which indentation begins if there's a

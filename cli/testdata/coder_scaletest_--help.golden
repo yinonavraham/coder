@@ -4,7 +4,7 @@ Usage:
   coder scaletest
 
 Commands:
-  cleanup              Cleanup any orphaned scaletest resources
-  create-workspaces    Creates many users and a workspace for each one, then
-                       waits for them to be ready
+  cleanup           Cleanup any orphaned scaletest resources
+  create-workspaces Creates many users and a workspace for each one, then waits
+                    for them to be ready
 
