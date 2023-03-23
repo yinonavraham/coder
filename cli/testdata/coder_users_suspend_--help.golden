@@ -2,11 +2,11 @@ Update a user's status to 'suspended'. A suspended user cannot log into the
 platform
 
 Usage:
-  coder users suspend [flags] <username|user_id>
+  coder users suspend <username|user_id> [flags]
 
 Aliases: rm, delete
 
 [;m$ coder users suspend example_user[0m
 
 Flags:
-  -c, --column string-array   Specify a column to filter in the table. (default: username,email,created_at,status)
+  -c, --column string-array   Specify a column to filter in the table. (default username,email,created_at,status)

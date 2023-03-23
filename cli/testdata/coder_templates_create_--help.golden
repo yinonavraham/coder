@@ -1,13 +1,13 @@
 Create a template from the current directory or as specified by flag
 
 Usage:
-  coder templates create [flags] [name]
+  coder templates create [name] [flags]
 
 Flags:
       --default-ttl duration           Specify a default TTL for workspaces created from this
-                                       template. (default: 24h)
+                                       template. (default 24h)
   -d, --directory string               Specify the directory to create from, use '-' to read
-                                       tar from stdin. (default: .)
+                                       tar from stdin. (default .)
       --parameter-file string          Specify a file path with parameter values.
       --provisioner-tag string-array   Specify a set of tags to target provisioner daemons.
       --variable string-array          Specify a set of values for Terraform-managed

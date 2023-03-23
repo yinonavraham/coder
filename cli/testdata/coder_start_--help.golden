@@ -1,7 +1,7 @@
 Start a workspace
 
 Usage:
-  coder start [flags] <workspace>
+  coder start <workspace> [flags]
 
 Flags:
   -y, --yes   Bypass prompts.

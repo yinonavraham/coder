@@ -1,9 +1,9 @@
 List all the versions of the specified template
 
 Usage:
-  coder templates versions list [flags] <template>
+  coder templates versions list <template> [flags]
 
 Flags:
   -c, --column string-array   Columns to display in table output. Available columns: name,
-                              created at, created by, status, active. (default: name,created at,created by,status,active)
-  -o, --output string         Output format. Available formats: table, json. (default: table)
+                              created at, created by, status, active. (default name,created at,created by,status,active)
+  -o, --output string         Output format. Available formats: table, json. (default table)

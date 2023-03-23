@@ -1,7 +1,7 @@
 Forward ports between your local system and the workspace
 
 Usage:
-  coder port-forward [flags] <workspace>
+  coder port-forward <workspace> [flags]
 
 Aliases: tunnel
 

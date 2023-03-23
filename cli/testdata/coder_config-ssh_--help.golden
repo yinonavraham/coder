@@ -17,7 +17,7 @@ Flags:
                                   the end.
                                   Consumes $CODER_SSH_DRY_RUN
       --ssh-config-file string    Specifies the path to an SSH config.
-                                  Consumes $CODER_SSH_CONFIG_FILE (default: ~/.ssh/config)
+                                  Consumes $CODER_SSH_CONFIG_FILE (default ~/.ssh/config)
       --ssh-host-prefix string    Override the default host prefix.
   -o, --ssh-option string-array   Specifies additional SSH options to embed in each host
                                   stanza.

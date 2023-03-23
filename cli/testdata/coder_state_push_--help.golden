@@ -1,7 +1,7 @@
 Push a Terraform state file to a workspace.
 
 Usage:
-  coder state push [flags] <workspace> <file>
+  coder state push <workspace> <file> [flags]
 
 Flags:
   -b, --build int   Specify a workspace build to target by name. Defaults to latest.

@@ -1,7 +1,7 @@
 Restart a workspace
 
 Usage:
-  coder restart [flags] <workspace>
+  coder restart <workspace> [flags]
 
 Flags:
   -y, --yes   Bypass prompts.

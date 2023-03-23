@@ -1,7 +1,7 @@
 Stop a workspace
 
 Usage:
-  coder stop [flags] <workspace>
+  coder stop <workspace> [flags]
 
 Flags:
   -y, --yes   Bypass prompts.

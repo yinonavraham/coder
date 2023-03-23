@@ -1,7 +1,7 @@
 Rename a workspace
 
 Usage:
-  coder rename [flags] <workspace> <new name>
+  coder rename <workspace> <new name> [flags]
 
 Flags:
   -y, --yes   Bypass prompts.

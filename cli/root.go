@@ -206,13 +206,14 @@ func (r *RootCmd) Command(subcommands []*clibase.Cmd) (*clibase.Cmd, error) {
 			return
 		}
 
-		// We insert [flags] between the command's name and its arguments.
-		tokens := strings.SplitN(cmd.Use, " ", 2)
-		if len(tokens) == 1 {
-			cmd.Use = fmt.Sprintf("%s %s", tokens[0], flags)
-			return
-		}
-		cmd.Use = fmt.Sprintf("%s %s %s", tokens[0], flags, tokens[1])
+		// // We insert [flags] between the command's name and its arguments.
+		// tokens := strings.SplitN(cmd.Use, " ", 2)
+		// if len(tokens) == 1 {
+		// 	cmd.Use = fmt.Sprintf("%s %s", tokens[0], flags)
+		// 	return
+		// }
+		// cmd.Use = fmt.Sprintf("%s %s %s", tokens[0], flags, tokens[1])
+		cmd.Use += " " + flags
 	})
 
 	// Sanity-check command options.

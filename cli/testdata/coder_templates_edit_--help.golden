@@ -1,10 +1,10 @@
 Edit the metadata of a template by name.
 
 Usage:
-  coder templates edit [flags] <template>
+  coder templates edit <template> [flags]
 
 Flags:
-      --allow-user-cancel-workspace-jobs   Allow users to cancel in-progress workspace jobs. (default: true)
+      --allow-user-cancel-workspace-jobs   Allow users to cancel in-progress workspace jobs. (default true)
       --default-ttl duration               Edit the template default time before shutdown -
                                            workspaces created from this template default to
                                            this value.

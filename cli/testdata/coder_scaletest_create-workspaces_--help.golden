@@ -14,33 +14,33 @@ against the (most likely single) IP.
 Flags:
       --cleanup-concurrency int          Number of concurrent cleanup jobs to run. 0 means
                                          unlimited.
-                                         Consumes $CODER_SCALETEST_CLEANUP_CONCURRENCY (default: 1)
+                                         Consumes $CODER_SCALETEST_CLEANUP_CONCURRENCY (default 1)
       --cleanup-job-timeout duration     Timeout per job. Jobs may take longer to complete
                                          under higher concurrency limits.
-                                         Consumes $CODER_SCALETEST_CLEANUP_JOB_TIMEOUT (default: 5m)
+                                         Consumes $CODER_SCALETEST_CLEANUP_JOB_TIMEOUT (default 5m)
       --cleanup-timeout duration         Timeout for the entire cleanup run. 0 means
                                          unlimited.
-                                         Consumes $CODER_SCALETEST_CLEANUP_TIMEOUT (default: 30m)
+                                         Consumes $CODER_SCALETEST_CLEANUP_TIMEOUT (default 30m)
       --concurrency int                  Number of concurrent jobs to run. 0 means unlimited.
-                                         Consumes $CODER_SCALETEST_CONCURRENCY (default: 1)
+                                         Consumes $CODER_SCALETEST_CONCURRENCY (default 1)
       --connect-hold duration            How long to hold the WireGuard connection open for.
-                                         Consumes $CODER_SCALETEST_CONNECT_HOLD (default: 30s)
+                                         Consumes $CODER_SCALETEST_CONNECT_HOLD (default 30s)
       --connect-interval duration        How long to wait between making requests to the
                                          --connect-url once the connection is established.
-                                         Consumes $CODER_SCALETEST_CONNECT_INTERVAL (default: 1s)
+                                         Consumes $CODER_SCALETEST_CONNECT_INTERVAL (default 1s)
       --connect-mode one of derp|direct   Mode to use for connecting to the workspace.
-                                         Consumes $CODER_SCALETEST_CONNECT_MODE (default: derp)
+                                         Consumes $CODER_SCALETEST_CONNECT_MODE (default derp)
       --connect-timeout duration         Timeout for each request to the --connect-url.
-                                         Consumes $CODER_SCALETEST_CONNECT_TIMEOUT (default: 5s)
+                                         Consumes $CODER_SCALETEST_CONNECT_TIMEOUT (default 5s)
       --connect-url string               URL to connect to inside the the workspace over
                                          WireGuard. If not specified, no connections will be
                                          made over WireGuard.
                                          Consumes $CODER_SCALETEST_CONNECT_URL
   -c, --count int                        Required: Number of workspaces to create.
-                                         Consumes $CODER_SCALETEST_COUNT (default: 1)
+                                         Consumes $CODER_SCALETEST_COUNT (default 1)
       --job-timeout duration             Timeout per job. Jobs may take longer to complete
                                          under higher concurrency limits.
-                                         Consumes $CODER_SCALETEST_JOB_TIMEOUT (default: 5m)
+                                         Consumes $CODER_SCALETEST_JOB_TIMEOUT (default 5m)
       --no-cleanup                       Do not clean up resources after the load test has
                                          finished. Useful for debugging.
                                          Consumes $CODER_SCALETEST_NO_CLEANUP
@@ -56,7 +56,7 @@ Flags:
       --output string-array              Output format specs in the format
                                          "<format>[:<path>]". Not specifying a path will
                                          default to stdout. Available formats: text, json.
-                                         Consumes $CODER_SCALETEST_OUTPUTS (default: text)
+                                         Consumes $CODER_SCALETEST_OUTPUTS (default text)
       --parameter string-array           Parameters to use for each workspace. Can be
                                          specified multiple times. Overrides any existing
                                          parameters with the same name from --parameters-file.
@@ -84,12 +84,12 @@ Flags:
                                          memory usage.
                                          Consumes $CODER_SCALETEST_RUN_LOG_OUTPUT
       --run-timeout duration             Timeout for the command to complete.
-                                         Consumes $CODER_SCALETEST_RUN_TIMEOUT (default: 5s)
+                                         Consumes $CODER_SCALETEST_RUN_TIMEOUT (default 5s)
   -t, --template string                  Required: Name or ID of the template to use for
                                          workspaces.
                                          Consumes $CODER_SCALETEST_TEMPLATE
       --timeout duration                 Timeout for the entire test run. 0 means unlimited.
-                                         Consumes $CODER_SCALETEST_TIMEOUT (default: 30m)
+                                         Consumes $CODER_SCALETEST_TIMEOUT (default 30m)
       --trace                            Whether application tracing data is collected. It
                                          exports to a backend configured by environment
                                          variables. See:

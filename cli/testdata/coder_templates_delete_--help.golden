@@ -1,7 +1,7 @@
 Delete templates
 
 Usage:
-  coder templates delete [flags] [name...]
+  coder templates delete [name...] [flags]
 
 Flags:
   -y, --yes   Bypass prompts.

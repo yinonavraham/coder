@@ -1,7 +1,7 @@
 Download the latest version of a template to a path.
 
 Usage:
-  coder templates pull [flags] <name> [destination]
+  coder templates pull <name> [destination] [flags]
 
 Flags:
       --tar   Output the template as a tar archive to stdout.

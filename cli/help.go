@@ -116,7 +116,7 @@ var usageTemplate = template.Must(
 					_, _ = sb.WriteString(option.Env)
 				}
 				if option.Default != "" {
-					_, _ = sb.WriteString(" (default: ")
+					_, _ = sb.WriteString(" (default ")
 					_, _ = sb.WriteString(option.Default)
 					_, _ = sb.WriteString(")")
 				}

@@ -1,7 +1,7 @@
 Authenticate with Coder deployment
 
 Usage:
-  coder login [flags] <url>
+  coder login <url> [flags]
 
 Flags:
       --first-user-email string      Specifies an email address to use if creating the first

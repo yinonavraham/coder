@@ -18,7 +18,7 @@ Flags:
       --raw-url                       Output the raw connection URL instead of a psql command.
       --ssh-keygen-algorithm string   The algorithm to use for generating ssh keys. Accepted
                                       values are "ed25519", "ecdsa", or "rsa4096".
-                                      Consumes $CODER_SSH_KEYGEN_ALGORITHM (default: ed25519)
+                                      Consumes $CODER_SSH_KEYGEN_ALGORITHM (default ed25519)
       --username string               The username of the new user. If not specified, you will
                                       be prompted via stdin.
                                       Consumes $CODER_USERNAME
