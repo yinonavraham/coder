@@ -28,5 +28,3 @@ Commands:
 
 Flags:
   -h, --help   help for tokens
-
-Use "coder tokens [command] --help" for more information about a command.

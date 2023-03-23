@@ -5,6 +5,6 @@ Usage:
 
 Flags:
   -h, --help                help for create
-      --lifetime duration   Specify a duration for the lifetime of the token.
+      --lifetime duration   Specify a duration for the lifetime of the token
                             Consumes $CODER_TOKEN_LIFETIME (default 720h0m0s)
-  -n, --name string         Specify a human-readable name.
+  -n, --name string         Specify a human-readable name

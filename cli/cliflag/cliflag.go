@@ -172,13 +172,14 @@ func DurationVarP(flagset *pflag.FlagSet, ptr *time.Duration, name string, short
 }
 
 func fmtUsage(u string, env string) string {
+	u = strings.TrimRight(u, ".")
 	if env != "" {
 		// Avoid double dotting.
-		dot := "."
-		if strings.HasSuffix(u, ".") {
-			dot = ""
-		}
-		u = fmt.Sprintf("%s%s\n"+cliui.Styles.Placeholder.Render("Consumes $%s"), u, dot, env)
+		// dot := "."
+		// if strings.HasSuffix(u, ".") {
+		// 	dot = ""
+		// }
+		u = fmt.Sprintf("%s%s\n"+cliui.Styles.Placeholder.Render("Consumes $%s"), u, "", env)
 	}
 
 	return u

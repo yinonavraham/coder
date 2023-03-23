@@ -18,5 +18,3 @@ Commands:
 
 Flags:
   -h, --help   help for versions
-
-Use "coder templates versions [command] --help" for more information about a command.

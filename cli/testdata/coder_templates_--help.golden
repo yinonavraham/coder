@@ -24,14 +24,12 @@ Get Started:
 Commands:
   create      Create a template from the current directory or as specified by flag
   delete      Delete templates
-  edit        Edit the metadata of a template by name.
-  init        Get started with a templated template.
+  edit        Edit the metadata of a template by name
+  init        Get started with a templated template
   list        List all the templates available for the organization
-  pull        Download the latest version of a template to a path.
+  pull        Download the latest version of a template to a path
   push        Push a new template version from the current directory or as specified by flag
   versions    Manage different versions of the specified template
 
 Flags:
   -h, --help   help for templates
-
-Use "coder templates [command] --help" for more information about a command.

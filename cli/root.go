@@ -458,6 +458,17 @@ func isTTYWriter(cmd *cobra.Command, writer func() io.Writer) bool {
 var templateFunctions = template.FuncMap{
 	"usageHeader":        usageHeader,
 	"isWorkspaceCommand": isWorkspaceCommand,
+	"trimDot": func(s string) string {
+		s = strings.TrimSuffix(s, ".")
+		lines := strings.Split(s, "\n")
+		last := lines[len(lines)-1]
+		parts := strings.Split(last, " (default")
+		if len(parts) > 1 {
+			last = strings.TrimSuffix(parts[0], ".") + " (default" + parts[1]
+		}
+		lines[len(lines)-1] = last
+		return strings.Join(lines, "\n")
+	},
 }
 
 func usageHeader(s string) string {
@@ -508,7 +519,7 @@ func usageTemplateCobra() string {
   {{- range .Commands}}
     {{- $isRootWorkspaceCommand := (and $isRootHelp (isWorkspaceCommand .))}}
     {{- if (or (and .IsAvailableCommand (not $isRootWorkspaceCommand)) (eq .Name "help"))}}
-  {{rpad .Name .NamePadding }} {{.Short}}
+  {{rpad .Name .NamePadding }} {{.Short | trimDot}}
     {{- end}}
   {{- end}}
 {{end}}
@@ -517,14 +528,14 @@ func usageTemplateCobra() string {
 {{usageHeader "Workspace Commands:"}}
   {{- range .Commands}}
     {{- if (and .IsAvailableCommand (isWorkspaceCommand .))}}
-  {{rpad .Name .NamePadding }} {{.Short}}
+  {{rpad .Name .NamePadding }} {{.Short | trimDot}}
     {{- end}}
   {{- end}}
 {{end}}
 
 {{- if .HasAvailableLocalFlags}}
 {{usageHeader "Flags:"}}
-{{.LocalFlags.FlagUsagesWrapped 100 | trimTrailingWhitespaces}}
+{{.LocalFlags.FlagUsagesWrapped 100 | trimTrailingWhitespaces | trimDot}}
 {{end}}
 
 {{- if .HasHelpSubCommands}}
@@ -534,10 +545,6 @@ func usageTemplateCobra() string {
   {{rpad .CommandPath .CommandPathPadding}} {{.Short}}
     {{- end}}
   {{- end}}
-{{end}}
-
-{{- if .HasAvailableSubCommands}}
-Use "{{.CommandPath}} [command] --help" for more information about a command.
 {{end}}`
 }
 

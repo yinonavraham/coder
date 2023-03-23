@@ -11,6 +11,6 @@ Get Started:
 Flags:
   -h, --help                 help for dotfiles
       --symlink-dir string   Specifies the directory for the dotfiles symlink destinations. If
-                             empty will use $HOME.
+                             empty will use $HOME
                              Consumes $CODER_SYMLINK_DIR
   -y, --yes                  Bypass prompts

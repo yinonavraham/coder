@@ -13,5 +13,3 @@ Commands:
 
 Flags:
   -h, --help   help for schedule
-
-Use "coder schedule [command] --help" for more information about a command.

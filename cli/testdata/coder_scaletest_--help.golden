@@ -11,5 +11,3 @@ Commands:
 
 Flags:
   -h, --help   help for scaletest
-
-Use "coder scaletest [command] --help" for more information about a command.

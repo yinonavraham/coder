@@ -5,17 +5,17 @@ Usage:
 
 Flags:
   -h, --help                                   help for create
-      --parameter-file string                  Specify a file path with parameter values.
+      --parameter-file string                  Specify a file path with parameter values
                                                Consumes $CODER_PARAMETER_FILE
       --rich-parameter-file string             Specify a file path with values for rich
-                                               parameters defined in the template.
+                                               parameters defined in the template
                                                Consumes $CODER_RICH_PARAMETER_FILE
       --start-at coder schedule start --help   Specify the workspace autostart schedule. Check
-                                               coder schedule start --help for the syntax.
+                                               coder schedule start --help for the syntax
                                                Consumes $CODER_WORKSPACE_START_AT
       --stop-after duration                    Specify a duration after which the workspace
-                                               should shut down (e.g. 8h).
+                                               should shut down (e.g. 8h)
                                                Consumes $CODER_WORKSPACE_STOP_AFTER
-  -t, --template string                        Specify a template name.
+  -t, --template string                        Specify a template name
                                                Consumes $CODER_TEMPLATE_NAME
   -y, --yes                                    Bypass prompts
