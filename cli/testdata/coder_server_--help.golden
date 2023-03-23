@@ -14,8 +14,7 @@ Flags:
       --cache-dir string              The directory to cache temporary files. If unspecified
                                       and $CACHE_DIRECTORY is set, it will be used for
                                       compatibility with systemd
-                                      Consumes $CODER_CACHE_DIRECTORY (default
-                                      "[cache dir]")
+                                      Consumes $CODER_CACHE_DIRECTORY (default "[cache dir]")
       --disable-path-apps             Disable workspace apps that are not served from
                                       subdomains. Path-based apps can make requests to the
                                       Coder API and pose a security risk when the workspace
@@ -53,8 +52,7 @@ Clients include the coder cli, vs code extension, and the web UI.
                                          Consumes $CODER_SSH_CONFIG_OPTIONS
       --ssh-hostname-prefix string       The SSH deployment prefix is used in the Host of the
                                          ssh config
-                                         Consumes $CODER_SSH_HOSTNAME_PREFIX (default
-                                         "coder.")
+                                         Consumes $CODER_SSH_HOSTNAME_PREFIX (default "coder.")
 Introspection / Logging Flags: 
       --log-human string         Output human-readable logs to a given file
                                  Consumes $CODER_LOGGING_HUMAN (default "/dev/stderr")
@@ -66,8 +64,7 @@ Introspection / Logging Flags:
                                  Consumes $CODER_VERBOSE
 Introspection / Prometheus Flags: 
       --prometheus-address host:port   The bind address to serve prometheus metrics
-                                       Consumes $CODER_PROMETHEUS_ADDRESS (default
-                                       127.0.0.1:2112)
+                                       Consumes $CODER_PROMETHEUS_ADDRESS (default 127.0.0.1:2112)
       --prometheus-enable              Serve prometheus metrics on the address defined by
                                        prometheus address
                                        Consumes $CODER_PROMETHEUS_ENABLE
@@ -125,23 +122,18 @@ backed by Tailscale and WireGuard.
                                                  Consumes $CODER_DERP_CONFIG_URL
       --derp-server-enable                       Whether to enable or disable the embedded
                                                  DERP relay server
-                                                 Consumes $CODER_DERP_SERVER_ENABLE (default
-                                                 true)
+                                                 Consumes $CODER_DERP_SERVER_ENABLE (default true)
       --derp-server-region-code string           Region code to use for the embedded DERP
                                                  server
-                                                 Consumes $CODER_DERP_SERVER_REGION_CODE
-                                                 (default "coder")
+                                                 Consumes $CODER_DERP_SERVER_REGION_CODE (default "coder")
       --derp-server-region-id int                Region ID to use for the embedded DERP server
-                                                 Consumes $CODER_DERP_SERVER_REGION_ID
-                                                 (default 999)
+                                                 Consumes $CODER_DERP_SERVER_REGION_ID (default 999)
       --derp-server-region-name string           Region name that for the embedded DERP server
-                                                 Consumes $CODER_DERP_SERVER_REGION_NAME
-                                                 (default "Coder Embedded Relay")
+                                                 Consumes $CODER_DERP_SERVER_REGION_NAME (default "Coder Embedded Relay")
       --derp-server-stun-addresses stringArray   Addresses for STUN servers to establish P2P
                                                  connections. Set empty to disable P2P
                                                  connections
-                                                 Consumes $CODER_DERP_SERVER_STUN_ADDRESSES
-                                                 (default [stun.l.google.com:19302])
+                                                 Consumes $CODER_DERP_SERVER_STUN_ADDRESSES (default [stun.l.google.com:19302])
 Networking / HTTP Flags: 
       --disable-password-auth            Disable password authentication. This is recommended
                                          for security purposes in production deployments that
@@ -158,12 +150,10 @@ Networking / HTTP Flags:
                                          Consumes $CODER_DISABLE_SESSION_EXPIRY_REFRESH
       --http-address string              HTTP bind address of the server. Unset to disable the
                                          HTTP endpoint
-                                         Consumes $CODER_HTTP_ADDRESS (default
-                                         "127.0.0.1:3000")
+                                         Consumes $CODER_HTTP_ADDRESS (default "127.0.0.1:3000")
       --max-token-lifetime duration      The maximum lifetime duration users can specify when
                                          creating an API token
-                                         Consumes $CODER_MAX_TOKEN_LIFETIME (default
-                                         2562047h47m16.854775807s)
+                                         Consumes $CODER_MAX_TOKEN_LIFETIME (default 2562047h47m16.854775807s)
       --session-duration duration        The token expiry duration for browser sessions.
                                          Sessions may last longer if they are actively making
                                          requests, but this functionality can be disabled via
@@ -182,8 +172,7 @@ can safely ignore these settings.
                                                         value is the MaxAge in seconds of the
                                                         header
                                                         Consumes
-                                                        $CODER_STRICT_TRANSPORT_SECURITY
-                                                        (default 0)
+                                                        $CODER_STRICT_TRANSPORT_SECURITY (default 0)
       --strict-transport-security-options stringArray   Two optional fields can be set in the
                                                         Strict-Transport-Security header;
                                                         'includeSubDomains' and 'preload'. The
@@ -193,8 +182,7 @@ can safely ignore these settings.
                                                         Consumes
                                                         $CODER_STRICT_TRANSPORT_SECURITY_OPTIONS
       --tls-address host:port                           HTTPS bind address of the server
-                                                        Consumes $CODER_TLS_ADDRESS (default
-                                                        127.0.0.1:3443)
+                                                        Consumes $CODER_TLS_ADDRESS (default 127.0.0.1:3443)
       --tls-cert-file stringArray                       Path to each certificate for TLS. It
                                                         requires a PEM-encoded file. To
                                                         configure the listener to use a CA
@@ -209,8 +197,7 @@ can safely ignore these settings.
                                                         are "none", "request", "require-any",
                                                         "verify-if-given", or
                                                         "require-and-verify"
-                                                        Consumes $CODER_TLS_CLIENT_AUTH
-                                                        (default "none")
+                                                        Consumes $CODER_TLS_CLIENT_AUTH (default "none")
       --tls-client-ca-file string                       PEM-encoded Certificate Authority file
                                                         used for checking the authenticity of
                                                         client
@@ -232,8 +219,7 @@ can safely ignore these settings.
       --tls-min-version string                          Minimum supported version of TLS.
                                                         Accepted values are "tls10", "tls11",
                                                         "tls12" or "tls13"
-                                                        Consumes $CODER_TLS_MIN_VERSION
-                                                        (default "tls12")
+                                                        Consumes $CODER_TLS_MIN_VERSION (default "tls12")
 OAuth2 / GitHub Flags: 
       --oauth2-github-allow-everyone               Allow all logins, setting this option means
                                                    allowed orgs and teams must be empty
@@ -259,8 +245,7 @@ OAuth2 / GitHub Flags:
                                                    $CODER_OAUTH2_GITHUB_ENTERPRISE_BASE_URL
 OIDC Flags: 
       --oidc-allow-signups                             Whether new users can sign up with OIDC
-                                                       Consumes $CODER_OIDC_ALLOW_SIGNUPS
-                                                       (default true)
+                                                       Consumes $CODER_OIDC_ALLOW_SIGNUPS (default true)
       --oidc-client-id string                          Client ID to use for Login with OIDC
                                                        Consumes $CODER_OIDC_CLIENT_ID
       --oidc-client-secret string                      Client secret to use for Login with
@@ -277,8 +262,7 @@ OIDC Flags:
                                                        in Coder it should map to. This is
                                                        useful for when OIDC providers only
                                                        return group IDs
-                                                       Consumes $OIDC_GROUP_MAPPING (default
-                                                       {})
+                                                       Consumes $OIDC_GROUP_MAPPING (default {})
       --oidc-ignore-email-verified                     Ignore the email_verified claim from
                                                        the upstream provider
                                                        Consumes
@@ -287,15 +271,12 @@ OIDC Flags:
                                                        Consumes $CODER_OIDC_ISSUER_URL
       --oidc-scopes stringArray                        Scopes to grant when authenticating
                                                        with OIDC
-                                                       Consumes $CODER_OIDC_SCOPES (default
-                                                       [openid,profile,email])
+                                                       Consumes $CODER_OIDC_SCOPES (default [openid,profile,email])
       --oidc-username-field string                     OIDC claim field to use as the username
-                                                       Consumes $CODER_OIDC_USERNAME_FIELD
-                                                       (default "preferred_username")
+                                                       Consumes $CODER_OIDC_USERNAME_FIELD (default "preferred_username")
       --oidc-sign-in-text string                       The text to show on the OpenID Connect
                                                        sign in button
-                                                       Consumes $CODER_OIDC_SIGN_IN_TEXT
-                                                       (default "OpenID Connect")
+                                                       Consumes $CODER_OIDC_SIGN_IN_TEXT (default "OpenID Connect")
       --oidc-icon-url url                              URL pointing to the icon to use on the
                                                        OepnID Connect login button
                                                        Consumes $CODER_OIDC_ICON_URL
@@ -306,22 +287,18 @@ updating, and deleting workspace resources.
       --provisioner-force-cancel-interval duration   Time to force cancel provisioning tasks
                                                      that are stuck
                                                      Consumes
-                                                     $CODER_PROVISIONER_FORCE_CANCEL_INTERVAL
-                                                     (default 10m0s)
+                                                     $CODER_PROVISIONER_FORCE_CANCEL_INTERVAL (default 10m0s)
       --provisioner-daemon-poll-interval duration    Time to wait before polling for a new job
                                                      Consumes
-                                                     $CODER_PROVISIONER_DAEMON_POLL_INTERVAL
-                                                     (default 1s)
+                                                     $CODER_PROVISIONER_DAEMON_POLL_INTERVAL (default 1s)
       --provisioner-daemon-poll-jitter duration      Random jitter added to the poll interval
                                                      Consumes
-                                                     $CODER_PROVISIONER_DAEMON_POLL_JITTER
-                                                     (default 100ms)
+                                                     $CODER_PROVISIONER_DAEMON_POLL_JITTER (default 100ms)
       --provisioner-daemons int                      Number of provisioner daemons to create
                                                      on start. If builds are stuck in queued
                                                      state for a long time, consider
                                                      increasing this
-                                                     Consumes $CODER_PROVISIONER_DAEMONS
-                                                     (default 3)
+                                                     Consumes $CODER_PROVISIONER_DAEMONS (default 3)
 Telemetry Flags: 
 Telemetry is critical to our ability to improve Coder. We strip all
 personalinformation before sending data to our servers. Please only disable

@@ -5,6 +5,5 @@ Usage:
 
 Flags:
   -c, --column stringArray   Columns to display in table output. Available columns: name,
-                             created at, created by, status, active (default [name,created
-                             at,created by,status,active])
+                             created at, created by, status, active (default [name,created at,created by,status,active])
   -o, --output string        Output format. Available formats: table, json (default "table")

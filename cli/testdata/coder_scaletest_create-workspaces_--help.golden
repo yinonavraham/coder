@@ -14,28 +14,23 @@ against the (most likely single) IP.
 Flags:
       --cleanup-concurrency int          Number of concurrent cleanup jobs to run. 0 means
                                          unlimited
-                                         Consumes $CODER_SCALETEST_CLEANUP_CONCURRENCY
-                                         (default 1)
+                                         Consumes $CODER_SCALETEST_CLEANUP_CONCURRENCY (default 1)
       --cleanup-job-timeout duration     Timeout per job. Jobs may take longer to complete
                                          under higher concurrency limits
-                                         Consumes $CODER_SCALETEST_CLEANUP_JOB_TIMEOUT
-                                         (default 5m)
+                                         Consumes $CODER_SCALETEST_CLEANUP_JOB_TIMEOUT (default 5m)
       --cleanup-timeout duration         Timeout for the entire cleanup run. 0 means unlimited
-                                         Consumes $CODER_SCALETEST_CLEANUP_TIMEOUT (default
-                                         30m)
+                                         Consumes $CODER_SCALETEST_CLEANUP_TIMEOUT (default 30m)
       --concurrency int                  Number of concurrent jobs to run. 0 means unlimited
                                          Consumes $CODER_SCALETEST_CONCURRENCY (default 1)
       --connect-hold duration            How long to hold the WireGuard connection open for
                                          Consumes $CODER_SCALETEST_CONNECT_HOLD (default 30s)
       --connect-interval duration        How long to wait between making requests to the
                                          --connect-url once the connection is established
-                                         Consumes $CODER_SCALETEST_CONNECT_INTERVAL (default
-                                         1s)
+                                         Consumes $CODER_SCALETEST_CONNECT_INTERVAL (default 1s)
       --connect-mode one of derp|direct   Mode to use for connecting to the workspace
                                          Consumes $CODER_SCALETEST_CONNECT_MODE (default derp)
       --connect-timeout duration         Timeout for each request to the --connect-url
-                                         Consumes $CODER_SCALETEST_CONNECT_TIMEOUT (default
-                                         5s)
+                                         Consumes $CODER_SCALETEST_CONNECT_TIMEOUT (default 5s)
       --connect-url string               URL to connect to inside the the workspace over
                                          WireGuard. If not specified, no connections will be
                                          made over WireGuard

@@ -96,6 +96,25 @@ var usageTemplate = template.Must(
 				if option.Env != "" {
 					body += "\nConsumes $" + option.Env
 				}
+				// if option.Default != "" {
+				// 	body += " (default=" // = == hack
+				// 	if option.Value.Type() == "stringArray" {
+				// 		body += "["
+				// 	} else if option.Value.Type() == "string" {
+				// 		body += "\""
+				// 	}
+				// 	body += option.Default
+				// 	if option.Value.Type() == "stringArray" {
+				// 		body += "]"
+				// 	} else if option.Value.Type() == "string" {
+				// 		body += "\""
+				// 	}
+				// 	body += ")"
+				// }
+
+				body = wordwrap.WrapString(body, uint(twidth-len(spacing)+14))
+				spacing = strings.Repeat(" ", maxLen-initial)
+
 				if option.Default != "" {
 					body += " (default "
 					if option.Value.Type() == "stringArray" {
@@ -111,9 +130,7 @@ var usageTemplate = template.Must(
 					}
 					body += ")"
 				}
-
-				body = wordwrap.WrapString(body, uint(twidth-len(spacing)+14))
-				spacing = strings.Repeat(" ", maxLen-initial)
+				// body = strings.Replace(body, "(default=", "(default ", 1)
 
 				var sb strings.Builder
 				first := true

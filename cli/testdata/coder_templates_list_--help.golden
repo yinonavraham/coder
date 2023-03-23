@@ -9,6 +9,5 @@ Aliases:
 Flags:
   -c, --column stringArray   Columns to display in table output. Available columns: name,
                              created at, last updated, organization id, provisioner, active
-                             version id, used by, default ttl (default [name,last updated,used
-                             by])
+                             version id, used by, default ttl (default [name,last updated,used by])
   -o, --output string        Output format. Available formats: table, json (default "table")
