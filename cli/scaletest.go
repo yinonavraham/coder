@@ -777,7 +777,7 @@ It is recommended that all rate limits are disabled on the server before running
 	cliflag.StringArrayVarP(cmd.Flags(), &parameters, "parameter", "", "CODER_LOADTEST_PARAMETERS", []string{}, "Parameters to use for each workspace. Can be specified multiple times. Overrides any existing parameters with the same name from --parameters-file. Format: key=value")
 
 	cliflag.BoolVarP(cmd.Flags(), &noPlan, "no-plan", "", "CODER_LOADTEST_NO_PLAN", false, "Skip the dry-run step to plan the workspace creation. This step ensures that the given parameters are valid for the given template.")
-	cliflag.BoolVarP(cmd.Flags(), &noCleanup, "no-cleanup", "", "CODER_LOADTEST_NO_CLEANUP", false, "Do not clean up resources after the test completes. You can cleanup manually using `coder scaletest cleanup`.")
+	cliflag.BoolVarP(cmd.Flags(), &noCleanup, "no-cleanup", "", "CODER_LOADTEST_NO_CLEANUP", false, "Do not clean up resources after the test completes. You can cleanup manually using coder scaletest cleanup.")
 	// cliflag.BoolVarP(cmd.Flags(), &noCleanupFailures, "no-cleanup-failures", "", "CODER_LOADTEST_NO_CLEANUP_FAILURES", false, "Do not clean up resources from failed jobs to aid in debugging failures. You can cleanup manually using `coder scaletest cleanup`.")
 	cliflag.BoolVarP(cmd.Flags(), &noWaitForAgents, "no-wait-for-agents", "", "CODER_LOADTEST_NO_WAIT_FOR_AGENTS", false, "Do not wait for agents to start before marking the test as succeeded. This can be useful if you are running the test against a template that does not start the agent quickly.")
 
