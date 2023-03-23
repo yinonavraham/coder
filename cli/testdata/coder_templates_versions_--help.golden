@@ -11,5 +11,5 @@ Aliases:
       [;m$ coder templates versions list my-template[0m
 
 Commands:
-  list List all the versions of the specified template
+  list    List all the versions of the specified template
 

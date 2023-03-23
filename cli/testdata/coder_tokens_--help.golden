@@ -20,7 +20,7 @@ Tokens are used to authenticate automated clients to Coder.
       [;m$ coder tokens rm WuoWs4ZsMX[0m
 
 Commands:
-  create Create a token
-  list   List tokens
-  remove Delete a token
+  create    Create a token
+  list      List tokens
+  remove    Delete a token
 
