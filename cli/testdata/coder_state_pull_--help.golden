@@ -4,5 +4,5 @@ Usage:
   coder state pull <workspace> [file] [flags]
 
 Flags:
-  -b, --build int   Specify a workspace build to target by name.
+  -b, --build int   Specify a workspace build to target by name
   -h, --help        help for pull
