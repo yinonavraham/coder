@@ -120,7 +120,7 @@ func (*tableFormat) ID() string {
 
 // AttachFlags implements OutputFormat.
 func (f *tableFormat) AttachFlags(cmd *cobra.Command) {
-	cmd.Flags().StringSliceVarP(&f.columns, "column", "c", f.defaultColumns, "Columns to display in table output. Available columns: "+strings.Join(f.allColumns, ", "))
+	cmd.Flags().StringArrayVarP(&f.columns, "column", "c", f.defaultColumns, "Columns to display in table output. Available columns: "+strings.Join(f.allColumns, ", "))
 }
 
 // Format implements OutputFormat.

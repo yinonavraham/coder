@@ -5,7 +5,8 @@ Aliases:
   list, ls
 
 Flags:
-  -c, --column strings   Columns to display in table output. Available columns: id, username,
-                         email, created at, status (default [username,email,created_at,status])
-  -h, --help             help for list
-  -o, --output string    Output format. Available formats: table, json (default "table")
+  -c, --column stringArray   Columns to display in table output. Available columns: id,
+                             username, email, created at, status (default
+                             [username,email,created_at,status])
+  -h, --help                 help for list
+  -o, --output string        Output format. Available formats: table, json (default "table")
