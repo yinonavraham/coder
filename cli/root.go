@@ -517,17 +517,7 @@ func usageTemplateCobra() string {
 {{- if .HasAvailableSubCommands}}
 {{usageHeader "Commands:"}}
   {{- range .Commands}}
-    {{- $isRootWorkspaceCommand := (and $isRootHelp (isWorkspaceCommand .))}}
-    {{- if (or (and .IsAvailableCommand (not $isRootWorkspaceCommand)) (eq .Name "help"))}}
-  {{rpad .Name .NamePadding }} {{.Short | trimDot}}
-    {{- end}}
-  {{- end}}
-{{end}}
-
-{{- if (and $isRootHelp .HasAvailableSubCommands)}}
-{{usageHeader "Workspace Commands:"}}
-  {{- range .Commands}}
-    {{- if (and .IsAvailableCommand (isWorkspaceCommand .))}}
+    {{- if (or .IsAvailableCommand (eq .Name "help"))}}
   {{rpad .Name .NamePadding }} {{.Short | trimDot}}
     {{- end}}
   {{- end}}
