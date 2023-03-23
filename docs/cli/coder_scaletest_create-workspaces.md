@@ -20,7 +20,7 @@ Number of concurrent cleanup jobs to run. 0 means unlimited.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CLEANUP_CONCURRENCY</code> |
+| Consumes | <code>$CODER_SCALETEST_CLEANUP_CONCURRENCY</code> |
 | Default | <code>1</code> |
 
 ### --cleanup-job-timeout
@@ -29,7 +29,7 @@ Timeout per job. Jobs may take longer to complete under higher concurrency limit
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CLEANUP_JOB_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_CLEANUP_JOB_TIMEOUT</code> |
 | Default | <code>5m0s</code> |
 
 ### --cleanup-timeout
@@ -38,7 +38,7 @@ Timeout for the entire cleanup run. 0 means unlimited.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CLEANUP_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_CLEANUP_TIMEOUT</code> |
 | Default | <code>30m0s</code> |
 
 ### --concurrency
@@ -47,7 +47,7 @@ Number of concurrent jobs to run. 0 means unlimited.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CONCURRENCY</code> |
+| Consumes | <code>$CODER_SCALETEST_CONCURRENCY</code> |
 | Default | <code>1</code> |
 
 ### --connect-hold
@@ -56,7 +56,7 @@ How long to hold the WireGuard connection open for.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CONNECT_HOLD</code> |
+| Consumes | <code>$CODER_SCALETEST_CONNECT_HOLD</code> |
 | Default | <code>30s</code> |
 
 ### --connect-interval
@@ -65,7 +65,7 @@ How long to wait between making requests to the --connect-url once the connectio
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CONNECT_INTERVAL</code> |
+| Consumes | <code>$CODER_SCALETEST_CONNECT_INTERVAL</code> |
 | Default | <code>1s</code> |
 
 ### --connect-mode
@@ -74,7 +74,7 @@ Mode to use for connecting to the workspace. Can be 'derp' or 'direct'.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CONNECT_MODE</code> |
+| Consumes | <code>$CODER_SCALETEST_CONNECT_MODE</code> |
 | Default | <code>derp</code> |
 
 ### --connect-timeout
@@ -83,7 +83,7 @@ Timeout for each request to the --connect-url.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CONNECT_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_CONNECT_TIMEOUT</code> |
 | Default | <code>5s</code> |
 
 ### --connect-url
@@ -92,7 +92,7 @@ URL to connect to inside the the workspace over WireGuard. If not specified, no 
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CONNECT_URL</code> |
+| Consumes | <code>$CODER_SCALETEST_CONNECT_URL</code> |
 
 ### --count, -c
 
@@ -100,7 +100,7 @@ Required: Number of workspaces to create.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_COUNT</code> |
+| Consumes | <code>$CODER_SCALETEST_COUNT</code> |
 | Default | <code>1</code> |
 
 ### --job-timeout
@@ -109,7 +109,7 @@ Timeout per job. Jobs may take longer to complete under higher concurrency limit
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_JOB_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_JOB_TIMEOUT</code> |
 | Default | <code>5m0s</code> |
 
 ### --no-cleanup
@@ -118,7 +118,7 @@ Do not clean up resources after the test completes. You can cleanup manually usi
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_NO_CLEANUP</code> |
+| Consumes | <code>$CODER_SCALETEST_NO_CLEANUP</code> |
 | Default | <code>false</code> |
 
 ### --no-plan
@@ -127,7 +127,7 @@ Skip the dry-run step to plan the workspace creation. This step ensures that the
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_NO_PLAN</code> |
+| Consumes | <code>$CODER_SCALETEST_NO_PLAN</code> |
 | Default | <code>false</code> |
 
 ### --no-wait-for-agents
@@ -136,7 +136,7 @@ Do not wait for agents to start before marking the test as succeeded. This can b
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_NO_WAIT_FOR_AGENTS</code> |
+| Consumes | <code>$CODER_SCALETEST_NO_WAIT_FOR_AGENTS</code> |
 | Default | <code>false</code> |
 
 ### --output
@@ -154,7 +154,7 @@ Parameters to use for each workspace. Can be specified multiple times. Overrides
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_PARAMETERS</code> |
+| Consumes | <code>$CODER_SCALETEST_PARAMETERS</code> |
 | Default | <code>[]</code> |
 
 ### --parameters-file
@@ -163,7 +163,7 @@ Path to a YAML file containing the parameters to use for each workspace.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_PARAMETERS_FILE</code> |
+| Consumes | <code>$CODER_SCALETEST_PARAMETERS_FILE</code> |
 
 ### --run-command
 
@@ -171,7 +171,7 @@ Command to run inside each workspace using reconnecting-pty (i.e. web terminal p
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_RUN_COMMAND</code> |
+| Consumes | <code>$CODER_SCALETEST_RUN_COMMAND</code> |
 
 ### --run-expect-output
 
@@ -179,7 +179,7 @@ Expect the command to output the given string (on a single line). If the command
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_RUN_EXPECT_OUTPUT</code> |
+| Consumes | <code>$CODER_SCALETEST_RUN_EXPECT_OUTPUT</code> |
 
 ### --run-expect-timeout
 
@@ -187,7 +187,7 @@ Expect the command to timeout. If the command does not finish within the given -
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_RUN_EXPECT_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_RUN_EXPECT_TIMEOUT</code> |
 | Default | <code>false</code> |
 
 ### --run-log-output
@@ -196,7 +196,7 @@ Log the output of the command to the test logs. This should be left off unless y
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_RUN_LOG_OUTPUT</code> |
+| Consumes | <code>$CODER_SCALETEST_RUN_LOG_OUTPUT</code> |
 | Default | <code>false</code> |
 
 ### --run-timeout
@@ -205,7 +205,7 @@ Timeout for the command to complete.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_RUN_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_RUN_TIMEOUT</code> |
 | Default | <code>5s</code> |
 
 ### --template, -t
@@ -214,7 +214,7 @@ Required: Name or ID of the template to use for workspaces.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_TEMPLATE</code> |
+| Consumes | <code>$CODER_SCALETEST_TEMPLATE</code> |
 
 ### --timeout
 
@@ -222,7 +222,7 @@ Timeout for the entire test run. 0 means unlimited.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_TIMEOUT</code> |
 | Default | <code>30m0s</code> |
 
 ### --trace
@@ -231,7 +231,7 @@ Whether application tracing data is collected. It exports to a backend configure
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_TRACE</code> |
+| Consumes | <code>$CODER_SCALETEST_TRACE</code> |
 | Default | <code>false</code> |
 
 ### --trace-coder
@@ -240,7 +240,7 @@ Whether opentelemetry traces are sent to Coder. We recommend keeping this disabl
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_TRACE_CODER</code> |
+| Consumes | <code>$CODER_SCALETEST_TRACE_CODER</code> |
 | Default | <code>false</code> |
 
 ### --trace-honeycomb-api-key
@@ -249,7 +249,7 @@ Enables trace exporting to Honeycomb.io using the provided API key.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_TRACE_HONEYCOMB_API_KEY</code> |
+| Consumes | <code>$CODER_SCALETEST_TRACE_HONEYCOMB_API_KEY</code> |
 
 ### --trace-propagate
 
@@ -257,5 +257,5 @@ Enables trace propagation to the Coder backend, which will be used to correlate 
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_TRACE_PROPAGATE</code> |
+| Consumes | <code>$CODER_SCALETEST_TRACE_PROPAGATE</code> |
 | Default | <code>false</code> |

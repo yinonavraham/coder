@@ -18,7 +18,7 @@ Number of concurrent cleanup jobs to run. 0 means unlimited.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CLEANUP_CONCURRENCY</code> |
+| Consumes | <code>$CODER_SCALETEST_CLEANUP_CONCURRENCY</code> |
 | Default | <code>1</code> |
 
 ### --cleanup-job-timeout
@@ -27,7 +27,7 @@ Timeout per job. Jobs may take longer to complete under higher concurrency limit
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CLEANUP_JOB_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_CLEANUP_JOB_TIMEOUT</code> |
 | Default | <code>5m0s</code> |
 
 ### --cleanup-timeout
@@ -36,5 +36,5 @@ Timeout for the entire cleanup run. 0 means unlimited.
 <br/>
 | | |
 | --- | --- |
-| Consumes | <code>$CODER_LOADTEST_CLEANUP_TIMEOUT</code> |
+| Consumes | <code>$CODER_SCALETEST_CLEANUP_TIMEOUT</code> |
 | Default | <code>30m0s</code> |
