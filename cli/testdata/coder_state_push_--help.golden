@@ -1,10 +1,7 @@
-Usage: coder state push [flags] <workspace> <file>
-
 Push a Terraform state file to a workspace.
 
-[1mOptions[0m
-  -b, --build int
-          Specify a workspace build to target by name. Defaults to latest.
+Usage:
+  coder state push [flags] <workspace> <file>
 
----
-Run `coder --help` for a list of global options.
+Flags:
+  -b, --build int   Specify a workspace build to target by name. Defaults to latest.

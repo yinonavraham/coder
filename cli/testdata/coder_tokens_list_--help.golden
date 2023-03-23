@@ -1,20 +1,13 @@
-Usage: coder tokens list [flags]
-
 List tokens
+
+Usage:
+  coder tokens list [flags]
 
 Aliases: ls
 
-[1mOptions[0m
-  -a, --all bool
-          Specifies whether all users' tokens will be listed or not (must have
-          Owner role to see all tokens).
-
-  -c, --column (default: id,name,last used,expires at,created at)
-          Columns to display in table output. Available columns: id, name, last
-          used, expires at, created at, owner.
-
-  -o, --output (default: table)
-          Output format. Available formats: table, json.
-
----
-Run `coder --help` for a list of global options.
+Flags:
+  -a, --all                   Specifies whether all users' tokens will be listed or not (must
+                              have Owner role to see all tokens).
+  -c, --column string-array   Columns to display in table output. Available columns: id, name,
+                              last used, expires at, created at, owner. (default: id,name,last used,expires at,created at)
+  -o, --output string         Output format. Available formats: table, json. (default: table)

@@ -1,11 +1,10 @@
 {{- /* Heavily inspired by the Go toolchain formatting. */ -}}
-Usage: {{.FullUsage}}
-
-
 {{ with .Short }}
 {{- wrapTTY . }}
 {{"\n"}}
 {{- end}}
+Usage:
+  {{.FullUsage}}
 
 {{ with .Aliases }}
 {{ "\n" }}
@@ -20,7 +19,7 @@ Usage: {{.FullUsage}}
 {{ with visibleChildren . }}
 {{- range $index, $child := . }}
 {{- if eq $index 0 }}
-{{ prettyHeader "Subcommands"}}
+{{ "Commands:"}}
 {{- end }}
     {{- "\n" }}
     {{- formatSubcommand . | trimNewline }}
@@ -28,7 +27,7 @@ Usage: {{.FullUsage}}
 {{- "\n" }}
 {{- end }}
 {{- range $index, $group := optionGroups . }}
-{{ with $group.Name }} {{- print $group.Name " Options" | prettyHeader }} {{ else -}} {{ prettyHeader "Options"}}{{- end -}}
+{{ with $group.Name }} {{- print $group.Name " Flags:" }} {{ else -}} {{ "Flags:"}}{{- end -}}
 {{- with $group.Description }}
 {{ formatGroupDescription . }}
 {{- else }}
@@ -38,19 +37,11 @@ Usage: {{.FullUsage}}
 	{{- else }}{{- print "\n      " -}}
 	{{- end }}
     {{- with flagName $option }}--{{ . }}{{ end }}
-    {{- with envName $option }}, ${{ . }}{{ end }}
-    {{- with $option.Default }} (default: {{ . }}){{ end }}
 	{{- with typeHelper $option }} {{ . }}{{ end }}
         {{- with $option.Description }}
             {{- $desc := $option.Description }}
-{{ indent $desc 10 }}
+{{- indent $desc 10 $option $group.Options }}
 {{- if isDeprecated $option }} DEPRECATED {{ end }}
         {{- end -}}
     {{- end }}
-{{- end }}
----
-{{- if .Parent }}
-Run `coder --help` for a list of global options.
-{{- else }}
-Report bugs and request features at https://github.com/coder/coder/issues/new
 {{- end }}

@@ -1,10 +1,7 @@
-Usage: coder state pull [flags] <workspace> [file]
-
 Pull a Terraform state file from a workspace.
 
-[1mOptions[0m
-  -b, --build int
-          Specify a workspace build to target by name. Defaults to latest.
+Usage:
+  coder state pull [flags] <workspace> [file]
 
----
-Run `coder --help` for a list of global options.
+Flags:
+  -b, --build int   Specify a workspace build to target by name. Defaults to latest.

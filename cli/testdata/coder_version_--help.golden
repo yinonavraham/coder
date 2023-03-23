@@ -1,6 +1,5 @@
-Usage: coder version
-
 Show coder version
 
----
-Run `coder --help` for a list of global options.
+Usage:
+  coder version
+

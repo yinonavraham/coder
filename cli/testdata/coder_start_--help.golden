@@ -1,10 +1,7 @@
-Usage: coder start [flags] <workspace>
-
 Start a workspace
 
-[1mOptions[0m
-  -y, --yes bool
-          Bypass prompts.
+Usage:
+  coder start [flags] <workspace>
 
----
-Run `coder --help` for a list of global options.
+Flags:
+  -y, --yes   Bypass prompts.

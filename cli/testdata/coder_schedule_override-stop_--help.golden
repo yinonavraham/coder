@@ -1,6 +1,7 @@
-Usage: coder schedule override-stop <workspace-name> <duration from now>
-
 Edit stop time of active workspace
+
+Usage:
+  coder schedule override-stop <workspace-name> <duration from now>
 
 * The new stop time is calculated from *now*.
   * The new stop time must be at least 30 minutes in the future.
@@ -8,5 +9,3 @@ Edit stop time of active workspace
 
   [;m$ coder schedule override-stop my-workspace 90m[0m
 
----
-Run `coder --help` for a list of global options.

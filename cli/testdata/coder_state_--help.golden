@@ -1,10 +1,9 @@
-Usage: coder state
-
 Manually manage Terraform state to fix broken workspaces
 
-[1mSubcommands[0m
+Usage:
+  coder state
+
+Commands:
     pull    Pull a Terraform state file from a workspace.
     push    Push a Terraform state file to a workspace.
 
----
-Run `coder --help` for a list of global options.

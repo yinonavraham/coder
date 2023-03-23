@@ -1,10 +1,11 @@
-Usage: coder users [subcommand]
-
 Manage users
+
+Usage:
+  coder users [subcommand]
 
 Aliases: user
 
-[1mSubcommands[0m
+Commands:
     activate    Update a user's status to 'active'. Active users can fully
                 interact with the platform
     create      
@@ -14,5 +15,3 @@ Aliases: user
     suspend     Update a user's status to 'suspended'. A suspended user cannot
                 log into the platform
 
----
-Run `coder --help` for a list of global options.

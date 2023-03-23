@@ -1,32 +1,24 @@
-Usage: coder server create-admin-user [flags]
-
 Create a new admin user with the given username, email and password and adds it
 to every organization.
 
-[1mOptions[0m
-      --email, $CODER_EMAIL string
-          The email of the new user. If not specified, you will be prompted via
-          stdin.
+Usage:
+  coder server create-admin-user [flags]
 
-      --password, $CODER_PASSWORD string
-          The password of the new user. If not specified, you will be prompted
-          via stdin.
-
-      --postgres-url, $CODER_POSTGRES_URL string
-          URL of a PostgreSQL database. If empty, the built-in PostgreSQL
-          deployment will be used (Coder must not be already running in this
-          case).
-
-      --raw-url bool
-          Output the raw connection URL instead of a psql command.
-
-      --ssh-keygen-algorithm, $CODER_SSH_KEYGEN_ALGORITHM (default: ed25519)
-          The algorithm to use for generating ssh keys. Accepted values are
-          "ed25519", "ecdsa", or "rsa4096".
-
-      --username, $CODER_USERNAME string
-          The username of the new user. If not specified, you will be prompted
-          via stdin.
-
----
-Run `coder --help` for a list of global options.
+Flags:
+      --email string                  The email of the new user. If not specified, you will be
+                                      prompted via stdin.
+                                      Consumes $CODER_EMAIL
+      --password string               The password of the new user. If not specified, you will
+                                      be prompted via stdin.
+                                      Consumes $CODER_PASSWORD
+      --postgres-url string           URL of a PostgreSQL database. If empty, the built-in
+                                      PostgreSQL deployment will be used (Coder must not be
+                                      already running in this case).
+                                      Consumes $CODER_POSTGRES_URL
+      --raw-url                       Output the raw connection URL instead of a psql command.
+      --ssh-keygen-algorithm string   The algorithm to use for generating ssh keys. Accepted
+                                      values are "ed25519", "ecdsa", or "rsa4096".
+                                      Consumes $CODER_SSH_KEYGEN_ALGORITHM (default: ed25519)
+      --username string               The username of the new user. If not specified, you will
+                                      be prompted via stdin.
+                                      Consumes $CODER_USERNAME

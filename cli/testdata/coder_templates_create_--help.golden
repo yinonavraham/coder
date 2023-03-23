@@ -1,28 +1,17 @@
-Usage: coder templates create [flags] [name]
-
 Create a template from the current directory or as specified by flag
 
-[1mOptions[0m
-      --default-ttl (default: 24h)
-          Specify a default TTL for workspaces created from this template.
+Usage:
+  coder templates create [flags] [name]
 
-  -d, --directory (default: .)
-          Specify the directory to create from, use '-' to read tar from stdin.
-
-      --parameter-file string
-          Specify a file path with parameter values.
-
-      --provisioner-tag string-array
-          Specify a set of tags to target provisioner daemons.
-
-      --variable string-array
-          Specify a set of values for Terraform-managed variables.
-
-      --variables-file string
-          Specify a file path with values for Terraform-managed variables.
-
-  -y, --yes bool
-          Bypass prompts.
-
----
-Run `coder --help` for a list of global options.
+Flags:
+      --default-ttl duration           Specify a default TTL for workspaces created from this
+                                       template. (default: 24h)
+  -d, --directory string               Specify the directory to create from, use '-' to read
+                                       tar from stdin. (default: .)
+      --parameter-file string          Specify a file path with parameter values.
+      --provisioner-tag string-array   Specify a set of tags to target provisioner daemons.
+      --variable string-array          Specify a set of values for Terraform-managed
+                                       variables.
+      --variables-file string          Specify a file path with values for Terraform-managed
+                                       variables.
+  -y, --yes                            Bypass prompts.

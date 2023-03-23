@@ -1,13 +1,8 @@
-Usage: coder templates pull [flags] <name> [destination]
-
 Download the latest version of a template to a path.
 
-[1mOptions[0m
-      --tar bool
-          Output the template as a tar archive to stdout.
+Usage:
+  coder templates pull [flags] <name> [destination]
 
-  -y, --yes bool
-          Bypass prompts.
-
----
-Run `coder --help` for a list of global options.
+Flags:
+      --tar   Output the template as a tar archive to stdout.
+  -y, --yes   Bypass prompts.

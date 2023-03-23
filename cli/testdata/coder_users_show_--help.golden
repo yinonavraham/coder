@@ -1,12 +1,9 @@
-Usage: coder users show [flags] <username|user_id|'me'>
-
 Show a single user. Use 'me' to indicate the currently authenticated user.
+
+Usage:
+  coder users show [flags] <username|user_id|'me'>
 
 [;m$ coder users show me[0m
 
-[1mOptions[0m
-  -o, --output (default: table)
-          Output format. Available formats: table, json.
-
----
-Run `coder --help` for a list of global options.
+Flags:
+  -o, --output string   Output format. Available formats: table, json. (default: table)

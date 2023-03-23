@@ -1,6 +1,7 @@
-Usage: coder schedule show <workspace-name>
-
 Show workspace schedule
+
+Usage:
+  coder schedule show <workspace-name>
 
 Shows the following information for the given workspace:
   * The automatic start schedule
@@ -8,5 +9,3 @@ Shows the following information for the given workspace:
   * The duration after which it will stop
   * The next scheduled stop time
 
----
-Run `coder --help` for a list of global options.

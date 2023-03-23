@@ -1,6 +1,5 @@
-Usage: coder templates init [directory]
-
 Get started with a templated template.
 
----
-Run `coder --help` for a list of global options.
+Usage:
+  coder templates init [directory]
+

@@ -56,34 +56,69 @@ var usageTemplate = template.Must(
 				switch v := opt.Value.(type) {
 				case *clibase.Enum:
 					return fmt.Sprintf("one of %s", strings.Join(v.Choices, "|"))
+				case *clibase.Bool:
+					return ""
 				default:
 					// Usually, enough type information is found in the
 					// default. It's easy to print too much information
 					// and either overwhelm or, worse, cause wrapping.
-					if opt.Default != "" {
-						return ""
-					}
+					// if opt.Default != "" {
+					// 	return ""
+					// }
 					return v.Type()
 				}
 			},
 			"joinStrings": func(s []string) string {
 				return strings.Join(s, ", ")
 			},
-			"indent": func(body string, spaces int) string {
+			"indent": func(body string, spaces int, option clibase.Option, options []clibase.Option) string {
 				twidth := ttyWidth()
 
-				spacing := strings.Repeat(" ", spaces)
+				optType := func(s string) string {
+					if s == "bool" {
+						return ""
+					}
+					return " " + s
+				}
 
-				body = wordwrap.WrapString(body, uint(twidth-len(spacing)))
+				maxLen := 0
+				for _, opt := range options {
+					s := "      --" + opt.Flag + "" + optType(opt.Value.Type()) + "   "
+					l := len(s)
+					if l > maxLen {
+						maxLen = l
+					}
+				}
+				initial := len("      --" + option.Flag + "" + optType(option.Value.Type()) + "")
+
+				spacing := strings.Repeat(" ", maxLen)
+				body = wordwrap.WrapString(body, uint(twidth-len(spacing)+14))
+				spacing = strings.Repeat(" ", maxLen-initial)
 
 				var sb strings.Builder
+				first := true
 				for _, line := range strings.Split(body, "\n") {
+					if !first {
+						_, _ = sb.WriteString("\n")
+					}
+					first = false
 					// Remove existing indent, if any.
 					line = strings.TrimSpace(line)
 					// Use spaces so we can easily calculate wrapping.
 					_, _ = sb.WriteString(spacing)
 					_, _ = sb.WriteString(line)
+					spacing = strings.Repeat(" ", maxLen)
+				}
+				if option.Env != "" {
 					_, _ = sb.WriteString("\n")
+					_, _ = sb.WriteString(spacing)
+					_, _ = sb.WriteString("Consumes $")
+					_, _ = sb.WriteString(option.Env)
+				}
+				if option.Default != "" {
+					_, _ = sb.WriteString(" (default: ")
+					_, _ = sb.WriteString(option.Default)
+					_, _ = sb.WriteString(")")
 				}
 				return sb.String()
 			},

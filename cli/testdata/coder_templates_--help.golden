@@ -1,6 +1,7 @@
-Usage: coder templates
-
 Manage templates
+
+Usage:
+  coder templates
 
 Aliases: template
 
@@ -18,7 +19,7 @@ workspaces
 
       [;m$ coder templates push my-template[0m
 
-[1mSubcommands[0m
+Commands:
     create      Create a template from the current directory or as specified by
                 flag
     delete      Delete templates
@@ -31,5 +32,3 @@ workspaces
                 specified by flag
     versions    Manage different versions of the specified template
 
----
-Run `coder --help` for a list of global options.

@@ -1,10 +1,7 @@
-Usage: coder rename [flags] <workspace> <new name>
-
 Rename a workspace
 
-[1mOptions[0m
-  -y, --yes bool
-          Bypass prompts.
+Usage:
+  coder rename [flags] <workspace> <new name>
 
----
-Run `coder --help` for a list of global options.
+Flags:
+  -y, --yes   Bypass prompts.

@@ -1,18 +1,11 @@
-Usage: coder speedtest [flags] <workspace>
-
 Run upload and download tests from your machine to a workspace
 
-[1mOptions[0m
-  -d, --direct bool
-          Specifies whether to wait for a direct connection before testing
-          speed.
+Usage:
+  coder speedtest [flags] <workspace>
 
-      --direction (default: down) one of up|down
-          Specifies whether to run in reverse mode where the client receives and
-          the server sends.
-
-  -t, --time (default: 5s)
-          Specifies the duration to monitor traffic.
-
----
-Run `coder --help` for a list of global options.
+Flags:
+  -d, --direct                    Specifies whether to wait for a direct connection before
+                                  testing speed.
+      --direction one of up|down   Specifies whether to run in reverse mode where the client
+                                  receives and the server sends. (default: down)
+  -t, --time duration             Specifies the duration to monitor traffic. (default: 5s)

@@ -1,6 +1,5 @@
-Usage: coder show <workspace>
-
 Display details of a workspace's resources and agents
 
----
-Run `coder --help` for a list of global options.
+Usage:
+  coder show <workspace>
+

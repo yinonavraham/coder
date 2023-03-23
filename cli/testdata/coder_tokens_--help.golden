@@ -1,6 +1,7 @@
-Usage: coder tokens
-
 Manage personal access tokens
+
+Usage:
+  coder tokens
 
 Aliases: token
 
@@ -17,10 +18,8 @@ Tokens are used to authenticate automated clients to Coder.
 
       [;m$ coder tokens rm WuoWs4ZsMX[0m
 
-[1mSubcommands[0m
+Commands:
     create    Create a token
     list      List tokens
     remove    Delete a token
 
----
-Run `coder --help` for a list of global options.

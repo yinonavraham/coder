@@ -1,22 +1,14 @@
-Usage: coder list [flags]
-
 List workspaces
+
+Usage:
+  coder list [flags]
 
 Aliases: ls
 
-[1mOptions[0m
-  -a, --all bool
-          Specifies whether all workspaces will be listed or not.
-
-  -c, --column (default: workspace,template,status,last built,outdated,starts at,stops after)
-          Columns to display in table output. Available columns: workspace,
-          template, status, last built, outdated, starts at, stops after.
-
-  -o, --output (default: table)
-          Output format. Available formats: table, json.
-
-      --search (default: owner:me)
-          Search for a workspace with a query.
-
----
-Run `coder --help` for a list of global options.
+Flags:
+  -a, --all                   Specifies whether all workspaces will be listed or not.
+  -c, --column string-array   Columns to display in table output. Available columns:
+                              workspace, template, status, last built, outdated, starts at,
+                              stops after. (default: workspace,template,status,last built,outdated,starts at,stops after)
+  -o, --output string         Output format. Available formats: table, json. (default: table)
+      --search string         Search for a workspace with a query. (default: owner:me)
