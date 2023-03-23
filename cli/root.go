@@ -527,11 +527,6 @@ func usageTemplateCobra() string {
 {{.LocalFlags.FlagUsagesWrapped 100 | trimTrailingWhitespaces}}
 {{end}}
 
-{{- if .HasAvailableInheritedFlags}}
-{{usageHeader "Global Flags:"}}
-{{.InheritedFlags.FlagUsagesWrapped 100 | trimTrailingWhitespaces}}
-{{end}}
-
 {{- if .HasHelpSubCommands}}
 {{usageHeader "Additional help topics:"}}
   {{- range .Commands}}
