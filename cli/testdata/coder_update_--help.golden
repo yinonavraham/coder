@@ -7,9 +7,9 @@ Use --always-prompt to change the parameter values of the workspace.
 
 Flags:
       --always-prompt                Always prompt all parameters. Does not pull parameter
-                                     values from existing workspace.
-      --parameter-file string        Specify a file path with parameter values.
+                                     values from existing workspace
+      --parameter-file string        Specify a file path with parameter values
                                      Consumes $CODER_PARAMETER_FILE
       --rich-parameter-file string   Specify a file path with values for rich parameters
-                                     defined in the template.
+                                     defined in the template
                                      Consumes $CODER_RICH_PARAMETER_FILE

@@ -4,4 +4,4 @@ Usage:
   coder state pull <workspace> [file] [flags]
 
 Flags:
-  -b, --build int   Specify a workspace build to target by name. Defaults to latest.
+  -b, --build int   Specify a workspace build to target by name. Defaults to latest

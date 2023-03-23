@@ -4,4 +4,4 @@ Usage:
   coder rename <workspace> <new name> [flags]
 
 Flags:
-  -y, --yes   Bypass prompts.
+  -y, --yes   Bypass prompts

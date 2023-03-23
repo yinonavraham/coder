@@ -3,10 +3,10 @@ Delete a workspace
 Usage:
   coder delete <workspace> [flags]
 
-Aliases: rm
+Aliases:
+  delete, rm
 
 Flags:
       --orphan   Delete a workspace without deleting its resources. This can delete a
-                 workspace in a broken state, but may also lead to unaccounted cloud
-                 resources.
-  -y, --yes      Bypass prompts.
+                 workspace in a broken state, but may also lead to unaccounted cloud resources
+  -y, --yes      Bypass prompts

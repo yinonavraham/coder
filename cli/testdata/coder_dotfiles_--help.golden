@@ -9,6 +9,6 @@ Usage:
 
 Flags:
       --symlink-dir string   Specifies the directory for the dotfiles symlink destinations. If
-                             empty, will use $HOME.
+                             empty, will use $HOME
                              Consumes $CODER_SYMLINK_DIR
-  -y, --yes                  Bypass prompts.
+  -y, --yes                  Bypass prompts

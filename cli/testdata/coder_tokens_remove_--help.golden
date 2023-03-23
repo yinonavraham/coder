@@ -3,5 +3,6 @@ Delete a token
 Usage:
   coder tokens remove <name>
 
-Aliases: rm, delete
+Aliases:
+  remove, rm, delete
 

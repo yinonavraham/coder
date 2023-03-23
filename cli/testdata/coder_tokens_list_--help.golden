@@ -3,11 +3,13 @@ List tokens
 Usage:
   coder tokens list [flags]
 
-Aliases: ls
+Aliases:
+  list, ls
 
 Flags:
-  -a, --all                   Specifies whether all users' tokens will be listed or not (must
-                              have Owner role to see all tokens).
-  -c, --column string-array   Columns to display in table output. Available columns: id, name,
-                              last used, expires at, created at, owner. (default id,name,last used,expires at,created at)
-  -o, --output string         Output format. Available formats: table, json. (default table)
+  -a, --all                  Specifies whether all users' tokens will be listed or not (must
+                             have Owner role to see all tokens)
+  -c, --column stringArray   Columns to display in table output. Available columns: id, name,
+                             last used, expires at, created at, owner (default [id,name,last
+                             used,expires at,created at])
+  -o, --output string        Output format. Available formats: table, json (default "table")

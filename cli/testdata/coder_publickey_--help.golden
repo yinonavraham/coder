@@ -3,9 +3,10 @@ Output your Coder public key used for Git operations
 Usage:
   coder publickey [flags]
 
-Aliases: pubkey
+Aliases:
+  publickey, pubkey
 
 Flags:
       --reset   Regenerate your public key. This will require updating the key on any services
-                it's registered with.
-  -y, --yes     Bypass prompts.
+                it's registered with
+  -y, --yes     Bypass prompts

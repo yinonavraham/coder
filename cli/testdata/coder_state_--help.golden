@@ -4,6 +4,6 @@ Usage:
   coder state
 
 Commands:
-    pull    Pull a Terraform state file from a workspace.
-    push    Push a Terraform state file to a workspace.
+  pull    Pull a Terraform state file from a workspace.
+  push    Push a Terraform state file to a workspace.
 

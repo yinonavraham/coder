@@ -6,9 +6,10 @@
 Usage:
   {{.FullUsage}}
 
-{{ with .Aliases }}
+{{ $name := .Name }}{{ with .Aliases }}
 {{ "\n" }}
-{{ "Aliases:"}} {{ joinStrings .}}
+{{ "Aliases:"}}
+  {{ $name }}, {{ joinStrings .}}
 {{ "\n" }}
 {{- end }}
 
@@ -21,8 +22,8 @@ Usage:
 {{- if eq $index 0 }}
 {{ "Commands:"}}
 {{- end }}
-    {{- "\n" }}
-    {{- formatSubcommand . | trimNewline }}
+  {{- "\n" }}
+  {{- formatSubcommand . | trimNewline }}
 {{- end }}
 {{- "\n" }}
 {{- end }}

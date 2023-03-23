@@ -7,10 +7,12 @@ The strategy flags will apply to each stage of the cleanup process.
 
 Flags:
       --cleanup-concurrency int        Number of concurrent cleanup jobs to run. 0 means
-                                       unlimited.
-                                       Consumes $CODER_SCALETEST_CLEANUP_CONCURRENCY (default 1)
+                                       unlimited
+                                       Consumes $CODER_SCALETEST_CLEANUP_CONCURRENCY (default
+                                       1)
       --cleanup-job-timeout duration   Timeout per job. Jobs may take longer to complete under
-                                       higher concurrency limits.
-                                       Consumes $CODER_SCALETEST_CLEANUP_JOB_TIMEOUT (default 5m)
-      --cleanup-timeout duration       Timeout for the entire cleanup run. 0 means unlimited.
+                                       higher concurrency limits
+                                       Consumes $CODER_SCALETEST_CLEANUP_JOB_TIMEOUT (default
+                                       5m)
+      --cleanup-timeout duration       Timeout for the entire cleanup run. 0 means unlimited
                                        Consumes $CODER_SCALETEST_CLEANUP_TIMEOUT (default 30m)

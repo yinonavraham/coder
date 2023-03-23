@@ -4,9 +4,11 @@ platform
 Usage:
   coder users activate <username|user_id> [flags]
 
-Aliases: active
+Aliases:
+  activate, active
 
 [;m$ coder users activate example_user[0m
 
 Flags:
-  -c, --column string-array   Specify a column to filter in the table. (default username,email,created_at,status)
+  -c, --column stringArray   Specify a column to filter in the table (default
+                             [username,email,created_at,status])

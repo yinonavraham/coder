@@ -163,7 +163,7 @@ func (s StringArray) Value() []string {
 }
 
 func (StringArray) Type() string {
-	return "string-array"
+	return "stringArray"
 }
 
 type Duration time.Duration

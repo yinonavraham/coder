@@ -4,5 +4,5 @@ Usage:
   coder templates pull <name> [destination] [flags]
 
 Flags:
-      --tar   Output the template as a tar archive to stdout.
-  -y, --yes   Bypass prompts.
+      --tar   Output the template as a tar archive to stdout
+  -y, --yes   Bypass prompts

@@ -6,19 +6,19 @@ Usage:
 
 Flags:
       --email string                  The email of the new user. If not specified, you will be
-                                      prompted via stdin.
+                                      prompted via stdin
                                       Consumes $CODER_EMAIL
       --password string               The password of the new user. If not specified, you will
-                                      be prompted via stdin.
+                                      be prompted via stdin
                                       Consumes $CODER_PASSWORD
       --postgres-url string           URL of a PostgreSQL database. If empty, the built-in
                                       PostgreSQL deployment will be used (Coder must not be
-                                      already running in this case).
+                                      already running in this case)
                                       Consumes $CODER_POSTGRES_URL
-      --raw-url                       Output the raw connection URL instead of a psql command.
+      --raw-url                       Output the raw connection URL instead of a psql command
       --ssh-keygen-algorithm string   The algorithm to use for generating ssh keys. Accepted
-                                      values are "ed25519", "ecdsa", or "rsa4096".
-                                      Consumes $CODER_SSH_KEYGEN_ALGORITHM (default ed25519)
+                                      values are "ed25519", "ecdsa", or "rsa4096"
+                                      Consumes $CODER_SSH_KEYGEN_ALGORITHM (default "ed25519")
       --username string               The username of the new user. If not specified, you will
-                                      be prompted via stdin.
+                                      be prompted via stdin
                                       Consumes $CODER_USERNAME

@@ -13,16 +13,15 @@ Usage:
       [;m$ coder config-ssh --dry-run[0m
 
 Flags:
-  -n, --dry-run                   Perform a trial run with no changes made, showing a diff at
-                                  the end.
-                                  Consumes $CODER_SSH_DRY_RUN
-      --ssh-config-file string    Specifies the path to an SSH config.
-                                  Consumes $CODER_SSH_CONFIG_FILE (default ~/.ssh/config)
-      --ssh-host-prefix string    Override the default host prefix.
-  -o, --ssh-option string-array   Specifies additional SSH options to embed in each host
-                                  stanza.
-                                  Consumes $CODER_SSH_CONFIG_OPTS
-      --use-previous-options      Specifies whether or not to keep options from previous run
-                                  of config-ssh.
-                                  Consumes $CODER_SSH_USE_PREVIOUS_OPTIONS
-  -y, --yes                       Bypass prompts.
+  -n, --dry-run                  Perform a trial run with no changes made, showing a diff at
+                                 the end
+                                 Consumes $CODER_SSH_DRY_RUN
+      --ssh-config-file string   Specifies the path to an SSH config
+                                 Consumes $CODER_SSH_CONFIG_FILE (default "~/.ssh/config")
+      --ssh-host-prefix string   Override the default host prefix
+  -o, --ssh-option stringArray   Specifies additional SSH options to embed in each host stanza
+                                 Consumes $CODER_SSH_CONFIG_OPTS
+      --use-previous-options     Specifies whether or not to keep options from previous run of
+                                 config-ssh
+                                 Consumes $CODER_SSH_USE_PREVIOUS_OPTIONS
+  -y, --yes                      Bypass prompts

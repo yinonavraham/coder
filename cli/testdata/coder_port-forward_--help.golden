@@ -3,7 +3,8 @@ Forward ports between your local system and the workspace
 Usage:
   coder port-forward <workspace> [flags]
 
-Aliases: tunnel
+Aliases:
+  port-forward, tunnel
 
 - Port forward a single TCP port from 1234 in the workspace to port 5678 on   
     your local machine:                                                         
@@ -26,9 +27,8 @@ Aliases: tunnel
 8080,9000:3000,9090-9092,10000-10002:10010-10012[0m
 
 Flags:
-  -p, --tcp string-array   Forward TCP port(s) from the workspace to the local machine.
-                           Consumes $CODER_PORT_FORWARD_TCP
-      --udp string-array   Forward UDP port(s) from the workspace to the local machine. The
-                           UDP connection has TCP-like semantics to support stateful UDP
-                           protocols.
-                           Consumes $CODER_PORT_FORWARD_UDP
+  -p, --tcp stringArray   Forward TCP port(s) from the workspace to the local machine
+                          Consumes $CODER_PORT_FORWARD_TCP
+      --udp stringArray   Forward UDP port(s) from the workspace to the local machine. The UDP
+                          connection has TCP-like semantics to support stateful UDP protocols
+                          Consumes $CODER_PORT_FORWARD_UDP

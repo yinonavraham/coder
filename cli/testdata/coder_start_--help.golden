@@ -4,4 +4,4 @@ Usage:
   coder start <workspace> [flags]
 
 Flags:
-  -y, --yes   Bypass prompts.
+  -y, --yes   Bypass prompts

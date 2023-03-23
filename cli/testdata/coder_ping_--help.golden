@@ -4,6 +4,6 @@ Usage:
   coder ping <workspace> [flags]
 
 Flags:
-  -n, --num int            Specifies the number of pings to perform. (default 10)
-  -t, --timeout duration   Specifies how long to wait for a ping to complete. (default 5s)
-      --wait duration      Specifies how long to wait between pings. (default 1s)
+  -n, --num int            Specifies the number of pings to perform (default 10)
+  -t, --timeout duration   Specifies how long to wait for a ping to complete (default 5s)
+      --wait duration      Specifies how long to wait between pings (default 1s)

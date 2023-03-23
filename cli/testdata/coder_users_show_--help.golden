@@ -6,4 +6,4 @@ Usage:
 [;m$ coder users show me[0m
 
 Flags:
-  -o, --output string   Output format. Available formats: table, json. (default table)
+  -o, --output string   Output format. Available formats: table, json (default "table")

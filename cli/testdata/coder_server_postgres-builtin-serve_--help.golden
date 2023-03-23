@@ -4,4 +4,4 @@ Usage:
   coder server postgres-builtin-serve [flags]
 
 Flags:
-      --raw-url   Output the raw connection URL instead of a psql command.
+      --raw-url   Output the raw connection URL instead of a psql command

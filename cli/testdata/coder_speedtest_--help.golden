@@ -5,7 +5,7 @@ Usage:
 
 Flags:
   -d, --direct                    Specifies whether to wait for a direct connection before
-                                  testing speed.
+                                  testing speed
       --direction one of up|down   Specifies whether to run in reverse mode where the client
-                                  receives and the server sends. (default down)
-  -t, --time duration             Specifies the duration to monitor traffic. (default 5s)
+                                  receives and the server sends (default down)
+  -t, --time duration             Specifies the duration to monitor traffic (default 5s)

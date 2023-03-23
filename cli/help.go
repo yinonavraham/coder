@@ -90,8 +90,28 @@ var usageTemplate = template.Must(
 					}
 				}
 				initial := len("      --" + option.Flag + "" + optType(option.Value.Type()) + "")
-
 				spacing := strings.Repeat(" ", maxLen)
+
+				body = strings.TrimRight(body, ".")
+				if option.Env != "" {
+					body += "\nConsumes $" + option.Env
+				}
+				if option.Default != "" {
+					body += " (default "
+					if option.Value.Type() == "stringArray" {
+						body += "["
+					} else if option.Value.Type() == "string" {
+						body += "\""
+					}
+					body += option.Default
+					if option.Value.Type() == "stringArray" {
+						body += "]"
+					} else if option.Value.Type() == "string" {
+						body += "\""
+					}
+					body += ")"
+				}
+
 				body = wordwrap.WrapString(body, uint(twidth-len(spacing)+14))
 				spacing = strings.Repeat(" ", maxLen-initial)
 
@@ -109,17 +129,27 @@ var usageTemplate = template.Must(
 					_, _ = sb.WriteString(line)
 					spacing = strings.Repeat(" ", maxLen)
 				}
-				if option.Env != "" {
-					_, _ = sb.WriteString("\n")
-					_, _ = sb.WriteString(spacing)
-					_, _ = sb.WriteString("Consumes $")
-					_, _ = sb.WriteString(option.Env)
-				}
-				if option.Default != "" {
-					_, _ = sb.WriteString(" (default ")
-					_, _ = sb.WriteString(option.Default)
-					_, _ = sb.WriteString(")")
-				}
+				// if option.Env != "" {
+				// 	_, _ = sb.WriteString("\n")
+				// 	_, _ = sb.WriteString(spacing)
+				// 	_, _ = sb.WriteString("Consumes $")
+				// 	_, _ = sb.WriteString(option.Env)
+				// }
+				// if option.Default != "" {
+				// 	_, _ = sb.WriteString(" (default ")
+				// 	if option.Value.Type() == "strings" {
+				// 		_, _ = sb.WriteString("[")
+				// 	} else {
+				// 		_, _ = sb.WriteString("\"")
+				// 	}
+				// 	_, _ = sb.WriteString(option.Default)
+				// 	if option.Value.Type() == "strings" {
+				// 		_, _ = sb.WriteString("]")
+				// 	} else {
+				// 		_, _ = sb.WriteString("\"")
+				// 	}
+				// 	_, _ = sb.WriteString(")")
+				// }
 				return sb.String()
 			},
 			"formatSubcommand": func(cmd *clibase.Cmd) string {
@@ -136,7 +166,7 @@ var usageTemplate = template.Must(
 				var sb strings.Builder
 				_, _ = fmt.Fprintf(
 					&sb, "%s%s%s",
-					strings.Repeat(" ", 4), cmd.Name(), strings.Repeat(" ", maxNameLength-len(cmd.Name())+4),
+					strings.Repeat(" ", 2), cmd.Name(), strings.Repeat(" ", maxNameLength-len(cmd.Name())+4),
 				)
 
 				// This is the point at which indentation begins if there's a
