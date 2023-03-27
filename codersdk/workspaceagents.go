@@ -19,6 +19,7 @@ import (
 	"tailscale.com/tailcfg"
 
 	"cdr.dev/slog"
+	"github.com/coder/coder/coderd/logstream"
 	"github.com/coder/coder/tailnet"
 	"github.com/coder/retry"
 )
@@ -356,32 +357,7 @@ func (c *Client) WorkspaceAgentStartupLogsAfter(ctx context.Context, agentID uui
 		}
 		return nil, nil, ReadBodyAsError(res)
 	}
-	logChunks := make(chan []WorkspaceAgentStartupLog)
-	closed := make(chan struct{})
-	ctx, wsNetConn := websocketNetConn(ctx, conn, websocket.MessageText)
-	decoder := json.NewDecoder(wsNetConn)
-	go func() {
-		defer close(closed)
-		defer close(logChunks)
-		defer conn.Close(websocket.StatusGoingAway, "")
-		var logs []WorkspaceAgentStartupLog
-		for {
-			err = decoder.Decode(&logs)
-			if err != nil {
-				return
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case logChunks <- logs:
-			}
-		}
-	}()
-	return logChunks, closeFunc(func() error {
-		_ = wsNetConn.Close()
-		<-closed
-		return nil
-	}), nil
+	return logstream.Client[WorkspaceAgentStartupLog](ctx, conn)
 }
 
 // GitProvider is a constant that represents the
