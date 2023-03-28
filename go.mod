@@ -74,6 +74,7 @@ require (
 	github.com/cli/safeexec v1.0.0
 	github.com/codeclysm/extract v2.2.0+incompatible
 	github.com/coder/flog v1.1.0
+	github.com/coder/gake v0.0.0-00010101000000-000000000000
 	github.com/coder/retry v1.3.1-0.20230210155434-e90a2e1e091d
 	github.com/coder/terraform-provider-coder v0.6.21
 	github.com/coder/wgtunnel v0.1.5
@@ -178,6 +179,8 @@ require (
 
 require (
 	cloud.google.com/go/logging v1.6.1 // indirect
+	github.com/ammario/tlru v0.3.0 // indirect
+	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/dgraph-io/badger/v3 v3.2103.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/golang/glog v1.0.0 // indirect
