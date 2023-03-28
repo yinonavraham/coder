@@ -8,6 +8,8 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"cdr.dev/slog"
+
 	"github.com/coder/coder/coderd/httpapi"
 	"github.com/coder/coder/codersdk"
 	"github.com/coder/coder/cryptorand"
@@ -40,7 +42,7 @@ func OAuth2(r *http.Request) OAuth2State {
 // ExtractOAuth2 is a middleware for automatically redirecting to OAuth
 // URLs, and handling the exchange inbound. Any route that does not have
 // a "code" URL parameter will be redirected.
-func ExtractOAuth2(config OAuth2Config, client *http.Client) func(http.Handler) http.Handler {
+func ExtractOAuth2(log slog.Logger, config OAuth2Config, client *http.Client) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -109,7 +111,15 @@ func ExtractOAuth2(config OAuth2Config, client *http.Client) func(http.Handler) 
 					SameSite: http.SameSiteLaxMode,
 				})
 
-				http.Redirect(rw, r, config.AuthCodeURL(state, oauth2.AccessTypeOffline), http.StatusTemporaryRedirect)
+				opts := []oauth2.AuthCodeOption{
+					oauth2.AccessTypeOffline,
+					// TODO: plumb through auth code options in deployment config.
+					oauth2.SetAuthURLParam("resource", "urn:microsoft:userinfo"),
+				}
+
+				authURL := config.AuthCodeURL(state, opts...)
+				log.Debug(ctx, "redirecting to oauth2 auth url", slog.F("url", authURL))
+				http.Redirect(rw, r, authURL, http.StatusTemporaryRedirect)
 				return
 			}
 

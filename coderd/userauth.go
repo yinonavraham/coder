@@ -545,6 +545,12 @@ func (api *API) userOIDC(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: add a CLI flag to toggle this
+	api.Logger.Debug(ctx, "OIDC claims from ID token", slog.F("claims", claims))
+	// If the issuer ends with /adfs then we need to do something extra to fetch
+	// claims from the userinfo endpoint.
+	// isADFS := strings.HasSuffix(api.OIDCConfig.Provider.Endpoint().AuthURL, "/adfs")
+
 	// Not all claims are necessarily embedded in the `id_token`.
 	// In GitLab, the username is left empty and must be fetched in UserInfo.
 	//
@@ -593,7 +599,9 @@ func (api *API) userOIDC(rw http.ResponseWriter, r *http.Request) {
 		username, _ = usernameRaw.(string)
 	}
 
-	emailRaw, ok := claims["email"]
+	// Wire through api.OIDCConfig.EmailField
+	// emailRaw, ok := claims["email"]
+	emailRaw, ok := claims["upn"]
 	if !ok {
 		// Email is an optional claim in OIDC and
 		// instead the email is frequently sent in

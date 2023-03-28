@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 
+	"cdr.dev/slog/sloggers/slogtest"
+
 	"github.com/coder/coder/coderd/httpmw"
 	"github.com/coder/coder/codersdk"
 )
@@ -36,16 +38,18 @@ func TestOAuth2(t *testing.T) {
 	t.Parallel()
 	t.Run("NotSetup", func(t *testing.T) {
 		t.Parallel()
+		log := slogtest.Make(t, &slogtest.Options{IgnoreErrors: true})
 		req := httptest.NewRequest("GET", "/", nil)
 		res := httptest.NewRecorder()
-		httpmw.ExtractOAuth2(nil, nil)(nil).ServeHTTP(res, req)
+		httpmw.ExtractOAuth2(log, nil, nil)(nil).ServeHTTP(res, req)
 		require.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
 	})
 	t.Run("RedirectWithoutCode", func(t *testing.T) {
 		t.Parallel()
+		log := slogtest.Make(t, &slogtest.Options{IgnoreErrors: true})
 		req := httptest.NewRequest("GET", "/?redirect="+url.QueryEscape("/dashboard"), nil)
 		res := httptest.NewRecorder()
-		httpmw.ExtractOAuth2(&testOAuth2Provider{}, nil)(nil).ServeHTTP(res, req)
+		httpmw.ExtractOAuth2(log, &testOAuth2Provider{}, nil)(nil).ServeHTTP(res, req)
 		location := res.Header().Get("Location")
 		if !assert.NotEmpty(t, location) {
 			return
@@ -56,31 +60,35 @@ func TestOAuth2(t *testing.T) {
 	})
 	t.Run("NoState", func(t *testing.T) {
 		t.Parallel()
+		log := slogtest.Make(t, &slogtest.Options{IgnoreErrors: true})
 		req := httptest.NewRequest("GET", "/?code=something", nil)
 		res := httptest.NewRecorder()
-		httpmw.ExtractOAuth2(&testOAuth2Provider{}, nil)(nil).ServeHTTP(res, req)
+		httpmw.ExtractOAuth2(log, &testOAuth2Provider{}, nil)(nil).ServeHTTP(res, req)
 		require.Equal(t, http.StatusBadRequest, res.Result().StatusCode)
 	})
 	t.Run("NoStateCookie", func(t *testing.T) {
 		t.Parallel()
+		log := slogtest.Make(t, &slogtest.Options{IgnoreErrors: true})
 		req := httptest.NewRequest("GET", "/?code=something&state=test", nil)
 		res := httptest.NewRecorder()
-		httpmw.ExtractOAuth2(&testOAuth2Provider{}, nil)(nil).ServeHTTP(res, req)
+		httpmw.ExtractOAuth2(log, &testOAuth2Provider{}, nil)(nil).ServeHTTP(res, req)
 		require.Equal(t, http.StatusUnauthorized, res.Result().StatusCode)
 	})
 	t.Run("MismatchedState", func(t *testing.T) {
 		t.Parallel()
+		log := slogtest.Make(t, &slogtest.Options{IgnoreErrors: true})
 		req := httptest.NewRequest("GET", "/?code=something&state=test", nil)
 		req.AddCookie(&http.Cookie{
 			Name:  codersdk.OAuth2StateCookie,
 			Value: "mismatch",
 		})
 		res := httptest.NewRecorder()
-		httpmw.ExtractOAuth2(&testOAuth2Provider{}, nil)(nil).ServeHTTP(res, req)
+		httpmw.ExtractOAuth2(log, &testOAuth2Provider{}, nil)(nil).ServeHTTP(res, req)
 		require.Equal(t, http.StatusUnauthorized, res.Result().StatusCode)
 	})
 	t.Run("ExchangeCodeAndState", func(t *testing.T) {
 		t.Parallel()
+		log := slogtest.Make(t, &slogtest.Options{IgnoreErrors: true})
 		req := httptest.NewRequest("GET", "/?code=test&state=something", nil)
 		req.AddCookie(&http.Cookie{
 			Name:  codersdk.OAuth2StateCookie,
@@ -91,7 +99,7 @@ func TestOAuth2(t *testing.T) {
 			Value: "/dashboard",
 		})
 		res := httptest.NewRecorder()
-		httpmw.ExtractOAuth2(&testOAuth2Provider{}, nil)(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		httpmw.ExtractOAuth2(log, &testOAuth2Provider{}, nil)(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			state := httpmw.OAuth2(r)
 			require.Equal(t, "/dashboard", state.Redirect)
 		})).ServeHTTP(res, req)

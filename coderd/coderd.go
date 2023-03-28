@@ -387,7 +387,7 @@ func New(options *Options) *API {
 		for _, gitAuthConfig := range options.GitAuthConfigs {
 			r.Route(fmt.Sprintf("/%s", gitAuthConfig.ID), func(r chi.Router) {
 				r.Use(
-					httpmw.ExtractOAuth2(gitAuthConfig, options.HTTPClient),
+					httpmw.ExtractOAuth2(options.Logger.Named("httpmw-gitauth"), gitAuthConfig, options.HTTPClient),
 					apiKeyMiddleware,
 				)
 				r.Get("/callback", api.gitAuthCallback(gitAuthConfig))
@@ -531,12 +531,12 @@ func New(options *Options) *API {
 				r.Post("/login", api.postLogin)
 				r.Route("/oauth2", func(r chi.Router) {
 					r.Route("/github", func(r chi.Router) {
-						r.Use(httpmw.ExtractOAuth2(options.GithubOAuth2Config, options.HTTPClient))
+						r.Use(httpmw.ExtractOAuth2(options.Logger.Named("httpmw-oauth2-github"), options.GithubOAuth2Config, options.HTTPClient))
 						r.Get("/callback", api.userOAuth2Github)
 					})
 				})
 				r.Route("/oidc/callback", func(r chi.Router) {
-					r.Use(httpmw.ExtractOAuth2(options.OIDCConfig, options.HTTPClient))
+					r.Use(httpmw.ExtractOAuth2(options.Logger.Named("httpmw-oidc"), options.OIDCConfig, options.HTTPClient))
 					r.Get("/", api.userOIDC)
 				})
 			})
