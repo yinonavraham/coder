@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"golang.org/x/xerrors"
 )
@@ -17,6 +18,9 @@ type AccessURLReport struct {
 }
 
 func (r *AccessURLReport) Run(ctx context.Context, accessURL *url.URL) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	accessURL, err := accessURL.Parse("/healthz")
 	if err != nil {
 		r.Err = xerrors.Errorf("parse healthz endpoint: %w", err)
