@@ -121,6 +121,28 @@ func TestRead(t *testing.T) {
 		require.Equal(t, "value", v.Validations[0].Field)
 		require.Equal(t, "Validation failed for tag \"required\" with value: \"\"", v.Validations[0].Detail)
 	})
+
+	t.Run("CustomValidateFailure", func(t *testing.T) {
+		t.Parallel()
+		type toValidate struct {
+			Value []string `json:"value" validate:"dive,username"`
+		}
+		ctx := context.Background()
+		rw := httptest.NewRecorder()
+		r := httptest.NewRequest("POST", "/", bytes.NewBufferString("{}"))
+
+		validate := toValidate{
+			Value: []string{"+", "random_valid", "n"},
+		}
+		require.False(t, httpapi.Read(ctx, rw, r, &validate))
+		var v codersdk.Response
+		err := json.NewDecoder(rw.Body).Decode(&v)
+		require.NoError(t, err)
+		require.Len(t, v.Validations, 1)
+		require.Equal(t, "value", v.Validations[0].Field)
+		fmt.Println(v.Validations[0].Detail)
+		require.Equal(t, "Validation failed for tag \"username\" with value: \"\"", v.Validations[0].Detail)
+	})
 }
 
 func TestWebsocketCloseMsg(t *testing.T) {

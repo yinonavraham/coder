@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coder/coder/coderd/httpapi/validate"
+
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/xerrors"
 
@@ -19,14 +21,15 @@ import (
 	"github.com/coder/coder/codersdk"
 )
 
-var Validate *validator.Validate
+var Validate *validate.Validator
 
 // This init is used to create a validator and register validation-specific
 // functionality for the HTTP API.
 //
 // A single validator instance is used, because it caches struct parsing.
 func init() {
-	Validate = validator.New()
+	Validate = validate.New()
+
 	Validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
@@ -35,14 +38,13 @@ func init() {
 		return name
 	})
 
-	nameValidator := func(fl validator.FieldLevel) bool {
+	nameValidator := func(fl validator.FieldLevel) error {
 		f := fl.Field().Interface()
 		str, ok := f.(string)
 		if !ok {
-			return false
+			return xerrors.New("name must be a string")
 		}
-		valid := NameValid(str)
-		return valid == nil
+		return NameValid(str)
 	}
 	for _, tag := range []string{"username", "template_name", "workspace_name"} {
 		err := Validate.RegisterValidation(tag, nameValidator)
@@ -51,28 +53,26 @@ func init() {
 		}
 	}
 
-	templateDisplayNameValidator := func(fl validator.FieldLevel) bool {
+	templateDisplayNameValidator := func(fl validator.FieldLevel) error {
 		f := fl.Field().Interface()
 		str, ok := f.(string)
 		if !ok {
-			return false
+			return xerrors.New("template_display_name must be a string")
 		}
-		valid := TemplateDisplayNameValid(str)
-		return valid == nil
+		return TemplateDisplayNameValid(str)
 	}
 	err := Validate.RegisterValidation("template_display_name", templateDisplayNameValidator)
 	if err != nil {
 		panic(err)
 	}
 
-	templateVersionNameValidator := func(fl validator.FieldLevel) bool {
+	templateVersionNameValidator := func(fl validator.FieldLevel) error {
 		f := fl.Field().Interface()
 		str, ok := f.(string)
 		if !ok {
-			return false
+			return xerrors.New("template_version_name must be a string")
 		}
-		valid := TemplateVersionNameValid(str)
-		return valid == nil
+		return TemplateVersionNameValid(str)
 	}
 	err = Validate.RegisterValidation("template_version_name", templateVersionNameValidator)
 	if err != nil {
@@ -168,9 +168,15 @@ func Read(ctx context.Context, rw http.ResponseWriter, r *http.Request, value in
 	if errors.As(err, &validationErrors) {
 		apiErrors := make([]codersdk.ValidationError, 0, len(validationErrors))
 		for _, validationError := range validationErrors {
+			detail := fmt.Sprintf("Validation failed for tag %q with value: \"%v\"", validationError.Tag(), validationError.Value())
+			var custom validate.DetailedFieldError
+			if xerrors.As(validationError, &custom) {
+				detail = fmt.Sprintf("Validation failed for tag %q=\"%v\": %s", validationError.Tag(), validationError.Value(), custom.Error())
+			}
+
 			apiErrors = append(apiErrors, codersdk.ValidationError{
 				Field:  validationError.Field(),
-				Detail: fmt.Sprintf("Validation failed for tag %q with value: \"%v\"", validationError.Tag(), validationError.Value()),
+				Detail: detail,
 			})
 		}
 		Write(ctx, rw, http.StatusBadRequest, codersdk.Response{
