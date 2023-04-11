@@ -22,6 +22,7 @@ import (
 	"github.com/coder/coder/cli/clitest"
 	"github.com/coder/coder/cli/config"
 	"github.com/coder/coder/coderd/coderdtest"
+	"github.com/coder/coder/coderd/database/dbauthz"
 	"github.com/coder/coder/coderd/database/dbtestutil"
 	"github.com/coder/coder/codersdk"
 	"github.com/coder/coder/testutil"
@@ -180,7 +181,7 @@ func prepareTestData(t *testing.T) (*codersdk.Client, map[string]string) {
 
 	db, pubsub := dbtestutil.NewDB(t)
 	rootClient := coderdtest.New(t, &coderdtest.Options{
-		Database:                 db,
+		Database:                 dbauthz.NewNoop(db),
 		Pubsub:                   pubsub,
 		IncludeProvisionerDaemon: true,
 	})

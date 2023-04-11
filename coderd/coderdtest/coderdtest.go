@@ -128,7 +128,7 @@ type Options struct {
 	// Overriding the database is heavily discouraged.
 	// It should only be used in cases where multiple Coder
 	// test instances are running against the same database.
-	Database database.Store
+	Database dbauthz.Store
 	Pubsub   database.Pubsub
 
 	ConfigSSH codersdk.SSHConfigResponse
@@ -196,8 +196,9 @@ func NewOptions(t *testing.T, options *Options) (func(http.Handler), context.Can
 	}
 
 	if options.Database == nil {
-		options.Database, options.Pubsub = dbtestutil.NewDB(t)
-		options.Database = dbauthz.New(options.Database, options.Authorizer, slogtest.Make(t, nil).Leveled(slog.LevelDebug))
+		db, ps := dbtestutil.NewDB(t)
+		options.Database = dbauthz.New(db, options.Authorizer, slogtest.Make(t, nil).Leveled(slog.LevelDebug))
+		options.Pubsub = ps
 	}
 
 	if options.DeploymentValues == nil {

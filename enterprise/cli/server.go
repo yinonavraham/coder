@@ -14,6 +14,7 @@ import (
 	"tailscale.com/types/key"
 
 	"github.com/coder/coder/cli/clibase"
+	"github.com/coder/coder/coderd/database/dbauthz"
 	"github.com/coder/coder/cryptorand"
 	"github.com/coder/coder/enterprise/audit"
 	"github.com/coder/coder/enterprise/audit/backends"
@@ -34,7 +35,8 @@ func (r *RootCmd) server() *clibase.Cmd {
 		}
 
 		options.DERPServer = derp.NewServer(key.NewNode(), tailnet.Logger(options.Logger.Named("derp")))
-		meshKey, err := options.Database.GetDERPMeshKey(ctx)
+		//nolint:gocritic
+		meshKey, err := options.Database.GetDERPMeshKey(dbauthz.AsSystemRestricted(ctx))
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				return nil, nil, xerrors.Errorf("get mesh key: %w", err)
@@ -43,7 +45,8 @@ func (r *RootCmd) server() *clibase.Cmd {
 			if err != nil {
 				return nil, nil, xerrors.Errorf("generate mesh key: %w", err)
 			}
-			err = options.Database.InsertDERPMeshKey(ctx, meshKey)
+			//nolint:gocritic
+			err = options.Database.InsertDERPMeshKey(dbauthz.AsSystemRestricted(ctx), meshKey)
 			if err != nil {
 				return nil, nil, xerrors.Errorf("insert mesh key: %w", err)
 			}

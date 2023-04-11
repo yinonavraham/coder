@@ -91,7 +91,7 @@ type Options struct {
 	// options.AppHostname is set.
 	AppHostnameRegex *regexp.Regexp
 	Logger           slog.Logger
-	Database         database.Store
+	Database         dbauthz.Store
 	Pubsub           database.Pubsub
 
 	// CacheDir is used for caching files served by the API.
@@ -177,6 +177,9 @@ func New(options *Options) *API {
 		})
 	}
 
+	if options.PrometheusRegistry == nil {
+		options.PrometheusRegistry = prometheus.NewRegistry()
+	}
 	if options.Authorizer == nil {
 		options.Authorizer = rbac.NewCachingAuthorizer(options.PrometheusRegistry)
 	}
@@ -216,9 +219,6 @@ func New(options *Options) *API {
 	}
 	if options.FilesRateLimit == 0 {
 		options.FilesRateLimit = 12
-	}
-	if options.PrometheusRegistry == nil {
-		options.PrometheusRegistry = prometheus.NewRegistry()
 	}
 	if options.TailnetCoordinator == nil {
 		options.TailnetCoordinator = tailnet.NewCoordinator()
@@ -891,7 +891,7 @@ func (api *API) CreateInMemoryProvisionerDaemon(ctx context.Context, debounce ti
 		AccessURL:             api.AccessURL,
 		ID:                    daemon.ID,
 		OIDCConfig:            api.OIDCConfig,
-		Database:              api.Database,
+		Database:              api.Database.Unwrap(),
 		Pubsub:                api.Pubsub,
 		Provisioners:          daemon.Provisioners,
 		GitAuthConfigs:        api.GitAuthConfigs,

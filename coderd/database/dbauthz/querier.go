@@ -15,6 +15,10 @@ import (
 	"github.com/coder/coder/coderd/util/slice"
 )
 
+func (q *querier) Unwrap() database.Store {
+	return q.db
+}
+
 func (q *querier) Ping(ctx context.Context) (time.Duration, error) {
 	return q.db.Ping(ctx)
 }

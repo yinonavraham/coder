@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/coder/coder/coderd/database"
+	"github.com/coder/coder/coderd/database/dbauthz"
 	"github.com/coder/coder/coderd/database/dbfake"
 	"github.com/coder/coder/coderd/database/postgres"
 )
 
-func NewDB(t *testing.T) (database.Store, database.Pubsub) {
+func NewDB(t *testing.T) (dbauthz.Store, database.Pubsub) {
 	t.Helper()
 
 	db := dbfake.New()
@@ -43,5 +44,5 @@ func NewDB(t *testing.T) (database.Store, database.Pubsub) {
 		})
 	}
 
-	return db, pubsub
+	return dbauthz.NewNoop(db), pubsub
 }

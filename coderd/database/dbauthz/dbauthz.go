@@ -15,6 +15,12 @@ import (
 	"github.com/coder/coder/coderd/rbac"
 )
 
+type Store interface {
+	database.Store
+
+	Unwrap() database.Store
+}
+
 var _ database.Store = (*querier)(nil)
 
 // NoActorError wraps ErrNoRows for the api to return a 404. This is the correct
@@ -86,12 +92,13 @@ type querier struct {
 	log  slog.Logger
 }
 
-func New(db database.Store, authorizer rbac.Authorizer, logger slog.Logger) database.Store {
+func New(db database.Store, authorizer rbac.Authorizer, logger slog.Logger) Store {
 	// If the underlying db store is already a querier, return it.
 	// Do not double wrap.
-	if _, ok := db.(*querier); ok {
-		return db
+	if store, ok := db.(Store); ok {
+		db = store.Unwrap()
 	}
+
 	return &querier{
 		db:   db,
 		auth: authorizer,

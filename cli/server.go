@@ -64,6 +64,7 @@ import (
 	"github.com/coder/coder/coderd"
 	"github.com/coder/coder/coderd/autobuild/executor"
 	"github.com/coder/coder/coderd/database"
+	"github.com/coder/coder/coderd/database/dbauthz"
 	"github.com/coder/coder/coderd/database/dbfake"
 	"github.com/coder/coder/coderd/database/dbpurge"
 	"github.com/coder/coder/coderd/database/migrations"
@@ -73,6 +74,7 @@ import (
 	"github.com/coder/coder/coderd/httpapi"
 	"github.com/coder/coder/coderd/httpmw"
 	"github.com/coder/coder/coderd/prometheusmetrics"
+	"github.com/coder/coder/coderd/rbac"
 	"github.com/coder/coder/coderd/schedule"
 	"github.com/coder/coder/coderd/telemetry"
 	"github.com/coder/coder/coderd/tracing"
@@ -442,7 +444,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				AppHostname:                 appHostname,
 				AppHostnameRegex:            appHostnameRegex,
 				Logger:                      logger.Named("coderd"),
-				Database:                    dbfake.New(),
+				Database:                    dbauthz.NewNoop(dbfake.New()),
 				DERPMap:                     derpMap,
 				Pubsub:                      database.NewPubsubInMemory(),
 				CacheDir:                    cacheDir,
@@ -567,8 +569,10 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				}
 			}
 
+			options.Authorizer = rbac.NewCachingAuthorizer(options.PrometheusRegistry)
+
 			if cfg.InMemoryDatabase {
-				options.Database = dbfake.New()
+				options.Database = dbauthz.NewNoop(dbfake.New())
 				options.Pubsub = database.NewPubsubInMemory()
 			} else {
 				sqlDB, err := connectToPostgres(ctx, logger, sqlDriver, cfg.PostgresURL.String())
@@ -579,7 +583,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 					_ = sqlDB.Close()
 				}()
 
-				options.Database = database.New(sqlDB)
+				options.Database = dbauthz.New(database.New(sqlDB), options.Authorizer, logger.Named("authz_querier"))
 				options.Pubsub, err = database.NewPubsub(ctx, sqlDB, cfg.PostgresURL.String())
 				if err != nil {
 					return xerrors.Errorf("create pubsub: %w", err)
@@ -663,7 +667,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				options.Telemetry, err = telemetry.New(telemetry.Options{
 					BuiltinPostgres:    builtinPostgres,
 					DeploymentID:       deploymentID,
-					Database:           options.Database,
+					Database:           options.Database.Unwrap(),
 					Logger:             logger.Named("telemetry"),
 					URL:                cfg.Telemetry.URL.Value(),
 					Wildcard:           cfg.WildcardAccessURL.String() != "",
@@ -772,8 +776,15 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			provisionerdMetrics := provisionerd.NewMetrics(options.PrometheusRegistry)
 			for i := int64(0); i < cfg.Provisioner.Daemons.Value(); i++ {
 				daemonCacheDir := filepath.Join(cacheDir, fmt.Sprintf("provisioner-%d", i))
-				daemon, err := newProvisionerDaemon(
-					ctx, coderAPI, provisionerdMetrics, logger, cfg, daemonCacheDir, errCh, false, &provisionerdWaitGroup,
+				daemon, err := newProvisionerDaemon(ctx,
+					coderAPI,
+					provisionerdMetrics,
+					logger,
+					cfg,
+					daemonCacheDir,
+					errCh,
+					false,
+					&provisionerdWaitGroup,
 				)
 				if err != nil {
 					return xerrors.Errorf("create provisioner daemon: %w", err)
