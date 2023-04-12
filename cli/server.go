@@ -196,30 +196,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				filesRateLimit = -1
 			}
 
-			//printLogo(inv)
-			//logger, logCloser, err := BuildLogger(inv, cfg)
-			//if err != nil {
-			//	return xerrors.Errorf("make logger: %w", err)
-			//}
-			//defer logCloser()
-
-			// This line is helpful in tests.
-			//logger.Debug(ctx, "started debug logging")
-			//logger.Sync()
-
-			// Register signals early on so that graceful shutdown can't
-			// be interrupted by additional signals. Note that we avoid
-			// shadowing cancel() (from above) here because notifyStop()
-			// restores default behavior for the signals. This protects
-			// the shutdown sequence from abruptly terminating things
-			// like: database migrations, provisioner work, workspace
-			// cleanup in dev-mode, etc.
-			//
-			// To get out of a graceful shutdown, the user can send
-			// SIGQUIT with ctrl+\ or SIGKILL with `kill -9`.
-			//notifyCtx, notifyStop := signal.NotifyContext(ctx, InterruptSignals...)
-			//defer notifyStop()
-
 			// Ensure we have a unique cache directory for this process.
 			cacheDir := filepath.Join(cfg.CacheDir.String(), uuid.NewString())
 			err = os.MkdirAll(cacheDir, 0o700)
@@ -227,13 +203,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				return xerrors.Errorf("create cache directory: %w", err)
 			}
 			defer os.RemoveAll(cacheDir)
-
-			// Clean up idle connections at the end, e.g.
-			// embedded-postgres can leave an idle connection
-			// which is caught by goleaks.
-			//defer http.DefaultClient.CloseIdleConnections()
-
-			//tracerProvider, sqlDriver := ConfigureTraceProvider(ctx, logger, inv, cfg)
 
 			config := r.createConfig()
 
@@ -262,28 +231,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 					}
 				}()
 			}
-
-			//httpServers, err := ConfigureHTTPServers(inv, cfg)
-			//if err != nil {
-			//	return xerrors.Errorf("configure http(s): %w", err)
-			//}
-			//defer httpServers.Close()
-
-			// Prefer HTTP because it's less prone to TLS errors over localhost.
-			//localURL := httpServers.TLSUrl
-			//if httpServers.HTTPUrl != nil {
-			//	localURL = httpServers.HTTPUrl
-			//}
-
-			//ctx, httpClient, err := configureHTTPClient(
-			//	ctx,
-			//	cfg.TLS.ClientCertFile.String(),
-			//	cfg.TLS.ClientKeyFile.String(),
-			//	cfg.TLS.ClientCAFile.String(),
-			//)
-			//if err != nil {
-			//	return xerrors.Errorf("configure http client: %w", err)
-			//}
 
 			//If the access URL is empty, we attempt to run a reverse-proxy
 			//tunnel to make the initial setup really simple.
@@ -324,23 +271,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				return xerrors.Errorf("parse access URL port: %w", err)
 			}
 
-			// Warn the user if the access URL appears to be a loopback address.
-			//isLocal, err := isLocalURL(ctx, cfg.AccessURL.Value())
-			//if isLocal || err != nil {
-			//	reason := "could not be resolved"
-			//	if isLocal {
-			//		reason = "isn't externally reachable"
-			//	}
-			//	cliui.Warnf(
-			//		inv.Stderr,
-			//		"The access URL %s %s, this may cause unexpected problems when creating workspaces. Generate a unique *.try.coder.app URL by not specifying an access URL.\n",
-			//		cliui.Styles.Field.Render(cfg.AccessURL.String()), reason,
-			//	)
-			//}
-			//
-			//// A newline is added before for visibility in terminal output.
-			//cliui.Infof(inv.Stdout, "\nView the Web UI: %s", cfg.AccessURL.String())
-
 			// Used for zero-trust instance identity with Google Cloud.
 			googleTokenValidator, err := idtoken.NewValidator(ctx, option.WithoutAuthentication())
 			if err != nil {
@@ -377,15 +307,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				return xerrors.Errorf("create derp map: %w", err)
 			}
 
-			//appHostname := cfg.WildcardAccessURL.String()
-			//var appHostnameRegex *regexp.Regexp
-			//if appHostname != "" {
-			//	appHostnameRegex, err = httpapi.CompileHostnamePattern(appHostname)
-			//	if err != nil {
-			//		return xerrors.Errorf("parse wildcard access URL %q: %w", appHostname, err)
-			//	}
-			//}
-
 			gitAuthEnv, err := ReadGitAuthProvidersFromEnv(os.Environ())
 			if err != nil {
 				return xerrors.Errorf("read git auth providers from env: %w", err)
@@ -405,11 +326,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 					slog.F("id", c.ID),
 				)
 			}
-
-			//realIPConfig, err := httpmw.ParseRealIPConfig(cfg.ProxyTrustedHeaders, cfg.ProxyTrustedOrigins)
-			//if err != nil {
-			//	return xerrors.Errorf("parse real ip config: %w", err)
-			//}
 
 			configSSHOptions, err := cfg.SSHConfig.ParseOptions()
 			if err != nil {
@@ -660,34 +576,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				}
 				defer options.Telemetry.Close()
 			}
-
-			//// This prevents the pprof import from being accidentally deleted.
-			//_ = pprof.Handler
-			//if cfg.Pprof.Enable {
-			//	//nolint:revive
-			//	defer serveHandler(ctx, logger, nil, cfg.Pprof.Address.String(), "pprof")()
-			//}
-			//if cfg.Prometheus.Enable {
-			//	options.PrometheusRegistry.MustRegister(collectors.NewGoCollector())
-			//	options.PrometheusRegistry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-			//
-			//	closeUsersFunc, err := prometheusmetrics.ActiveUsers(ctx, options.PrometheusRegistry, options.Database, 0)
-			//	if err != nil {
-			//		return xerrors.Errorf("register active users prometheus metric: %w", err)
-			//	}
-			//	defer closeUsersFunc()
-			//
-			//	closeWorkspacesFunc, err := prometheusmetrics.Workspaces(ctx, options.PrometheusRegistry, options.Database, 0)
-			//	if err != nil {
-			//		return xerrors.Errorf("register workspaces prometheus metric: %w", err)
-			//	}
-			//	defer closeWorkspacesFunc()
-			//
-			//	//nolint:revive
-			//	defer serveHandler(ctx, logger, promhttp.InstrumentMetricHandler(
-			//		options.PrometheusRegistry, promhttp.HandlerFor(options.PrometheusRegistry, promhttp.HandlerOpts{}),
-			//	), cfg.Prometheus.Address.String(), "prometheus")()
-			//}
 
 			if cfg.Swagger.Enable {
 				options.SwaggerEndpoint = cfg.Swagger.Enable.Value()
