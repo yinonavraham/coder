@@ -1,9 +1,19 @@
 package cli
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
+	"runtime/pprof"
+	"time"
+
+	"github.com/coreos/go-systemd/daemon"
+
+	"github.com/coder/coder/cli/cliui"
+	"golang.org/x/xerrors"
 
 	"github.com/coder/coder/cli"
 	"github.com/coder/coder/coderd/workspaceapps"
@@ -54,23 +64,30 @@ func (r *RootCmd) proxyServer() *clibase.Cmd {
 			if err != nil {
 				return err
 			}
+			defer scd.Close()
+			ctx := scd.Ctx
 
 			proxy, err := wsproxy.New(&wsproxy.Options{
-				Logger:             scd.Logger,
+				Logger: scd.Logger,
+				// TODO: PrimaryAccessURL
 				PrimaryAccessURL:   nil,
-				AccessURL:          nil,
+				AccessURL:          cfg.AccessURL.Value(),
 				AppHostname:        scd.AppHostname,
 				AppHostnameRegex:   scd.AppHostnameRegex,
 				RealIPConfig:       scd.RealIPConfig,
 				AppSecurityKey:     workspaceapps.SecurityKey{},
 				Tracing:            scd.Tracer,
-				PrometheusRegistry: nil,
-				APIRateLimit:       0,
-				SecureAuthCookie:   false,
-				DisablePathApps:    false,
-				ProxySessionToken:  "",
+				PrometheusRegistry: scd.PrometheusRegistry,
+				APIRateLimit:       int(cfg.RateLimit.API.Value()),
+				SecureAuthCookie:   cfg.SecureAuthCookie.Value(),
+				// TODO: DisablePathApps
+				DisablePathApps: false,
+				// TODO: ProxySessionToken
+				ProxySessionToken: "",
 			})
 
+			shutdownConnsCtx, shutdownConns := context.WithCancel(ctx)
+			defer shutdownConns()
 			// ReadHeaderTimeout is purposefully not enabled. It caused some
 			// issues with websockets over the dev tunnel.
 			// See: https://github.com/coder/coder/pull/3730
@@ -81,16 +98,90 @@ func (r *RootCmd) proxyServer() *clibase.Cmd {
 				// https://github.com/hashicorp/vault/blob/e2490059d0711635e529a4efcbaa1b26998d6e1c/command/server.go#L2714
 				ErrorLog: log.New(io.Discard, "", 0),
 				Handler:  proxy.Handler,
-				//BaseContext: func(_ net.Listener) context.Context {
-				//	return shutdownConnsCtx
-				//},
+				BaseContext: func(_ net.Listener) context.Context {
+					return shutdownConnsCtx
+				},
 			}
-			//defer func() {
-			//	_ = shutdownWithTimeout(httpServer.Shutdown, 5*time.Second)
-			//}()
+			defer func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				_ = httpServer.Shutdown(ctx)
+			}()
 
 			// TODO: So this obviously is not going to work well.
-			return scd.HTTPServers.Serve(httpServer)
+			errCh := make(chan error, 1)
+			pprof.Do(ctx, pprof.Labels("service", "workspace-proxy"), func(ctx context.Context) {
+				errCh <- scd.HTTPServers.Serve(httpServer)
+			})
+
+			cliui.Infof(inv.Stdout, "\n==> Logs will stream in below (press ctrl+c to gracefully exit):")
+
+			// Updates the systemd status from activating to activated.
+			_, err = daemon.SdNotify(false, daemon.SdNotifyReady)
+			if err != nil {
+				return xerrors.Errorf("notify systemd: %w", err)
+			}
+
+			// Currently there is no way to ask the server to shut
+			// itself down, so any exit signal will result in a non-zero
+			// exit of the server.
+			var exitErr error
+			select {
+			case exitErr = <-errCh:
+				fmt.Println("As")
+			case <-scd.NotifyCtx.Done():
+				exitErr = scd.NotifyCtx.Err()
+				_, _ = fmt.Fprintln(inv.Stdout, cliui.Styles.Bold.Render(
+					"Interrupt caught, gracefully exiting. Use ctrl+\\ to force quit",
+				))
+			}
+
+			if exitErr != nil && !xerrors.Is(exitErr, context.Canceled) {
+				cliui.Errorf(inv.Stderr, "Unexpected error, shutting down server: %s\n", exitErr)
+			}
+
+			// Begin clean shut down stage, we try to shut down services
+			// gracefully in an order that gives the best experience.
+			// This procedure should not differ greatly from the order
+			// of `defer`s in this function, but allows us to inform
+			// the user about what's going on and handle errors more
+			// explicitly.
+
+			_, err = daemon.SdNotify(false, daemon.SdNotifyStopping)
+			if err != nil {
+				cliui.Errorf(inv.Stderr, "Notify systemd failed: %s", err)
+			}
+
+			// Stop accepting new connections without interrupting
+			// in-flight requests, give in-flight requests 5 seconds to
+			// complete.
+			cliui.Info(inv.Stdout, "Shutting down API server..."+"\n")
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			err = httpServer.Shutdown(ctx)
+			if err != nil {
+				cliui.Errorf(inv.Stderr, "API server shutdown took longer than 3s: %s\n", err)
+			} else {
+				cliui.Info(inv.Stdout, "Gracefully shut down API server\n")
+			}
+			// Cancel any remaining in-flight requests.
+			shutdownConns()
+
+			// Trigger context cancellation for any remaining services.
+			scd.Close()
+
+			switch {
+			case xerrors.Is(exitErr, context.DeadlineExceeded):
+				cliui.Warnf(inv.Stderr, "Graceful shutdown timed out")
+				// Errors here cause a significant number of benign CI failures.
+				return nil
+			case xerrors.Is(exitErr, context.Canceled):
+				return nil
+			case exitErr != nil:
+				return xerrors.Errorf("graceful shutdown: %w", exitErr)
+			default:
+				return nil
+			}
 		},
 	}
 

@@ -33,14 +33,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/coreos/go-systemd/daemon"
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/google/go-github/v43/github"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/afero"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/mod/semver"
@@ -660,33 +661,33 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				defer options.Telemetry.Close()
 			}
 
-			// This prevents the pprof import from being accidentally deleted.
-			_ = pprof.Handler
-			if cfg.Pprof.Enable {
-				//nolint:revive
-				defer serveHandler(ctx, logger, nil, cfg.Pprof.Address.String(), "pprof")()
-			}
-			if cfg.Prometheus.Enable {
-				options.PrometheusRegistry.MustRegister(collectors.NewGoCollector())
-				options.PrometheusRegistry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-
-				closeUsersFunc, err := prometheusmetrics.ActiveUsers(ctx, options.PrometheusRegistry, options.Database, 0)
-				if err != nil {
-					return xerrors.Errorf("register active users prometheus metric: %w", err)
-				}
-				defer closeUsersFunc()
-
-				closeWorkspacesFunc, err := prometheusmetrics.Workspaces(ctx, options.PrometheusRegistry, options.Database, 0)
-				if err != nil {
-					return xerrors.Errorf("register workspaces prometheus metric: %w", err)
-				}
-				defer closeWorkspacesFunc()
-
-				//nolint:revive
-				defer serveHandler(ctx, logger, promhttp.InstrumentMetricHandler(
-					options.PrometheusRegistry, promhttp.HandlerFor(options.PrometheusRegistry, promhttp.HandlerOpts{}),
-				), cfg.Prometheus.Address.String(), "prometheus")()
-			}
+			//// This prevents the pprof import from being accidentally deleted.
+			//_ = pprof.Handler
+			//if cfg.Pprof.Enable {
+			//	//nolint:revive
+			//	defer serveHandler(ctx, logger, nil, cfg.Pprof.Address.String(), "pprof")()
+			//}
+			//if cfg.Prometheus.Enable {
+			//	options.PrometheusRegistry.MustRegister(collectors.NewGoCollector())
+			//	options.PrometheusRegistry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+			//
+			//	closeUsersFunc, err := prometheusmetrics.ActiveUsers(ctx, options.PrometheusRegistry, options.Database, 0)
+			//	if err != nil {
+			//		return xerrors.Errorf("register active users prometheus metric: %w", err)
+			//	}
+			//	defer closeUsersFunc()
+			//
+			//	closeWorkspacesFunc, err := prometheusmetrics.Workspaces(ctx, options.PrometheusRegistry, options.Database, 0)
+			//	if err != nil {
+			//		return xerrors.Errorf("register workspaces prometheus metric: %w", err)
+			//	}
+			//	defer closeWorkspacesFunc()
+			//
+			//	//nolint:revive
+			//	defer serveHandler(ctx, logger, promhttp.InstrumentMetricHandler(
+			//		options.PrometheusRegistry, promhttp.HandlerFor(options.PrometheusRegistry, promhttp.HandlerOpts{}),
+			//	), cfg.Prometheus.Address.String(), "prometheus")()
+			//}
 
 			if cfg.Swagger.Enable {
 				options.SwaggerEndpoint = cfg.Swagger.Enable.Value()
@@ -701,6 +702,18 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			}
 
 			if cfg.Prometheus.Enable {
+				closeUsersFunc, err := prometheusmetrics.ActiveUsers(ctx, options.PrometheusRegistry, options.Database, 0)
+				if err != nil {
+					return xerrors.Errorf("register active users prometheus metric: %w", err)
+				}
+				defer closeUsersFunc()
+
+				closeWorkspacesFunc, err := prometheusmetrics.Workspaces(ctx, options.PrometheusRegistry, options.Database, 0)
+				if err != nil {
+					return xerrors.Errorf("register workspaces prometheus metric: %w", err)
+				}
+				defer closeWorkspacesFunc()
+
 				// Agent metrics require reference to the tailnet coordinator, so must be initiated after Coder API.
 				closeAgentsFunc, err := prometheusmetrics.Agents(ctx, logger, options.PrometheusRegistry, coderAPI.Database, &coderAPI.TailnetCoordinator, options.DERPMap, coderAPI.Options.AgentInactiveDisconnectTimeout, 0)
 				if err != nil {
@@ -720,7 +733,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 					},
 				}
 			}
-			defer client.HTTPClient.CloseIdleConnections()
 
 			// This is helpful for tests, but can be silently ignored.
 			// Coder may be ran as users that don't have permission to write in the homedir,
@@ -819,6 +831,11 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				}
 			}()
 
+			autobuildPoller := time.NewTicker(cfg.AutobuildPollInterval.Value())
+			defer autobuildPoller.Stop()
+			autobuildExecutor := executor.New(ctx, options.Database, coderAPI.TemplateScheduleStore, logger, autobuildPoller.C)
+			autobuildExecutor.Run()
+
 			cliui.Infof(inv.Stdout, "\n==> Logs will stream in below (press ctrl+c to gracefully exit):")
 
 			// Updates the systemd status from activating to activated.
@@ -826,11 +843,6 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			if err != nil {
 				return xerrors.Errorf("notify systemd: %w", err)
 			}
-
-			autobuildPoller := time.NewTicker(cfg.AutobuildPollInterval.Value())
-			defer autobuildPoller.Stop()
-			autobuildExecutor := executor.New(ctx, options.Database, coderAPI.TemplateScheduleStore, logger, autobuildPoller.C)
-			autobuildExecutor.Run()
 
 			// Currently there is no way to ask the server to shut
 			// itself down, so any exit signal will result in a non-zero
@@ -1214,9 +1226,10 @@ type CommonServerCmd struct {
 	HTTPServers *HTTPServers
 	HTTPClient  *http.Client
 	LocalURL    *url.URL
-	Logger      slog.Logger
 
-	Tracer trace.TracerProvider
+	Logger             slog.Logger
+	PrometheusRegistry *prometheus.Registry
+	Tracer             trace.TracerProvider
 	// SQLDriver is the driver that the tracer is active on.
 	SQLDriver string
 
@@ -1328,12 +1341,6 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 	// A newline is added before for visibility in terminal output.
 	cliui.Infof(inv.Stdout, "\nView the Web UI: %s", cfg.AccessURL.String())
 
-	// Used for zero-trust instance identity with Google Cloud.
-	googleTokenValidator, err := idtoken.NewValidator(ctx, option.WithoutAuthentication())
-	if err != nil {
-		return nil, err
-	}
-
 	c.AppHostname = cfg.WildcardAccessURL.String()
 	if c.AppHostname != "" {
 		c.AppHostnameRegex, err = httpapi.CompileHostnamePattern(c.AppHostname)
@@ -1345,6 +1352,29 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 	c.RealIPConfig, err = httpmw.ParseRealIPConfig(cfg.ProxyTrustedHeaders, cfg.ProxyTrustedOrigins)
 	if err != nil {
 		return nil, xerrors.Errorf("parse real ip config: %w", err)
+	}
+
+	if cfg.Pprof.Enable {
+		// This prevents the pprof import from being accidentally deleted.
+		// pprof has an init function that attaches itself to the default handler.
+		// By passing a nil handler to 'serverHandler', it will automatically use
+		// the default, which has pprof attached.
+		_ = pprof.Handler
+		//nolint:revive
+		closeFunc := serveHandler(ctx, logger, nil, cfg.Pprof.Address.String(), "pprof")
+		c.addClose(closeFunc)
+	}
+
+	c.PrometheusRegistry = prometheus.NewRegistry()
+	if cfg.Prometheus.Enable {
+		c.PrometheusRegistry.MustRegister(collectors.NewGoCollector())
+		c.PrometheusRegistry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+
+		//nolint:revive
+		closeFunc := serveHandler(ctx, logger, promhttp.InstrumentMetricHandler(
+			c.PrometheusRegistry, promhttp.HandlerFor(c.PrometheusRegistry, promhttp.HandlerOpts{}),
+		), cfg.Prometheus.Address.String(), "prometheus")
+		c.addClose(closeFunc)
 	}
 
 	return c, nil
