@@ -174,12 +174,16 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			clibase.RequireNArgs(0),
 		),
 		Handler: func(inv *clibase.Invocation) error {
-			// Main command context for managing cancellation of running
-			// services.
-			ctx, cancel := context.WithCancel(inv.Context())
-			defer cancel()
+			scd, err := SetupServerCmd(inv, cfg)
+			if err != nil {
+				return err
+			}
+			defer scd.Close()
+			ctx := scd.Ctx
 
-			go dumpHandler(ctx)
+			var (
+				logger = scd.Logger
+			)
 
 			// Disable rate limits if the `--dangerous-disable-rate-limits` flag
 			// was specified.
@@ -191,16 +195,16 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				filesRateLimit = -1
 			}
 
-			printLogo(inv)
-			logger, logCloser, err := buildLogger(inv, cfg)
-			if err != nil {
-				return xerrors.Errorf("make logger: %w", err)
-			}
-			defer logCloser()
+			//printLogo(inv)
+			//logger, logCloser, err := BuildLogger(inv, cfg)
+			//if err != nil {
+			//	return xerrors.Errorf("make logger: %w", err)
+			//}
+			//defer logCloser()
 
 			// This line is helpful in tests.
-			logger.Debug(ctx, "started debug logging")
-			logger.Sync()
+			//logger.Debug(ctx, "started debug logging")
+			//logger.Sync()
 
 			// Register signals early on so that graceful shutdown can't
 			// be interrupted by additional signals. Note that we avoid
@@ -212,8 +216,8 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			//
 			// To get out of a graceful shutdown, the user can send
 			// SIGQUIT with ctrl+\ or SIGKILL with `kill -9`.
-			notifyCtx, notifyStop := signal.NotifyContext(ctx, InterruptSignals...)
-			defer notifyStop()
+			//notifyCtx, notifyStop := signal.NotifyContext(ctx, InterruptSignals...)
+			//defer notifyStop()
 
 			// Ensure we have a unique cache directory for this process.
 			cacheDir := filepath.Join(cfg.CacheDir.String(), uuid.NewString())
@@ -226,9 +230,9 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			// Clean up idle connections at the end, e.g.
 			// embedded-postgres can leave an idle connection
 			// which is caught by goleaks.
-			defer http.DefaultClient.CloseIdleConnections()
+			//defer http.DefaultClient.CloseIdleConnections()
 
-			tracerProvider, sqlDriver := ConfigureTraceProvider(ctx, logger, inv, cfg)
+			//tracerProvider, sqlDriver := ConfigureTraceProvider(ctx, logger, inv, cfg)
 
 			config := r.createConfig()
 
@@ -270,71 +274,71 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				localURL = httpServers.HTTPUrl
 			}
 
-			ctx, httpClient, err := configureHTTPClient(
-				ctx,
-				cfg.TLS.ClientCertFile.String(),
-				cfg.TLS.ClientKeyFile.String(),
-				cfg.TLS.ClientCAFile.String(),
-			)
-			if err != nil {
-				return xerrors.Errorf("configure http client: %w", err)
-			}
+			//ctx, httpClient, err := configureHTTPClient(
+			//	ctx,
+			//	cfg.TLS.ClientCertFile.String(),
+			//	cfg.TLS.ClientKeyFile.String(),
+			//	cfg.TLS.ClientCAFile.String(),
+			//)
+			//if err != nil {
+			//	return xerrors.Errorf("configure http client: %w", err)
+			//}
 
 			// If the access URL is empty, we attempt to run a reverse-proxy
 			// tunnel to make the initial setup really simple.
-			var (
-				tunnel     *tunnelsdk.Tunnel
-				tunnelDone <-chan struct{} = make(chan struct{}, 1)
-			)
-			if cfg.AccessURL.String() == "" {
-				cliui.Infof(inv.Stderr, "Opening tunnel so workspaces can connect to your deployment. For production scenarios, specify an external access URL")
-				tunnel, err = devtunnel.New(ctx, logger.Named("devtunnel"), cfg.WgtunnelHost.String())
-				if err != nil {
-					return xerrors.Errorf("create tunnel: %w", err)
-				}
-				defer tunnel.Close()
-				tunnelDone = tunnel.Wait()
-				cfg.AccessURL = clibase.URL(*tunnel.URL)
+			//var (
+			//	tunnel     *tunnelsdk.Tunnel
+			//	tunnelDone <-chan struct{} = make(chan struct{}, 1)
+			//)
+			//if cfg.AccessURL.String() == "" {
+			//	cliui.Infof(inv.Stderr, "Opening tunnel so workspaces can connect to your deployment. For production scenarios, specify an external access URL")
+			//	tunnel, err = devtunnel.New(ctx, logger.Named("devtunnel"), cfg.WgtunnelHost.String())
+			//	if err != nil {
+			//		return xerrors.Errorf("create tunnel: %w", err)
+			//	}
+			//	defer tunnel.Close()
+			//	tunnelDone = tunnel.Wait()
+			//	cfg.AccessURL = clibase.URL(*tunnel.URL)
+			//
+			//	if cfg.WildcardAccessURL.String() == "" {
+			//		// Suffixed wildcard access URL.
+			//		u, err := url.Parse(fmt.Sprintf("*--%s", tunnel.URL.Hostname()))
+			//		if err != nil {
+			//			return xerrors.Errorf("parse wildcard url: %w", err)
+			//		}
+			//		cfg.WildcardAccessURL = clibase.URL(*u)
+			//	}
+			//}
 
-				if cfg.WildcardAccessURL.String() == "" {
-					// Suffixed wildcard access URL.
-					u, err := url.Parse(fmt.Sprintf("*--%s", tunnel.URL.Hostname()))
-					if err != nil {
-						return xerrors.Errorf("parse wildcard url: %w", err)
-					}
-					cfg.WildcardAccessURL = clibase.URL(*u)
-				}
-			}
-
-			_, accessURLPortRaw, _ := net.SplitHostPort(cfg.AccessURL.Host)
-			if accessURLPortRaw == "" {
-				accessURLPortRaw = "80"
-				if cfg.AccessURL.Scheme == "https" {
-					accessURLPortRaw = "443"
-				}
-			}
-
-			accessURLPort, err := strconv.Atoi(accessURLPortRaw)
-			if err != nil {
-				return xerrors.Errorf("parse access URL port: %w", err)
-			}
+			//_, accessURLPortRaw, _ := net.SplitHostPort(cfg.AccessURL.Host)
+			//if accessURLPortRaw == "" {
+			//	accessURLPortRaw = "80"
+			//	if cfg.AccessURL.Scheme == "https" {
+			//		accessURLPortRaw = "443"
+			//	}
+			//}
+			//
+			//accessURLPort, err := strconv.Atoi(accessURLPortRaw)
+			//if err != nil {
+			//	return xerrors.Errorf("parse access URL port: %w", err)
+			//}
 
 			// Warn the user if the access URL appears to be a loopback address.
-			isLocal, err := isLocalURL(ctx, cfg.AccessURL.Value())
-			if isLocal || err != nil {
-				reason := "could not be resolved"
-				if isLocal {
-					reason = "isn't externally reachable"
-				}
-				cliui.Warnf(
-					inv.Stderr,
-					"The access URL %s %s, this may cause unexpected problems when creating workspaces. Generate a unique *.try.coder.app URL by not specifying an access URL.\n",
-					cliui.Styles.Field.Render(cfg.AccessURL.String()), reason,
-				)
-			}
-
-			// A newline is added before for visibility in terminal output.
-			cliui.Infof(inv.Stdout, "\nView the Web UI: %s", cfg.AccessURL.String())
+			//isLocal, err := isLocalURL(ctx, cfg.AccessURL.Value())
+			//if isLocal || err != nil {
+			//	reason := "could not be resolved"
+			//	if isLocal {
+			//		reason = "isn't externally reachable"
+			//	}
+			//	cliui.Warnf(
+			//		inv.Stderr,
+			//		"The access URL %s %s, this may cause unexpected problems when creating workspaces. Generate a unique *.try.coder.app URL by not specifying an access URL.\n",
+			//		cliui.Styles.Field.Render(cfg.AccessURL.String()), reason,
+			//	)
+			//}
+			//
+			//// A newline is added before for visibility in terminal output.
+			//cliui.Infof(inv.Stdout, "\nView the Web UI: %s", cfg.AccessURL.String())
 
 			// Used for zero-trust instance identity with Google Cloud.
 			googleTokenValidator, err := idtoken.NewValidator(ctx, option.WithoutAuthentication())
@@ -372,14 +376,14 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				return xerrors.Errorf("create derp map: %w", err)
 			}
 
-			appHostname := cfg.WildcardAccessURL.String()
-			var appHostnameRegex *regexp.Regexp
-			if appHostname != "" {
-				appHostnameRegex, err = httpapi.CompileHostnamePattern(appHostname)
-				if err != nil {
-					return xerrors.Errorf("parse wildcard access URL %q: %w", appHostname, err)
-				}
-			}
+			//appHostname := cfg.WildcardAccessURL.String()
+			//var appHostnameRegex *regexp.Regexp
+			//if appHostname != "" {
+			//	appHostnameRegex, err = httpapi.CompileHostnamePattern(appHostname)
+			//	if err != nil {
+			//		return xerrors.Errorf("parse wildcard access URL %q: %w", appHostname, err)
+			//	}
+			//}
 
 			gitAuthEnv, err := ReadGitAuthProvidersFromEnv(os.Environ())
 			if err != nil {
@@ -401,10 +405,10 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				)
 			}
 
-			realIPConfig, err := httpmw.ParseRealIPConfig(cfg.ProxyTrustedHeaders, cfg.ProxyTrustedOrigins)
-			if err != nil {
-				return xerrors.Errorf("parse real ip config: %w", err)
-			}
+			//realIPConfig, err := httpmw.ParseRealIPConfig(cfg.ProxyTrustedHeaders, cfg.ProxyTrustedOrigins)
+			//if err != nil {
+			//	return xerrors.Errorf("parse real ip config: %w", err)
+			//}
 
 			configSSHOptions, err := cfg.SSHConfig.ParseOptions()
 			if err != nil {
@@ -413,8 +417,8 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 
 			options := &coderd.Options{
 				AccessURL:                   cfg.AccessURL.Value(),
-				AppHostname:                 appHostname,
-				AppHostnameRegex:            appHostnameRegex,
+				AppHostname:                 scd.AppHostname,
+				AppHostnameRegex:            scd.AppHostnameRegex,
 				Logger:                      logger.Named("coderd"),
 				Database:                    dbfake.New(),
 				DERPMap:                     derpMap,
@@ -422,10 +426,10 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				CacheDir:                    cacheDir,
 				GoogleTokenValidator:        googleTokenValidator,
 				GitAuthConfigs:              gitAuthConfigs,
-				RealIPConfig:                realIPConfig,
+				RealIPConfig:                scd.RealIPConfig,
 				SecureAuthCookie:            cfg.SecureAuthCookie.Value(),
 				SSHKeygenAlgorithm:          sshKeygenAlgorithm,
-				TracerProvider:              tracerProvider,
+				TracerProvider:              scd.Tracer,
 				Telemetry:                   telemetry.NewNoop(),
 				MetricsCacheRefreshInterval: cfg.MetricsCacheRefreshInterval.Value(),
 				AgentStatsRefreshInterval:   cfg.AgentStatRefreshInterval.Value(),
@@ -434,7 +438,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				APIRateLimit:                int(cfg.RateLimit.API.Value()),
 				LoginRateLimit:              loginRateLimit,
 				FilesRateLimit:              filesRateLimit,
-				HTTPClient:                  httpClient,
+				HTTPClient:                  scd.HTTPClient,
 				TemplateScheduleStore:       &atomic.Pointer[schedule.TemplateScheduleStore]{},
 				SSHConfig: codersdk.SSHConfigResponse{
 					HostnamePrefix:   cfg.SSHConfig.DeploymentName.String(),
@@ -1201,6 +1205,184 @@ func newProvisionerDaemon(
 	}), nil
 }
 
+// CommonServerCmd is the common elements of starting a server daemon.
+// This can be used by both workspace proxies and the primary coderd.
+type CommonServerCmd struct {
+	Ctx       context.Context
+	NotifyCtx context.Context
+
+	HTTPServers *HTTPServers
+	HTTPClient  *http.Client
+	Logger      slog.Logger
+	Tracer      trace.TracerProvider
+	SQLDriver   string
+	Tunnel      *tunnelsdk.Tunnel
+
+	AppHostname      string
+	AppHostnameRegex *regexp.Regexp
+	RealIPConfig     *httpmw.RealIPConfig
+
+	closeFuncs []func()
+}
+
+func (c *CommonServerCmd) Close() {
+	for _, f := range c.closeFuncs {
+		f()
+	}
+}
+
+func (c *CommonServerCmd) addClose(f func()) {
+	c.closeFuncs = append(c.closeFuncs, f)
+}
+
+func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ *CommonServerCmd, err error) {
+	c := &CommonServerCmd{}
+
+	// Main command context for managing cancellation of running
+	// services.
+	ctx, cancel := context.WithCancel(inv.Context())
+	c.addClose(cancel)
+	c.Ctx = ctx
+	defer func() {
+		if err != nil {
+			c.Close()
+		}
+	}()
+
+	go dumpHandler(ctx)
+
+	printLogo(inv)
+	logger, logCloser, err := BuildLogger(inv, cfg)
+	if err != nil {
+		return nil, xerrors.Errorf("make logger: %w", err)
+	}
+	c.Logger = logger
+	c.addClose(logCloser)
+
+	logger.Debug(ctx, "started debug logging")
+	logger.Sync()
+
+	// Register signals early on so that graceful shutdown can't
+	// be interrupted by additional signals. Note that we avoid
+	// shadowing cancel() (from above) here because notifyStop()
+	// restores default behavior for the signals. This protects
+	// the shutdown sequence from abruptly terminating things
+	// like: database migrations, provisioner work, workspace
+	// cleanup in dev-mode, etc.
+	//
+	// To get out of a graceful shutdown, the user can send
+	// SIGQUIT with ctrl+\ or SIGKILL with `kill -9`.
+	notifyCtx, notifyStop := signal.NotifyContext(ctx, InterruptSignals...)
+	c.NotifyCtx = notifyCtx
+	c.addClose(notifyStop)
+
+	// Clean up idle connections at the end, e.g.
+	// embedded-postgres can leave an idle connection
+	// which is caught by goleaks.
+	c.addClose(http.DefaultClient.CloseIdleConnections)
+
+	c.Tracer, c.SQLDriver = ConfigureTraceProvider(ctx, logger, inv, cfg)
+
+	c.HTTPServers, err = ConfigureHTTPServers(inv, cfg)
+	if err != nil {
+		return nil, xerrors.Errorf("configure http(s): %w", err)
+	}
+	c.addClose(c.HTTPServers.Close)
+
+	// Prefer HTTP because it's less prone to TLS errors over localhost.
+	localURL := c.HTTPServers.TLSUrl
+	if c.HTTPServers.HTTPUrl != nil {
+		localURL = c.HTTPServers.HTTPUrl
+	}
+
+	// TODO: @emyrk I find this strange that we add this to the context
+	// at the root here.
+	ctx, httpClient, err := configureHTTPClient(
+		ctx,
+		cfg.TLS.ClientCertFile.String(),
+		cfg.TLS.ClientKeyFile.String(),
+		cfg.TLS.ClientCAFile.String(),
+	)
+	if err != nil {
+		return nil, xerrors.Errorf("configure http client: %w", err)
+	}
+	c.Ctx = ctx
+	c.HTTPClient = httpClient
+
+	// If the access URL is empty, we attempt to run a reverse-proxy
+	// tunnel to make the initial setup really simple.
+	if cfg.AccessURL.String() == "" {
+		cliui.Infof(inv.Stderr, "Opening tunnel so workspaces can connect to your deployment. For production scenarios, specify an external access URL")
+		tunnel, err := devtunnel.New(ctx, logger.Named("devtunnel"), cfg.WgtunnelHost.String())
+		if err != nil {
+			return nil, xerrors.Errorf("create tunnel: %w", err)
+		}
+		c.addClose(func() { _ = tunnel.Close() })
+		cfg.AccessURL = clibase.URL(*tunnel.URL)
+
+		if cfg.WildcardAccessURL.String() == "" {
+			// Suffixed wildcard access URL.
+			u, err := url.Parse(fmt.Sprintf("*--%s", tunnel.URL.Hostname()))
+			if err != nil {
+				return nil, xerrors.Errorf("parse wildcard url: %w", err)
+			}
+			cfg.WildcardAccessURL = clibase.URL(*u)
+		}
+		c.Tunnel = tunnel
+	}
+
+	_, accessURLPortRaw, _ := net.SplitHostPort(cfg.AccessURL.Host)
+	if accessURLPortRaw == "" {
+		accessURLPortRaw = "80"
+		if cfg.AccessURL.Scheme == "https" {
+			accessURLPortRaw = "443"
+		}
+	}
+
+	accessURLPort, err := strconv.Atoi(accessURLPortRaw)
+	if err != nil {
+		return nil, xerrors.Errorf("parse access URL port: %w", err)
+	}
+
+	// Warn the user if the access URL appears to be a loopback address.
+	isLocal, err := isLocalURL(ctx, cfg.AccessURL.Value())
+	if isLocal || err != nil {
+		reason := "could not be resolved"
+		if isLocal {
+			reason = "isn't externally reachable"
+		}
+		cliui.Warnf(
+			inv.Stderr,
+			"The access URL %s %s, this may cause unexpected problems when creating workspaces. Generate a unique *.try.coder.app URL by not specifying an access URL.\n",
+			cliui.Styles.Field.Render(cfg.AccessURL.String()), reason,
+		)
+	}
+
+	// A newline is added before for visibility in terminal output.
+	cliui.Infof(inv.Stdout, "\nView the Web UI: %s", cfg.AccessURL.String())
+
+	// Used for zero-trust instance identity with Google Cloud.
+	googleTokenValidator, err := idtoken.NewValidator(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return nil, err
+	}
+
+	c.AppHostname = cfg.WildcardAccessURL.String()
+	if c.AppHostname != "" {
+		c.AppHostnameRegex, err = httpapi.CompileHostnamePattern(c.AppHostname)
+		if err != nil {
+			return nil, xerrors.Errorf("parse wildcard access URL %q: %w", c.AppHostname, err)
+		}
+	}
+
+	c.RealIPConfig, err = httpmw.ParseRealIPConfig(cfg.ProxyTrustedHeaders, cfg.ProxyTrustedOrigins)
+	if err != nil {
+		return nil, xerrors.Errorf("parse real ip config: %w", err)
+	}
+
+	return c, nil
+}
+
 // nolint: revive
 func printLogo(inv *clibase.Invocation) {
 	// Only print the logo in TTYs.
@@ -1614,7 +1796,7 @@ func isLocalhost(host string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
-func buildLogger(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (slog.Logger, func(), error) {
+func BuildLogger(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (slog.Logger, func(), error) {
 	var (
 		sinks   = []slog.Sink{}
 		closers = []func() error{}
