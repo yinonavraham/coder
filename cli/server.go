@@ -262,17 +262,17 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				}()
 			}
 
-			httpServers, err := ConfigureHTTPServers(inv, cfg)
-			if err != nil {
-				return xerrors.Errorf("configure http(s): %w", err)
-			}
-			defer httpServers.Close()
+			//httpServers, err := ConfigureHTTPServers(inv, cfg)
+			//if err != nil {
+			//	return xerrors.Errorf("configure http(s): %w", err)
+			//}
+			//defer httpServers.Close()
 
 			// Prefer HTTP because it's less prone to TLS errors over localhost.
-			localURL := httpServers.TLSUrl
-			if httpServers.HTTPUrl != nil {
-				localURL = httpServers.HTTPUrl
-			}
+			//localURL := httpServers.TLSUrl
+			//if httpServers.HTTPUrl != nil {
+			//	localURL = httpServers.HTTPUrl
+			//}
 
 			//ctx, httpClient, err := configureHTTPClient(
 			//	ctx,
@@ -284,44 +284,44 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			//	return xerrors.Errorf("configure http client: %w", err)
 			//}
 
-			// If the access URL is empty, we attempt to run a reverse-proxy
-			// tunnel to make the initial setup really simple.
-			//var (
-			//	tunnel     *tunnelsdk.Tunnel
-			//	tunnelDone <-chan struct{} = make(chan struct{}, 1)
-			//)
-			//if cfg.AccessURL.String() == "" {
-			//	cliui.Infof(inv.Stderr, "Opening tunnel so workspaces can connect to your deployment. For production scenarios, specify an external access URL")
-			//	tunnel, err = devtunnel.New(ctx, logger.Named("devtunnel"), cfg.WgtunnelHost.String())
-			//	if err != nil {
-			//		return xerrors.Errorf("create tunnel: %w", err)
-			//	}
-			//	defer tunnel.Close()
-			//	tunnelDone = tunnel.Wait()
-			//	cfg.AccessURL = clibase.URL(*tunnel.URL)
-			//
-			//	if cfg.WildcardAccessURL.String() == "" {
-			//		// Suffixed wildcard access URL.
-			//		u, err := url.Parse(fmt.Sprintf("*--%s", tunnel.URL.Hostname()))
-			//		if err != nil {
-			//			return xerrors.Errorf("parse wildcard url: %w", err)
-			//		}
-			//		cfg.WildcardAccessURL = clibase.URL(*u)
-			//	}
-			//}
+			//If the access URL is empty, we attempt to run a reverse-proxy
+			//tunnel to make the initial setup really simple.
+			var (
+				tunnel     *tunnelsdk.Tunnel
+				tunnelDone <-chan struct{} = make(chan struct{}, 1)
+			)
+			if cfg.AccessURL.String() == "" {
+				cliui.Infof(inv.Stderr, "Opening tunnel so workspaces can connect to your deployment. For production scenarios, specify an external access URL")
+				tunnel, err = devtunnel.New(ctx, logger.Named("devtunnel"), cfg.WgtunnelHost.String())
+				if err != nil {
+					return xerrors.Errorf("create tunnel: %w", err)
+				}
+				defer tunnel.Close()
+				tunnelDone = tunnel.Wait()
+				cfg.AccessURL = clibase.URL(*tunnel.URL)
 
-			//_, accessURLPortRaw, _ := net.SplitHostPort(cfg.AccessURL.Host)
-			//if accessURLPortRaw == "" {
-			//	accessURLPortRaw = "80"
-			//	if cfg.AccessURL.Scheme == "https" {
-			//		accessURLPortRaw = "443"
-			//	}
-			//}
-			//
-			//accessURLPort, err := strconv.Atoi(accessURLPortRaw)
-			//if err != nil {
-			//	return xerrors.Errorf("parse access URL port: %w", err)
-			//}
+				if cfg.WildcardAccessURL.String() == "" {
+					// Suffixed wildcard access URL.
+					u, err := url.Parse(fmt.Sprintf("*--%s", tunnel.URL.Hostname()))
+					if err != nil {
+						return xerrors.Errorf("parse wildcard url: %w", err)
+					}
+					cfg.WildcardAccessURL = clibase.URL(*u)
+				}
+			}
+
+			_, accessURLPortRaw, _ := net.SplitHostPort(cfg.AccessURL.Host)
+			if accessURLPortRaw == "" {
+				accessURLPortRaw = "80"
+				if cfg.AccessURL.Scheme == "https" {
+					accessURLPortRaw = "443"
+				}
+			}
+
+			accessURLPort, err := strconv.Atoi(accessURLPortRaw)
+			if err != nil {
+				return xerrors.Errorf("parse access URL port: %w", err)
+			}
 
 			// Warn the user if the access URL appears to be a loopback address.
 			//isLocal, err := isLocalURL(ctx, cfg.AccessURL.Value())
@@ -445,8 +445,8 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 					SSHConfigOptions: configSSHOptions,
 				},
 			}
-			if httpServers.TLSConfig != nil {
-				options.TLSCertificates = httpServers.TLSConfig.Certificates
+			if scd.HTTPServers.TLSConfig != nil {
+				options.TLSCertificates = scd.HTTPServers.TLSConfig.Certificates
 			}
 
 			if cfg.StrictTransportSecurity > 0 {
@@ -549,7 +549,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				options.Database = dbfake.New()
 				options.Pubsub = database.NewPubsubInMemory()
 			} else {
-				sqlDB, err := connectToPostgres(ctx, logger, sqlDriver, cfg.PostgresURL.String())
+				sqlDB, err := connectToPostgres(ctx, logger, scd.SQLDriver, cfg.PostgresURL.String())
 				if err != nil {
 					return xerrors.Errorf("connect to postgres: %w", err)
 				}
@@ -709,8 +709,8 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				defer closeAgentsFunc()
 			}
 
-			client := codersdk.New(localURL)
-			if localURL.Scheme == "https" && isLocalhost(localURL.Hostname()) {
+			client := codersdk.New(scd.LocalURL)
+			if scd.LocalURL.Scheme == "https" && isLocalhost(scd.LocalURL.Hostname()) {
 				// The certificate will likely be self-signed or for a different
 				// hostname, so we need to skip verification.
 				client.HTTPClient.Transport = &http.Transport{
@@ -770,7 +770,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			// the request is not to a local IP.
 			var handler http.Handler = coderAPI.RootHandler
 			if cfg.RedirectToAccessURL {
-				handler = redirectToAccessURL(handler, cfg.AccessURL.Value(), tunnel != nil, appHostnameRegex)
+				handler = redirectToAccessURL(handler, cfg.AccessURL.Value(), tunnel != nil, scd.AppHostnameRegex)
 			}
 
 			// ReadHeaderTimeout is purposefully not enabled. It caused some
@@ -794,7 +794,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			// We call this in the routine so we can kill the other listeners if
 			// one of them fails.
 			closeListenersNow := func() {
-				httpServers.Close()
+				scd.HTTPServers.Close()
 				if tunnel != nil {
 					_ = tunnel.Listener.Close()
 				}
@@ -803,7 +803,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			eg := errgroup.Group{}
 			eg.Go(func() error {
 				defer closeListenersNow()
-				return httpServers.Serve(httpServer)
+				return scd.HTTPServers.Serve(httpServer)
 			})
 			if tunnel != nil {
 				eg.Go(func() error {
@@ -837,8 +837,8 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			// exit of the server.
 			var exitErr error
 			select {
-			case <-notifyCtx.Done():
-				exitErr = notifyCtx.Err()
+			case <-scd.NotifyCtx.Done():
+				exitErr = scd.NotifyCtx.Err()
 				_, _ = fmt.Fprintln(inv.Stdout, cliui.Styles.Bold.Render(
 					"Interrupt caught, gracefully exiting. Use ctrl+\\ to force quit",
 				))
@@ -890,7 +890,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 					}
 					err := shutdownWithTimeout(provisionerDaemon.Shutdown, 5*time.Second)
 					if err != nil {
-						cliui.Errorf(inv.Stderr, "Failed to shutdown provisioner daemon %d: %s\n", id, err)
+						cliui.Errorf(inv.Stderr, "Failed to shut down provisioner daemon %d: %s\n", id, err)
 						return
 					}
 					err = provisionerDaemon.Close()
@@ -921,7 +921,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			options.Telemetry.Close()
 
 			// Trigger context cancellation for any remaining services.
-			cancel()
+			scd.Close()
 
 			switch {
 			case xerrors.Is(exitErr, context.DeadlineExceeded):
@@ -1213,10 +1213,12 @@ type CommonServerCmd struct {
 
 	HTTPServers *HTTPServers
 	HTTPClient  *http.Client
+	LocalURL    *url.URL
 	Logger      slog.Logger
-	Tracer      trace.TracerProvider
-	SQLDriver   string
-	Tunnel      *tunnelsdk.Tunnel
+
+	Tracer trace.TracerProvider
+	// SQLDriver is the driver that the tracer is active on.
+	SQLDriver string
 
 	AppHostname      string
 	AppHostnameRegex *regexp.Regexp
@@ -1290,9 +1292,9 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 	c.addClose(c.HTTPServers.Close)
 
 	// Prefer HTTP because it's less prone to TLS errors over localhost.
-	localURL := c.HTTPServers.TLSUrl
+	c.LocalURL = c.HTTPServers.TLSUrl
 	if c.HTTPServers.HTTPUrl != nil {
-		localURL = c.HTTPServers.HTTPUrl
+		c.LocalURL = c.HTTPServers.HTTPUrl
 	}
 
 	// TODO: @emyrk I find this strange that we add this to the context
@@ -1308,41 +1310,6 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 	}
 	c.Ctx = ctx
 	c.HTTPClient = httpClient
-
-	// If the access URL is empty, we attempt to run a reverse-proxy
-	// tunnel to make the initial setup really simple.
-	if cfg.AccessURL.String() == "" {
-		cliui.Infof(inv.Stderr, "Opening tunnel so workspaces can connect to your deployment. For production scenarios, specify an external access URL")
-		tunnel, err := devtunnel.New(ctx, logger.Named("devtunnel"), cfg.WgtunnelHost.String())
-		if err != nil {
-			return nil, xerrors.Errorf("create tunnel: %w", err)
-		}
-		c.addClose(func() { _ = tunnel.Close() })
-		cfg.AccessURL = clibase.URL(*tunnel.URL)
-
-		if cfg.WildcardAccessURL.String() == "" {
-			// Suffixed wildcard access URL.
-			u, err := url.Parse(fmt.Sprintf("*--%s", tunnel.URL.Hostname()))
-			if err != nil {
-				return nil, xerrors.Errorf("parse wildcard url: %w", err)
-			}
-			cfg.WildcardAccessURL = clibase.URL(*u)
-		}
-		c.Tunnel = tunnel
-	}
-
-	_, accessURLPortRaw, _ := net.SplitHostPort(cfg.AccessURL.Host)
-	if accessURLPortRaw == "" {
-		accessURLPortRaw = "80"
-		if cfg.AccessURL.Scheme == "https" {
-			accessURLPortRaw = "443"
-		}
-	}
-
-	accessURLPort, err := strconv.Atoi(accessURLPortRaw)
-	if err != nil {
-		return nil, xerrors.Errorf("parse access URL port: %w", err)
-	}
 
 	// Warn the user if the access URL appears to be a loopback address.
 	isLocal, err := isLocalURL(ctx, cfg.AccessURL.Value())
