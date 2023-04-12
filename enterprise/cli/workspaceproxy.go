@@ -1,3 +1,5 @@
+//go:build !slim
+
 package cli
 
 import (
@@ -7,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"runtime/pprof"
 	"time"
 
@@ -34,9 +37,41 @@ func (r *RootCmd) workspaceProxy() *clibase.Cmd {
 		},
 		Children: []*clibase.Cmd{
 			r.proxyServer(),
+			r.registerProxy(),
 		},
 	}
 
+	return cmd
+}
+
+func (r *RootCmd) registerProxy() *clibase.Cmd {
+	client := new(codersdk.Client)
+	cmd := &clibase.Cmd{
+		Use:   "register",
+		Short: "Register a workspace proxy",
+		Middleware: clibase.Chain(
+			clibase.RequireNArgs(1),
+			r.InitClient(client),
+		),
+		Handler: func(i *clibase.Invocation) error {
+			ctx := i.Context()
+			name := i.Args[0]
+			// TODO: Fix all this
+			resp, err := client.CreateWorkspaceProxy(ctx, codersdk.CreateWorkspaceProxyRequest{
+				Name:             name,
+				DisplayName:      name,
+				Icon:             "whocares.png",
+				URL:              "http://localhost:6005",
+				WildcardHostname: "",
+			})
+			if err != nil {
+				return xerrors.Errorf("create workspace proxy: %w", err)
+			}
+
+			fmt.Println(resp.ProxyToken)
+			return nil
+		},
+	}
 	return cmd
 }
 
@@ -50,8 +85,9 @@ func (r *RootCmd) proxyServer() *clibase.Cmd {
 
 	client := new(codersdk.Client)
 	cmd := &clibase.Cmd{
-		Use:   "server",
-		Short: "Start a workspace proxy server",
+		Use:     "server",
+		Short:   "Start a workspace proxy server",
+		Options: opts,
 		Middleware: clibase.Chain(
 			cli.WriteConfigMW(cfg),
 			cli.PrintDeprecatedOptions(),
@@ -67,14 +103,16 @@ func (r *RootCmd) proxyServer() *clibase.Cmd {
 			defer scd.Close()
 			ctx := scd.Ctx
 
+			pu, _ := url.Parse("http://localhost:3000")
 			proxy, err := wsproxy.New(&wsproxy.Options{
 				Logger: scd.Logger,
 				// TODO: PrimaryAccessURL
-				PrimaryAccessURL:   nil,
-				AccessURL:          cfg.AccessURL.Value(),
-				AppHostname:        scd.AppHostname,
-				AppHostnameRegex:   scd.AppHostnameRegex,
-				RealIPConfig:       scd.RealIPConfig,
+				PrimaryAccessURL: pu,
+				AccessURL:        cfg.AccessURL.Value(),
+				AppHostname:      scd.AppHostname,
+				AppHostnameRegex: scd.AppHostnameRegex,
+				RealIPConfig:     scd.RealIPConfig,
+				// TODO: AppSecurityKey
 				AppSecurityKey:     workspaceapps.SecurityKey{},
 				Tracing:            scd.Tracer,
 				PrometheusRegistry: scd.PrometheusRegistry,
@@ -85,6 +123,9 @@ func (r *RootCmd) proxyServer() *clibase.Cmd {
 				// TODO: ProxySessionToken
 				ProxySessionToken: "",
 			})
+			if err != nil {
+				return xerrors.Errorf("create workspace proxy: %w", err)
+			}
 
 			shutdownConnsCtx, shutdownConns := context.WithCancel(ctx)
 			defer shutdownConns()
@@ -110,7 +151,7 @@ func (r *RootCmd) proxyServer() *clibase.Cmd {
 
 			// TODO: So this obviously is not going to work well.
 			errCh := make(chan error, 1)
-			pprof.Do(ctx, pprof.Labels("service", "workspace-proxy"), func(ctx context.Context) {
+			go pprof.Do(ctx, pprof.Labels("service", "workspace-proxy"), func(ctx context.Context) {
 				errCh <- scd.HTTPServers.Serve(httpServer)
 			})
 
@@ -128,7 +169,6 @@ func (r *RootCmd) proxyServer() *clibase.Cmd {
 			var exitErr error
 			select {
 			case exitErr = <-errCh:
-				fmt.Println("As")
 			case <-scd.NotifyCtx.Done():
 				exitErr = scd.NotifyCtx.Err()
 				_, _ = fmt.Fprintln(inv.Stdout, cliui.Styles.Bold.Render(

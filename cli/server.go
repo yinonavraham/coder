@@ -1128,6 +1128,7 @@ type CommonServerCmd struct {
 	closeFuncs []func()
 }
 
+// Close closes all the resources associated with the CommonServerCmd.
 func (c *CommonServerCmd) Close() {
 	for _, f := range c.closeFuncs {
 		f()
@@ -1138,6 +1139,8 @@ func (c *CommonServerCmd) addClose(f func()) {
 	c.closeFuncs = append(c.closeFuncs, f)
 }
 
+// SetupServerCmd sets up the common elements of starting a server daemon.
+// This is used by both coderd and workspace proxies.
 func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ *CommonServerCmd, err error) {
 	c := &CommonServerCmd{}
 
