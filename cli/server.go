@@ -1158,7 +1158,7 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 	go dumpHandler(ctx)
 
 	printLogo(inv)
-	logger, logCloser, err := BuildLogger(inv, cfg)
+	logger, logCloser, err := buildLogger(inv, cfg)
 	if err != nil {
 		return nil, xerrors.Errorf("make logger: %w", err)
 	}
@@ -1187,9 +1187,9 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 	// which is caught by goleaks.
 	c.addClose(http.DefaultClient.CloseIdleConnections)
 
-	c.Tracer, c.SQLDriver = ConfigureTraceProvider(ctx, logger, inv, cfg)
+	c.Tracer, c.SQLDriver = configureTraceProvider(ctx, logger, inv, cfg)
 
-	c.HTTPServers, err = ConfigureHTTPServers(inv, cfg)
+	c.HTTPServers, err = configureHTTPServers(inv, cfg)
 	if err != nil {
 		return nil, xerrors.Errorf("configure http(s): %w", err)
 	}
@@ -1684,7 +1684,7 @@ func isLocalhost(host string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
-func BuildLogger(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (slog.Logger, func(), error) {
+func buildLogger(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (slog.Logger, func(), error) {
 	var (
 		sinks   = []slog.Sink{}
 		closers = []func() error{}
@@ -1812,7 +1812,7 @@ func connectToPostgres(ctx context.Context, logger slog.Logger, driver string, d
 	return sqlDB, nil
 }
 
-func ConfigureTraceProvider(ctx context.Context, logger slog.Logger, inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (trace.TracerProvider, string) {
+func configureTraceProvider(ctx context.Context, logger slog.Logger, inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (trace.TracerProvider, string) {
 	var (
 		tracerProvider trace.TracerProvider
 		sqlDriver      = "postgres"
@@ -1891,7 +1891,7 @@ func (s *HTTPServers) Close() {
 	}
 }
 
-func ConfigureHTTPServers(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ *HTTPServers, err error) {
+func configureHTTPServers(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ *HTTPServers, err error) {
 	httpServers := &HTTPServers{}
 	defer func() {
 		if err != nil {
