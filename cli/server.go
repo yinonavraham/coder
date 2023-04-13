@@ -978,9 +978,9 @@ func WriteConfigMW(cfg *codersdk.DeploymentValues) clibase.MiddlewareFunc {
 	}
 }
 
-// isLocalURL returns true if the hostname of the provided URL appears to
+// IsLocalURL returns true if the hostname of the provided URL appears to
 // resolve to a loopback address.
-func isLocalURL(ctx context.Context, u *url.URL) (bool, error) {
+func IsLocalURL(ctx context.Context, u *url.URL) (bool, error) {
 	resolver := &net.Resolver{}
 	ips, err := resolver.LookupIPAddr(ctx, u.Hostname())
 	if err != nil {
@@ -1155,10 +1155,10 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 		}
 	}()
 
-	go dumpHandler(ctx)
+	go DumpHandler(ctx)
 
-	printLogo(inv)
-	logger, logCloser, err := buildLogger(inv, cfg)
+	PrintLogo(inv)
+	logger, logCloser, err := BuildLogger(inv, cfg)
 	if err != nil {
 		return nil, xerrors.Errorf("make logger: %w", err)
 	}
@@ -1187,9 +1187,9 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 	// which is caught by goleaks.
 	c.addClose(http.DefaultClient.CloseIdleConnections)
 
-	c.Tracer, c.SQLDriver = configureTraceProvider(ctx, logger, inv, cfg)
+	c.Tracer, c.SQLDriver = ConfigureTraceProvider(ctx, logger, inv, cfg)
 
-	c.HTTPServers, err = configureHTTPServers(inv, cfg)
+	c.HTTPServers, err = ConfigureHTTPServers(inv, cfg)
 	if err != nil {
 		return nil, xerrors.Errorf("configure http(s): %w", err)
 	}
@@ -1203,7 +1203,7 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 
 	// TODO: @emyrk I find this strange that we add this to the context
 	// at the root here.
-	ctx, httpClient, err := configureHTTPClient(
+	ctx, httpClient, err := ConfigureHTTPClient(
 		ctx,
 		cfg.TLS.ClientCertFile.String(),
 		cfg.TLS.ClientKeyFile.String(),
@@ -1216,7 +1216,7 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 	c.HTTPClient = httpClient
 
 	// Warn the user if the access URL appears to be a loopback address.
-	isLocal, err := isLocalURL(ctx, cfg.AccessURL.Value())
+	isLocal, err := IsLocalURL(ctx, cfg.AccessURL.Value())
 	if isLocal || err != nil {
 		reason := "could not be resolved"
 		if isLocal {
@@ -1252,7 +1252,7 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 		// the default, which has pprof attached.
 		_ = pprof.Handler
 		//nolint:revive
-		closeFunc := serveHandler(ctx, logger, nil, cfg.Pprof.Address.String(), "pprof")
+		closeFunc := ServeHandler(ctx, logger, nil, cfg.Pprof.Address.String(), "pprof")
 		c.addClose(closeFunc)
 	}
 
@@ -1262,7 +1262,7 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 		c.PrometheusRegistry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 
 		//nolint:revive
-		closeFunc := serveHandler(ctx, logger, promhttp.InstrumentMetricHandler(
+		closeFunc := ServeHandler(ctx, logger, promhttp.InstrumentMetricHandler(
 			c.PrometheusRegistry, promhttp.HandlerFor(c.PrometheusRegistry, promhttp.HandlerOpts{}),
 		), cfg.Prometheus.Address.String(), "prometheus")
 		c.addClose(closeFunc)
@@ -1272,7 +1272,7 @@ func SetupServerCmd(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ 
 }
 
 // nolint: revive
-func printLogo(inv *clibase.Invocation) {
+func PrintLogo(inv *clibase.Invocation) {
 	// Only print the logo in TTYs.
 	if !isTTYOut(inv) {
 		return
@@ -1618,7 +1618,7 @@ func startBuiltinPostgres(ctx context.Context, cfg config.Root, logger slog.Logg
 	return connectionURL, ep.Stop, nil
 }
 
-func configureHTTPClient(ctx context.Context, clientCertFile, clientKeyFile string, tlsClientCAFile string) (context.Context, *http.Client, error) {
+func ConfigureHTTPClient(ctx context.Context, clientCertFile, clientKeyFile string, tlsClientCAFile string) (context.Context, *http.Client, error) {
 	if clientCertFile != "" && clientKeyFile != "" {
 		certificates, err := loadCertificates([]string{clientCertFile}, []string{clientKeyFile})
 		if err != nil {
@@ -1684,7 +1684,7 @@ func isLocalhost(host string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
-func buildLogger(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (slog.Logger, func(), error) {
+func BuildLogger(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (slog.Logger, func(), error) {
 	var (
 		sinks   = []slog.Sink{}
 		closers = []func() error{}
@@ -1812,7 +1812,7 @@ func connectToPostgres(ctx context.Context, logger slog.Logger, driver string, d
 	return sqlDB, nil
 }
 
-func configureTraceProvider(ctx context.Context, logger slog.Logger, inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (trace.TracerProvider, string) {
+func ConfigureTraceProvider(ctx context.Context, logger slog.Logger, inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (trace.TracerProvider, string) {
 	var (
 		tracerProvider trace.TracerProvider
 		sqlDriver      = "postgres"
@@ -1891,7 +1891,7 @@ func (s *HTTPServers) Close() {
 	}
 }
 
-func configureHTTPServers(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ *HTTPServers, err error) {
+func ConfigureHTTPServers(inv *clibase.Invocation, cfg *codersdk.DeploymentValues) (_ *HTTPServers, err error) {
 	httpServers := &HTTPServers{}
 	defer func() {
 		if err != nil {
