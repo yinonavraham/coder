@@ -106,7 +106,6 @@ func WorkspaceResources(writer io.Writer, resources []codersdk.WorkspaceResource
 				if totalAgents > 1 {
 					sshCommand += "." + agent.Name
 				}
-				sshCommand = Styles.Code.Render(sshCommand)
 				row = append(row, sshCommand)
 			}
 			tableWriter.AppendRow(row)

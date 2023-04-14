@@ -103,9 +103,8 @@ func (r *RootCmd) ping() *clibase.Cmd {
 					}
 					didP2p = true
 
-					via = fmt.Sprintf("%s via %s",
-						cliui.Styles.Fuchsia.Render("p2p"),
-						cliui.Styles.Code.Render(pong.Endpoint),
+					via = fmt.Sprintf("p2p via %s",
+						pong.Endpoint,
 					)
 				} else {
 					derpName := "unknown"
@@ -115,7 +114,7 @@ func (r *RootCmd) ping() *clibase.Cmd {
 					}
 					via = fmt.Sprintf("%s via %s",
 						cliui.Styles.Fuchsia.Render("proxied"),
-						cliui.Styles.Code.Render(fmt.Sprintf("DERP(%s)", derpName)),
+						fmt.Sprintf("DERP(%s)", derpName),
 					)
 				}
 

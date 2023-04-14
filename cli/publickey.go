@@ -45,12 +45,12 @@ func (r *RootCmd) publickey() *clibase.Cmd {
 
 			cliui.Infof(inv.Stdout,
 				"This is your public key for using "+cliui.Styles.Field.Render("git")+" in "+
-					"Coder. All clones with SSH will be authenticated automatically 🪄.\n\n",
+					"Coder. All clones with SSH will be authenticated automatically 🪄.\n",
 			)
-			cliui.Infof(inv.Stdout, cliui.Styles.Code.Render(strings.TrimSpace(key.PublicKey))+"\n\n")
-			cliui.Infof(inv.Stdout, "Add to GitHub and GitLab:"+"\n")
-			cliui.Infof(inv.Stdout, cliui.Styles.Prompt.String()+"https://github.com/settings/ssh/new"+"\n")
-			cliui.Infof(inv.Stdout, cliui.Styles.Prompt.String()+"https://gitlab.com/-/profile/keys"+"\n")
+			cliui.Infof(inv.Stdout, strings.TrimSpace(key.PublicKey)+"\n")
+			cliui.Infof(inv.Stdout, "Add to GitHub and GitLab:")
+			cliui.Infof(inv.Stdout, cliui.Styles.Prompt.String()+"https://github.com/settings/ssh/new")
+			cliui.Infof(inv.Stdout, cliui.Styles.Prompt.String()+"https://gitlab.com/-/profile/keys")
 
 			return nil
 		},
