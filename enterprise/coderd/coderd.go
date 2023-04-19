@@ -100,6 +100,7 @@ func New(ctx context.Context, options *Options) (*API, error) {
 					}),
 				)
 				r.Post("/issue-signed-app-token", api.workspaceProxyIssueSignedAppToken)
+				r.Post("/register", api.workspaceProxyRegister)
 			})
 			// TODO: Add specific workspace proxy endpoints.
 			// r.Route("/{proxyName}", func(r chi.Router) {
