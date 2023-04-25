@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"go4.org/netipx"
 	"golang.org/x/xerrors"
@@ -224,6 +225,7 @@ func NewConn(options *Options) (conn *Conn, err error) {
 			LocalAddrs: netMap.Addresses,
 		},
 		wireguardEngine: wireguardEngine,
+		debugRouter:     chi.NewRouter(),
 	}
 	defer func() {
 		if err != nil {
@@ -281,6 +283,8 @@ func NewConn(options *Options) (conn *Conn, err error) {
 		return nil, xerrors.Errorf("start netstack: %w", err)
 	}
 
+	server.debugRouter.Get("/magicsock", server.magicConn.ServeHTTPDebug)
+
 	return server, nil
 }
 
@@ -331,6 +335,7 @@ type Conn struct {
 	lastNetInfo              *tailcfg.NetInfo
 	nodeCallback             func(node *Node)
 
+	debugRouter  *chi.Mux
 	trafficStats *connstats.Statistics
 }
 
@@ -826,6 +831,10 @@ func (c *Conn) SetConnStatsCallback(maxPeriod time.Duration, maxConns int, dump 
 	}
 
 	c.tunDevice.SetStatistics(connStats)
+}
+
+func (c *Conn) ServeHTTPDebug(w http.ResponseWriter, r *http.Request) {
+	c.debugRouter.ServeHTTP(w, r)
 }
 
 type listenKey struct {

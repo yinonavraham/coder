@@ -20,6 +20,8 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"tailscale.com/util/clientmetric"
 
+	"github.com/go-chi/chi/v5"
+
 	"cdr.dev/slog"
 	"cdr.dev/slog/sloggers/sloghuman"
 	"github.com/coder/coder/agent"
@@ -37,7 +39,7 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 		noReap            bool
 		sshMaxTimeout     time.Duration
 		tailnetListenPort int64
-		prometheusAddress string
+		metricsAddress    string
 	)
 	cmd := &clibase.Cmd{
 		Use:   "agent",
@@ -48,7 +50,7 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 			ctx, cancel := context.WithCancel(inv.Context())
 			defer cancel()
 
-			agentPorts := map[int]string{}
+			ignorePorts := map[int]string{}
 
 			isLinux := runtime.GOOS == "linux"
 
@@ -125,14 +127,7 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 			defer pprofSrvClose()
 			// Do a best effort here. If this fails, it's not a big deal.
 			if port, err := urlPort(pprofAddress); err == nil {
-				agentPorts[port] = "pprof"
-			}
-
-			prometheusSrvClose := ServeHandler(ctx, logger, prometheusMetricsHandler(), prometheusAddress, "prometheus")
-			defer prometheusSrvClose()
-			// Do a best effort here. If this fails, it's not a big deal.
-			if port, err := urlPort(prometheusAddress); err == nil {
-				agentPorts[port] = "prometheus"
+				ignorePorts[port] = "pprof"
 			}
 
 			// exchangeToken returns a session token.
@@ -196,7 +191,7 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 				return xerrors.Errorf("add executable to $PATH: %w", err)
 			}
 
-			closer := agent.New(agent.Options{
+			agnt := agent.New(agent.Options{
 				Client:            client,
 				Logger:            logger,
 				LogDir:            logDir,
@@ -215,11 +210,19 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 				EnvironmentVariables: map[string]string{
 					"GIT_ASKPASS": executablePath,
 				},
-				AgentPorts:    agentPorts,
+				IgnorePorts:   ignorePorts,
 				SSHMaxTimeout: sshMaxTimeout,
 			})
+
+			metricsSrvClose := ServeHandler(ctx, logger, metricsHandler(agnt), metricsAddress, "metrics")
+			defer metricsSrvClose()
+			// Do a best effort here. If this fails, it's not a big deal.
+			if port, err := urlPort(metricsAddress); err == nil {
+				ignorePorts[port] = "metrics"
+			}
+
 			<-ctx.Done()
-			return closer.Close()
+			return agnt.Close()
 		},
 	}
 
@@ -270,7 +273,7 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 			Flag:        "prometheus-address",
 			Default:     "127.0.0.1:2112",
 			Env:         "CODER_AGENT_PROMETHEUS_ADDRESS",
-			Value:       clibase.StringOf(&prometheusAddress),
+			Value:       clibase.StringOf(&metricsAddress),
 			Description: "The bind address to serve Prometheus metrics.",
 		},
 	}
@@ -360,11 +363,14 @@ func urlPort(u string) (int, error) {
 	return -1, xerrors.Errorf("invalid port: %s", u)
 }
 
-func prometheusMetricsHandler() http.Handler {
-	// We don't have any other internal metrics so far, so it's safe to expose metrics this way.
-	// Based on: https://github.com/tailscale/tailscale/blob/280255acae604796a1113861f5a84e6fa2dc6121/ipn/localapi/localapi.go#L489
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func metricsHandler(a agent.Agent) http.Handler {
+	r := chi.NewRouter()
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		clientmetric.WritePrometheusExpositionFormat(w)
 	})
+	r.Mount("/debug", http.HandlerFunc(a.ServeHTTPDebug))
+
+	return r
 }

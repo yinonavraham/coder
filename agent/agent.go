@@ -60,7 +60,7 @@ type Options struct {
 	ReconnectingPTYTimeout time.Duration
 	EnvironmentVariables   map[string]string
 	Logger                 slog.Logger
-	AgentPorts             map[int]string
+	IgnorePorts            map[int]string
 	SSHMaxTimeout          time.Duration
 	TailnetListenPort      uint16
 }
@@ -76,7 +76,12 @@ type Client interface {
 	PatchStartupLogs(ctx context.Context, req agentsdk.PatchStartupLogs) error
 }
 
-func New(options Options) io.Closer {
+type Agent interface {
+	ServeHTTPDebug(w http.ResponseWriter, r *http.Request)
+	io.Closer
+}
+
+func New(options Options) Agent {
 	if options.ReconnectingPTYTimeout == 0 {
 		options.ReconnectingPTYTimeout = 5 * time.Minute
 	}
@@ -112,7 +117,7 @@ func New(options Options) io.Closer {
 		tempDir:                options.TempDir,
 		lifecycleUpdate:        make(chan struct{}, 1),
 		lifecycleReported:      make(chan codersdk.WorkspaceAgentLifecycle, 1),
-		ignorePorts:            options.AgentPorts,
+		ignorePorts:            options.IgnorePorts,
 		connStatsChan:          make(chan *agentsdk.Stats, 1),
 		sshMaxTimeout:          options.SSHMaxTimeout,
 	}
@@ -1265,6 +1270,10 @@ func (a *agent) isClosed() bool {
 	default:
 		return false
 	}
+}
+
+func (a *agent) ServeHTTPDebug(w http.ResponseWriter, r *http.Request) {
+	a.network.ServeHTTPDebug(w, r)
 }
 
 func (a *agent) Close() error {
