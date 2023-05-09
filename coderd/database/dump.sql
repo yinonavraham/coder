@@ -85,6 +85,20 @@ CREATE TYPE provisioner_type AS ENUM (
     'terraform'
 );
 
+CREATE TYPE relationship_member AS ENUM (
+    'user',
+    'organization',
+    'team',
+    'workspace',
+    'template'
+);
+
+CREATE TYPE relationship_permission AS ENUM (
+    'read',
+    'write',
+    'admin'
+);
+
 CREATE TYPE resource_type AS ENUM (
     'organization',
     'template',
@@ -139,6 +153,57 @@ BEGIN
 		WHERE user_id = OLD.id;
 	END IF;
 	RETURN NEW;
+END;
+$$;
+
+CREATE TABLE relationships (
+    id uuid NOT NULL,
+    parent uuid NOT NULL,
+    parent_type relationship_member NOT NULL,
+    child uuid NOT NULL,
+    child_type relationship_member NOT NULL,
+    permission relationship_permission DEFAULT 'read'::relationship_permission NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE FUNCTION find_relationships(target_parent_id uuid, target_parent_type relationship_member, target_child_id uuid DEFAULT NULL::uuid, target_child_type relationship_member DEFAULT NULL::relationship_member) RETURNS SETOF relationships
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Recursive CTE to traverse the relationship hierarchy
+    RETURN QUERY
+    WITH RECURSIVE relationship_hierarchy AS (
+        -- Base case: Direct relationships where the source is the parent
+        SELECT
+            *
+        FROM relationships r
+        WHERE r.parent = target_parent_id
+            AND r.parent_type = target_parent_type
+            AND (r.child_type = target_child_type OR target_child_type IS NULL)
+
+        UNION ALL
+
+        -- Recursive step: Relationships where the parent is a child in the previous level
+        SELECT
+            r.id,
+            r.parent,
+            r.parent_type,
+            r.child,
+            r.child_type,
+            -- Inherit the minimum permission from the parent
+            CASE
+                WHEN rh.permission = 'read' THEN 'read'
+                WHEN rh.permission = 'write' AND r.permission IN ('write', 'admin') THEN 'write'
+                WHEN rh.permission = 'admin' AND r.permission = 'admin' THEN 'admin'
+                ELSE 'read'
+            END AS permission,
+            r.created_at
+        FROM relationships r
+        JOIN relationship_hierarchy rh ON r.parent = rh.child AND r.parent_type = rh.child_type
+        WHERE (r.child_type = target_child_type OR target_child_type IS NULL)
+    )
+    SELECT * FROM relationship_hierarchy rh
+    WHERE rh.child = COALESCE(target_child_id, rh.child);
 END;
 $$;
 
@@ -810,6 +875,12 @@ ALTER TABLE ONLY provisioner_job_logs
 ALTER TABLE ONLY provisioner_jobs
     ADD CONSTRAINT provisioner_jobs_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY relationships
+    ADD CONSTRAINT relationships_id_key UNIQUE (id);
+
+ALTER TABLE ONLY relationships
+    ADD CONSTRAINT relationships_parent_child_key UNIQUE (parent, child);
+
 ALTER TABLE ONLY site_configs
     ADD CONSTRAINT site_configs_key_key UNIQUE (key);
 
@@ -876,6 +947,8 @@ ALTER TABLE ONLY workspace_resources
 ALTER TABLE ONLY workspaces
     ADD CONSTRAINT workspaces_pkey PRIMARY KEY (id);
 
+CREATE INDEX child_child_type ON relationships USING btree (child, child_type);
+
 CREATE INDEX idx_agent_stats_created_at ON workspace_agent_stats USING btree (created_at);
 
 CREATE INDEX idx_agent_stats_user_id ON workspace_agent_stats USING btree (user_id);
@@ -903,6 +976,8 @@ CREATE UNIQUE INDEX idx_organization_name_lower ON organizations USING btree (lo
 CREATE UNIQUE INDEX idx_users_email ON users USING btree (email) WHERE (deleted = false);
 
 CREATE UNIQUE INDEX idx_users_username ON users USING btree (username) WHERE (deleted = false);
+
+CREATE INDEX parent_parent_type ON relationships USING btree (parent, parent_type);
 
 CREATE INDEX provisioner_job_logs_id_job_id_idx ON provisioner_job_logs USING btree (job_id, id);
 

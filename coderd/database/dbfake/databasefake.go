@@ -824,6 +824,14 @@ func (q *fakeQuerier) GetUserCount(_ context.Context) (int64, error) {
 	return existing, nil
 }
 
+func (q *fakeQuerier) GetRelationships(ctx context.Context, arg database.GetRelationshipsParams) ([]database.Relationship, error) {
+	return nil, nil
+}
+
+func (q *fakeQuerier) InsertRelationships(ctx context.Context, arg database.InsertRelationshipsParams) ([]database.Relationship, error) {
+	return nil, nil
+}
+
 func (q *fakeQuerier) GetActiveUserCount(_ context.Context) (int64, error) {
 	q.mutex.RLock()
 	defer q.mutex.RUnlock()

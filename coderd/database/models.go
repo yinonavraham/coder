@@ -874,6 +874,134 @@ func AllProvisionerTypeValues() []ProvisionerType {
 	}
 }
 
+type RelationshipMember string
+
+const (
+	RelationshipMemberUser         RelationshipMember = "user"
+	RelationshipMemberOrganization RelationshipMember = "organization"
+	RelationshipMemberTeam         RelationshipMember = "team"
+	RelationshipMemberWorkspace    RelationshipMember = "workspace"
+	RelationshipMemberTemplate     RelationshipMember = "template"
+)
+
+func (e *RelationshipMember) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RelationshipMember(s)
+	case string:
+		*e = RelationshipMember(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RelationshipMember: %T", src)
+	}
+	return nil
+}
+
+type NullRelationshipMember struct {
+	RelationshipMember RelationshipMember
+	Valid              bool // Valid is true if RelationshipMember is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRelationshipMember) Scan(value interface{}) error {
+	if value == nil {
+		ns.RelationshipMember, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RelationshipMember.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRelationshipMember) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RelationshipMember), nil
+}
+
+func (e RelationshipMember) Valid() bool {
+	switch e {
+	case RelationshipMemberUser,
+		RelationshipMemberOrganization,
+		RelationshipMemberTeam,
+		RelationshipMemberWorkspace,
+		RelationshipMemberTemplate:
+		return true
+	}
+	return false
+}
+
+func AllRelationshipMemberValues() []RelationshipMember {
+	return []RelationshipMember{
+		RelationshipMemberUser,
+		RelationshipMemberOrganization,
+		RelationshipMemberTeam,
+		RelationshipMemberWorkspace,
+		RelationshipMemberTemplate,
+	}
+}
+
+type RelationshipPermission string
+
+const (
+	RelationshipPermissionRead  RelationshipPermission = "read"
+	RelationshipPermissionWrite RelationshipPermission = "write"
+	RelationshipPermissionAdmin RelationshipPermission = "admin"
+)
+
+func (e *RelationshipPermission) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RelationshipPermission(s)
+	case string:
+		*e = RelationshipPermission(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RelationshipPermission: %T", src)
+	}
+	return nil
+}
+
+type NullRelationshipPermission struct {
+	RelationshipPermission RelationshipPermission
+	Valid                  bool // Valid is true if RelationshipPermission is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRelationshipPermission) Scan(value interface{}) error {
+	if value == nil {
+		ns.RelationshipPermission, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RelationshipPermission.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRelationshipPermission) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RelationshipPermission), nil
+}
+
+func (e RelationshipPermission) Valid() bool {
+	switch e {
+	case RelationshipPermissionRead,
+		RelationshipPermissionWrite,
+		RelationshipPermissionAdmin:
+		return true
+	}
+	return false
+}
+
+func AllRelationshipPermissionValues() []RelationshipPermission {
+	return []RelationshipPermission{
+		RelationshipPermissionRead,
+		RelationshipPermissionWrite,
+		RelationshipPermissionAdmin,
+	}
+}
+
 type ResourceType string
 
 const (
@@ -1391,6 +1519,16 @@ type ProvisionerJobLog struct {
 	Stage     string    `db:"stage" json:"stage"`
 	Output    string    `db:"output" json:"output"`
 	ID        int64     `db:"id" json:"id"`
+}
+
+type Relationship struct {
+	ID         uuid.UUID              `db:"id" json:"id"`
+	Parent     uuid.UUID              `db:"parent" json:"parent"`
+	ParentType RelationshipMember     `db:"parent_type" json:"parent_type"`
+	Child      uuid.UUID              `db:"child" json:"child"`
+	ChildType  RelationshipMember     `db:"child_type" json:"child_type"`
+	Permission RelationshipPermission `db:"permission" json:"permission"`
+	CreatedAt  time.Time              `db:"created_at" json:"created_at"`
 }
 
 type Replica struct {

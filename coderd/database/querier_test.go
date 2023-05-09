@@ -5,6 +5,7 @@ package database_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +16,79 @@ import (
 	"github.com/coder/coder/coderd/database/dbgen"
 	"github.com/coder/coder/coderd/database/migrations"
 )
+
+func TestRelationships(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.SkipNow()
+	}
+	sqlDB := testSQLDB(t)
+	err := migrations.Up(sqlDB)
+	require.NoError(t, err)
+	db := database.New(sqlDB)
+	ctx := context.Background()
+
+	admin := uuid.New()
+	user := uuid.New()
+
+	// adminWorkspace := uuid.New()
+	userWorkspace := uuid.New()
+
+	org := uuid.New()
+
+	insert := func(r database.Relationship) {
+		_, err := db.InsertRelationships(ctx, database.InsertRelationshipsParams{
+			ID:         []uuid.UUID{r.ID},
+			Parent:     []uuid.UUID{r.Parent},
+			ParentType: []database.RelationshipMember{r.ParentType},
+			Child:      []uuid.UUID{r.Child},
+			ChildType:  []database.RelationshipMember{r.ChildType},
+			Permission: []database.RelationshipPermission{r.Permission},
+			CreatedAt:  []time.Time{r.CreatedAt},
+		})
+		require.NoError(t, err)
+	}
+
+	// Add users to org
+	insert(database.Relationship{
+		ID:         uuid.New(),
+		Parent:     org,
+		ParentType: database.RelationshipMemberOrganization,
+		Child:      admin,
+		ChildType:  database.RelationshipMemberUser,
+		Permission: database.RelationshipPermissionAdmin,
+		CreatedAt:  database.Now(),
+	})
+	insert(database.Relationship{
+		ID:         uuid.New(),
+		Parent:     org,
+		ParentType: database.RelationshipMemberOrganization,
+		Child:      user,
+		ChildType:  database.RelationshipMemberUser,
+		Permission: database.RelationshipPermissionRead,
+		CreatedAt:  database.Now(),
+	})
+
+	// Add the users workspace
+	insert(database.Relationship{
+		ID:         uuid.New(),
+		Parent:     user,
+		ParentType: database.RelationshipMemberUser,
+		Child:      userWorkspace,
+		ChildType:  database.RelationshipMemberWorkspace,
+		Permission: database.RelationshipPermissionRead,
+		CreatedAt:  database.Now(),
+	})
+
+	rels, err := db.GetRelationships(ctx, database.GetRelationshipsParams{
+		ParentID:   admin,
+		ParentType: database.RelationshipMemberUser,
+		ChildType:  database.RelationshipMemberWorkspace,
+		// ChildID:    userWorkspace,
+	})
+	require.NoError(t, err)
+	fmt.Printf("RELS %+v\n", rels)
+}
 
 func TestGetDeploymentWorkspaceAgentStats(t *testing.T) {
 	t.Parallel()

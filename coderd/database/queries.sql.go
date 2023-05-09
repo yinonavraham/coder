@@ -3144,6 +3144,113 @@ func (q *sqlQuerier) GetQuotaConsumedForUser(ctx context.Context, ownerID uuid.U
 	return column_1, err
 }
 
+const getRelationships = `-- name: GetRelationships :many
+SELECT id, parent, parent_type, child, child_type, permission, created_at FROM find_relationships($1, $2, $3, $4)
+`
+
+type GetRelationshipsParams struct {
+	ParentID   uuid.UUID          `db:"parent_id" json:"parent_id"`
+	ParentType RelationshipMember `db:"parent_type" json:"parent_type"`
+	ChildID    uuid.UUID          `db:"child_id" json:"child_id"`
+	ChildType  RelationshipMember `db:"child_type" json:"child_type"`
+}
+
+func (q *sqlQuerier) GetRelationships(ctx context.Context, arg GetRelationshipsParams) ([]Relationship, error) {
+	rows, err := q.db.QueryContext(ctx, getRelationships,
+		arg.ParentID,
+		arg.ParentType,
+		arg.ChildID,
+		arg.ChildType,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Relationship
+	for rows.Next() {
+		var i Relationship
+		if err := rows.Scan(
+			&i.ID,
+			&i.Parent,
+			&i.ParentType,
+			&i.Child,
+			&i.ChildType,
+			&i.Permission,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const insertRelationships = `-- name: InsertRelationships :many
+INSERT INTO relationships SELECT
+	UNNEST($1 :: uuid [ ]) AS id,
+	UNNEST($2 :: uuid [ ]) AS parent,
+	UNNEST($3 :: relationship_member [ ]) AS parent_type,
+	UNNEST($4 :: uuid [ ]) AS child,
+	UNNEST($5 :: relationship_member [ ]) AS child_type,
+	UNNEST($6 :: relationship_permission [ ]) AS permission,
+	UNNEST($7 :: timestamptz [ ]) AS created_at RETURNING id, parent, parent_type, child, child_type, permission, created_at
+`
+
+type InsertRelationshipsParams struct {
+	ID         []uuid.UUID              `db:"id" json:"id"`
+	Parent     []uuid.UUID              `db:"parent" json:"parent"`
+	ParentType []RelationshipMember     `db:"parent_type" json:"parent_type"`
+	Child      []uuid.UUID              `db:"child" json:"child"`
+	ChildType  []RelationshipMember     `db:"child_type" json:"child_type"`
+	Permission []RelationshipPermission `db:"permission" json:"permission"`
+	CreatedAt  []time.Time              `db:"created_at" json:"created_at"`
+}
+
+func (q *sqlQuerier) InsertRelationships(ctx context.Context, arg InsertRelationshipsParams) ([]Relationship, error) {
+	rows, err := q.db.QueryContext(ctx, insertRelationships,
+		pq.Array(arg.ID),
+		pq.Array(arg.Parent),
+		pq.Array(arg.ParentType),
+		pq.Array(arg.Child),
+		pq.Array(arg.ChildType),
+		pq.Array(arg.Permission),
+		pq.Array(arg.CreatedAt),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Relationship
+	for rows.Next() {
+		var i Relationship
+		if err := rows.Scan(
+			&i.ID,
+			&i.Parent,
+			&i.ParentType,
+			&i.Child,
+			&i.ChildType,
+			&i.Permission,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteReplicasUpdatedBefore = `-- name: DeleteReplicasUpdatedBefore :exec
 DELETE FROM replicas WHERE updated_at < $1
 `

@@ -15,6 +15,14 @@ import (
 	"github.com/coder/coder/coderd/util/slice"
 )
 
+func (q *querier) GetRelationships(ctx context.Context, arg database.GetRelationshipsParams) ([]database.Relationship, error) {
+	return nil, nil
+}
+
+func (q *querier) InsertRelationships(ctx context.Context, arg database.InsertRelationshipsParams) ([]database.Relationship, error) {
+	return nil, nil
+}
+
 func (q *querier) Ping(ctx context.Context) (time.Duration, error) {
 	return q.db.Ping(ctx)
 }
