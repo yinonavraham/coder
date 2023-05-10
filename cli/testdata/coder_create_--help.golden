@@ -3,6 +3,10 @@ Usage: coder create [flags] [name]
 Create a workspace
 
 [1mOptions[0m
+      --automatic-updates string, $CODER_WORKSPACE_AUTOMATIC_UPDATES (default: never)
+          Specify automatic updates setting for the workspace (accepts 'always'
+          or 'never').
+
       --parameter-file string, $CODER_PARAMETER_FILE
           Specify a file path with parameter values.
 
