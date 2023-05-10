@@ -1683,6 +1683,13 @@ func (q *querier) UpdateWorkspaceTTL(ctx context.Context, arg database.UpdateWor
 	return update(q.log, q.auth, fetch, q.db.UpdateWorkspaceTTL)(ctx, arg)
 }
 
+func (q *querier) UpdateWorkspaceAutomaticUpdates(ctx context.Context, arg database.UpdateWorkspaceAutomaticUpdatesParams) error {
+	fetch := func(ctx context.Context, arg database.UpdateWorkspaceAutomaticUpdatesParams) (database.Workspace, error) {
+		return q.db.GetWorkspaceByID(ctx, arg.ID)
+	}
+	return update(q.log, q.auth, fetch, q.db.UpdateWorkspaceAutomaticUpdates)(ctx, arg)
+}
+
 func (q *querier) GetWorkspaceByWorkspaceAppID(ctx context.Context, workspaceAppID uuid.UUID) (database.Workspace, error) {
 	return fetch(q.log, q.auth, q.db.GetWorkspaceByWorkspaceAppID)(ctx, workspaceAppID)
 }

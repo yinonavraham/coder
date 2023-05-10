@@ -271,10 +271,11 @@ INSERT INTO
 		name,
 		autostart_schedule,
 		ttl,
-		last_used_at
+		last_used_at,
+		automatic_updates
 	)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *;
 
 -- name: UpdateWorkspaceDeletedByID :exec
 UPDATE
@@ -393,6 +394,14 @@ SELECT
 	failed_workspaces.count AS failed_workspaces,
 	stopped_workspaces.count AS stopped_workspaces
 FROM pending_workspaces, building_workspaces, running_workspaces, failed_workspaces, stopped_workspaces;
+
+-- name: UpdateWorkspaceAutomaticUpdates :exec
+UPDATE
+	workspaces
+SET
+	automatic_updates = $2
+WHERE
+		id = $1;
 
 -- name: GetWorkspacesEligibleForAutoStartStop :many
 SELECT

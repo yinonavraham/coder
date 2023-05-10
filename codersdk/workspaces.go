@@ -14,26 +14,34 @@ import (
 	"github.com/coder/coder/coderd/tracing"
 )
 
+type AutomaticUpdates string
+
+const (
+	AutomaticUpdatesAlways AutomaticUpdates = "always"
+	AutomaticUpdatesNever  AutomaticUpdates = "never"
+)
+
 // Workspace is a deployment of a template. It references a specific
 // version and can be updated.
 type Workspace struct {
-	ID                                   uuid.UUID      `json:"id" format:"uuid"`
-	CreatedAt                            time.Time      `json:"created_at" format:"date-time"`
-	UpdatedAt                            time.Time      `json:"updated_at" format:"date-time"`
-	OwnerID                              uuid.UUID      `json:"owner_id" format:"uuid"`
-	OwnerName                            string         `json:"owner_name"`
-	OrganizationID                       uuid.UUID      `json:"organization_id" format:"uuid"`
-	TemplateID                           uuid.UUID      `json:"template_id" format:"uuid"`
-	TemplateName                         string         `json:"template_name"`
-	TemplateDisplayName                  string         `json:"template_display_name"`
-	TemplateIcon                         string         `json:"template_icon"`
-	TemplateAllowUserCancelWorkspaceJobs bool           `json:"template_allow_user_cancel_workspace_jobs"`
-	LatestBuild                          WorkspaceBuild `json:"latest_build"`
-	Outdated                             bool           `json:"outdated"`
-	Name                                 string         `json:"name"`
-	AutostartSchedule                    *string        `json:"autostart_schedule,omitempty"`
-	TTLMillis                            *int64         `json:"ttl_ms,omitempty"`
-	LastUsedAt                           time.Time      `json:"last_used_at" format:"date-time"`
+	ID                                   uuid.UUID        `json:"id" format:"uuid"`
+	CreatedAt                            time.Time        `json:"created_at" format:"date-time"`
+	UpdatedAt                            time.Time        `json:"updated_at" format:"date-time"`
+	OwnerID                              uuid.UUID        `json:"owner_id" format:"uuid"`
+	OwnerName                            string           `json:"owner_name"`
+	OrganizationID                       uuid.UUID        `json:"organization_id" format:"uuid"`
+	TemplateID                           uuid.UUID        `json:"template_id" format:"uuid"`
+	TemplateName                         string           `json:"template_name"`
+	TemplateDisplayName                  string           `json:"template_display_name"`
+	TemplateIcon                         string           `json:"template_icon"`
+	TemplateAllowUserCancelWorkspaceJobs bool             `json:"template_allow_user_cancel_workspace_jobs"`
+	LatestBuild                          WorkspaceBuild   `json:"latest_build"`
+	Outdated                             bool             `json:"outdated"`
+	Name                                 string           `json:"name"`
+	AutostartSchedule                    *string          `json:"autostart_schedule,omitempty"`
+	TTLMillis                            *int64           `json:"ttl_ms,omitempty"`
+	LastUsedAt                           time.Time        `json:"last_used_at" format:"date-time"`
+	AutomaticUpdates                     AutomaticUpdates `json:"automatic_updates" enums:"always,never"`
 }
 
 type WorkspacesRequest struct {
@@ -268,6 +276,25 @@ func (c *Client) PutExtendWorkspace(ctx context.Context, id uuid.UUID, req PutEx
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusNotModified {
+		return ReadBodyAsError(res)
+	}
+	return nil
+}
+
+// UpdateWorkspaceAutomaticUpdatesRequest is a request to updates a workspace's automatic updates setting.
+type UpdateWorkspaceAutomaticUpdatesRequest struct {
+	AutomaticUpdates AutomaticUpdates `json:"automatic_updates"`
+}
+
+// UpdateWorkspaceAutomaticUpdates sets the automatic updates setting for workspace by id.
+func (c *Client) UpdateWorkspaceAutomaticUpdates(ctx context.Context, id uuid.UUID, req UpdateWorkspaceAutomaticUpdatesRequest) error {
+	path := fmt.Sprintf("/api/v2/workspaces/%s/autoupdates", id.String())
+	res, err := c.Request(ctx, http.MethodPut, path, req)
+	if err != nil {
+		return xerrors.Errorf("update workspace automatic updates: %w", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusNoContent {
 		return ReadBodyAsError(res)
 	}
 	return nil

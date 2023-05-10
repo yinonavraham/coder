@@ -671,7 +671,8 @@ func TestFailJob(t *testing.T) {
 		ignoreLogErrors := true
 		srv := setup(t, ignoreLogErrors)
 		workspace, err := srv.Database.InsertWorkspace(ctx, database.InsertWorkspaceParams{
-			ID: uuid.New(),
+			ID:               uuid.New(),
+			AutomaticUpdates: database.AutomaticUpdatesNever,
 		})
 		require.NoError(t, err)
 		build, err := srv.Database.InsertWorkspaceBuild(ctx, database.InsertWorkspaceBuildParams{

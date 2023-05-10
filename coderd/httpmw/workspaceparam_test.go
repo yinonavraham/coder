@@ -113,9 +113,10 @@ func TestWorkspaceParam(t *testing.T) {
 		})
 		r, user := setup(db)
 		workspace, err := db.InsertWorkspace(context.Background(), database.InsertWorkspaceParams{
-			ID:      uuid.New(),
-			OwnerID: user.ID,
-			Name:    "hello",
+			ID:               uuid.New(),
+			OwnerID:          user.ID,
+			Name:             "hello",
+			AutomaticUpdates: database.AutomaticUpdatesNever,
 		})
 		require.NoError(t, err)
 		chi.RouteContext(r.Context()).URLParams.Add("workspace", workspace.ID.String())

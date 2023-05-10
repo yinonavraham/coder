@@ -270,6 +270,7 @@ export interface CreateWorkspaceRequest {
   readonly name: string
   readonly autostart_schedule?: string
   readonly ttl_ms?: number
+  readonly automatic_updates?: AutomaticUpdates
   readonly parameter_values?: CreateParameterRequest[]
   readonly rich_parameter_values?: WorkspaceBuildParameter[]
 }
@@ -1033,6 +1034,11 @@ export interface UpdateUserProfileRequest {
 }
 
 // From codersdk/workspaces.go
+export interface UpdateWorkspaceAutomaticUpdatesRequest {
+  readonly automatic_updates: AutomaticUpdates
+}
+
+// From codersdk/workspaces.go
 export interface UpdateWorkspaceAutostartRequest {
   readonly schedule?: string
 }
@@ -1113,6 +1119,7 @@ export interface Workspace {
   readonly autostart_schedule?: string
   readonly ttl_ms?: number
   readonly last_used_at: string
+  readonly automatic_updates: AutomaticUpdates
 }
 
 // From codersdk/workspaceagents.go
@@ -1359,6 +1366,10 @@ export const AuditActions: AuditAction[] = [
   "stop",
   "write",
 ]
+
+// From codersdk/workspaces.go
+export type AutomaticUpdates = "always" | "never"
+export const AutomaticUpdateses: AutomaticUpdates[] = ["always", "never"]
 
 // From codersdk/workspacebuilds.go
 export type BuildReason = "autostart" | "autostop" | "initiator"

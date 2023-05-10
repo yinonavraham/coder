@@ -117,10 +117,11 @@ type CreateTemplateRequest struct {
 
 // CreateWorkspaceRequest provides options for creating a new workspace.
 type CreateWorkspaceRequest struct {
-	TemplateID        uuid.UUID `json:"template_id" validate:"required" format:"uuid"`
-	Name              string    `json:"name" validate:"workspace_name,required"`
-	AutostartSchedule *string   `json:"autostart_schedule"`
-	TTLMillis         *int64    `json:"ttl_ms,omitempty"`
+	TemplateID        uuid.UUID        `json:"template_id" validate:"required" format:"uuid"`
+	Name              string           `json:"name" validate:"workspace_name,required"`
+	AutostartSchedule *string          `json:"autostart_schedule"`
+	TTLMillis         *int64           `json:"ttl_ms,omitempty"`
+	AutomaticUpdates  AutomaticUpdates `json:"automatic_updates,omitempty"`
 	// ParameterValues allows for additional parameters to be provided
 	// during the initial provision.
 	ParameterValues     []CreateParameterRequest  `json:"parameter_values,omitempty"`

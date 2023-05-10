@@ -18,6 +18,7 @@ curl -X POST http://coder-server:8080/api/v2/organizations/{organization}/member
 
 ```json
 {
+  "automatic_updates": "always",
   "autostart_schedule": "string",
   "name": "string",
   "parameter_values": [
@@ -54,6 +55,7 @@ curl -X POST http://coder-server:8080/api/v2/organizations/{organization}/member
 
 ```json
 {
+  "automatic_updates": "always",
   "autostart_schedule": "string",
   "created_at": "2019-08-24T14:15:22Z",
   "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
@@ -226,6 +228,7 @@ curl -X GET http://coder-server:8080/api/v2/users/{user}/workspace/{workspacenam
 
 ```json
 {
+  "automatic_updates": "always",
   "autostart_schedule": "string",
   "created_at": "2019-08-24T14:15:22Z",
   "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
@@ -421,6 +424,7 @@ curl -X GET http://coder-server:8080/api/v2/workspaces \
   "count": 0,
   "workspaces": [
     {
+      "automatic_updates": "always",
       "autostart_schedule": "string",
       "created_at": "2019-08-24T14:15:22Z",
       "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
@@ -590,6 +594,7 @@ curl -X GET http://coder-server:8080/api/v2/workspaces/{workspace} \
 
 ```json
 {
+  "automatic_updates": "always",
   "autostart_schedule": "string",
   "created_at": "2019-08-24T14:15:22Z",
   "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
@@ -798,6 +803,42 @@ curl -X PUT http://coder-server:8080/api/v2/workspaces/{workspace}/autostart \
 | ----------- | ---- | ---------------------------------------------------------------------------------------------- | -------- | ----------------------- |
 | `workspace` | path | string(uuid)                                                                                   | true     | Workspace ID            |
 | `body`      | body | [codersdk.UpdateWorkspaceAutostartRequest](schemas.md#codersdkupdateworkspaceautostartrequest) | true     | Schedule update request |
+
+### Responses
+
+| Status | Meaning                                                         | Description | Schema |
+| ------ | --------------------------------------------------------------- | ----------- | ------ |
+| 204    | [No Content](https://tools.ietf.org/html/rfc7231#section-6.3.5) | No Content  |        |
+
+To perform this operation, you must be authenticated. [Learn more](authentication.md).
+
+## Update workspace automatic updates by ID
+
+### Code samples
+
+```shell
+# Example request using curl
+curl -X PUT http://coder-server:8080/api/v2/workspaces/{workspace}/autoupdates \
+  -H 'Content-Type: application/json' \
+  -H 'Coder-Session-Token: API_KEY'
+```
+
+`PUT /workspaces/{workspace}/autoupdates`
+
+> Body parameter
+
+```json
+{
+  "automatic_updates": "always"
+}
+```
+
+### Parameters
+
+| Name        | In   | Type                                                                                                         | Required | Description               |
+| ----------- | ---- | ------------------------------------------------------------------------------------------------------------ | -------- | ------------------------- |
+| `workspace` | path | string(uuid)                                                                                                 | true     | Workspace ID              |
+| `body`      | body | [codersdk.UpdateWorkspaceAutomaticUpdatesRequest](schemas.md#codersdkupdateworkspaceautomaticupdatesrequest) | true     | Automatic updates request |
 
 ### Responses
 

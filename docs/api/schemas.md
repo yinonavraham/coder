@@ -1185,6 +1185,21 @@ AuthorizationObject can represent a "set" of objects, such as: all workspaces in
 | ---------------- | ------- | -------- | ------------ | ----------- |
 | `[any property]` | boolean | false    |              |             |
 
+## codersdk.AutomaticUpdates
+
+```json
+"always"
+```
+
+### Properties
+
+#### Enumerated Values
+
+| Value    |
+| -------- |
+| `always` |
+| `never`  |
+
 ## codersdk.BuildInfoResponse
 
 ```json
@@ -1625,6 +1640,7 @@ CreateParameterRequest is a structure used to create a new parameter value for a
 
 ```json
 {
+  "automatic_updates": "always",
   "autostart_schedule": "string",
   "name": "string",
   "parameter_values": [
@@ -1651,6 +1667,7 @@ CreateParameterRequest is a structure used to create a new parameter value for a
 
 | Name                    | Type                                                                          | Required | Restrictions | Description                                                                                    |
 | ----------------------- | ----------------------------------------------------------------------------- | -------- | ------------ | ---------------------------------------------------------------------------------------------- |
+| `automatic_updates`     | [codersdk.AutomaticUpdates](#codersdkautomaticupdates)                        | false    |              |                                                                                                |
 | `autostart_schedule`    | string                                                                        | false    |              |                                                                                                |
 | `name`                  | string                                                                        | true     |              |                                                                                                |
 | `parameter_values`      | array of [codersdk.CreateParameterRequest](#codersdkcreateparameterrequest)   | false    |              | Parameter values allows for additional parameters to be provided during the initial provision. |
@@ -4428,6 +4445,20 @@ Parameter represents a set value for the scope.
 | ---------- | ------ | -------- | ------------ | ----------- |
 | `username` | string | true     |              |             |
 
+## codersdk.UpdateWorkspaceAutomaticUpdatesRequest
+
+```json
+{
+  "automatic_updates": "always"
+}
+```
+
+### Properties
+
+| Name                | Type                                                   | Required | Restrictions | Description |
+| ------------------- | ------------------------------------------------------ | -------- | ------------ | ----------- |
+| `automatic_updates` | [codersdk.AutomaticUpdates](#codersdkautomaticupdates) | false    |              |             |
+
 ## codersdk.UpdateWorkspaceAutostartRequest
 
 ```json
@@ -4592,6 +4623,7 @@ Parameter represents a set value for the scope.
 
 ```json
 {
+  "automatic_updates": "always",
   "autostart_schedule": "string",
   "created_at": "2019-08-24T14:15:22Z",
   "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
@@ -4731,25 +4763,33 @@ Parameter represents a set value for the scope.
 
 ### Properties
 
-| Name                                        | Type                                               | Required | Restrictions | Description |
-| ------------------------------------------- | -------------------------------------------------- | -------- | ------------ | ----------- |
-| `autostart_schedule`                        | string                                             | false    |              |             |
-| `created_at`                                | string                                             | false    |              |             |
-| `id`                                        | string                                             | false    |              |             |
-| `last_used_at`                              | string                                             | false    |              |             |
-| `latest_build`                              | [codersdk.WorkspaceBuild](#codersdkworkspacebuild) | false    |              |             |
-| `name`                                      | string                                             | false    |              |             |
-| `organization_id`                           | string                                             | false    |              |             |
-| `outdated`                                  | boolean                                            | false    |              |             |
-| `owner_id`                                  | string                                             | false    |              |             |
-| `owner_name`                                | string                                             | false    |              |             |
-| `template_allow_user_cancel_workspace_jobs` | boolean                                            | false    |              |             |
-| `template_display_name`                     | string                                             | false    |              |             |
-| `template_icon`                             | string                                             | false    |              |             |
-| `template_id`                               | string                                             | false    |              |             |
-| `template_name`                             | string                                             | false    |              |             |
-| `ttl_ms`                                    | integer                                            | false    |              |             |
-| `updated_at`                                | string                                             | false    |              |             |
+| Name                                        | Type                                                   | Required | Restrictions | Description |
+| ------------------------------------------- | ------------------------------------------------------ | -------- | ------------ | ----------- |
+| `automatic_updates`                         | [codersdk.AutomaticUpdates](#codersdkautomaticupdates) | false    |              |             |
+| `autostart_schedule`                        | string                                                 | false    |              |             |
+| `created_at`                                | string                                                 | false    |              |             |
+| `id`                                        | string                                                 | false    |              |             |
+| `last_used_at`                              | string                                                 | false    |              |             |
+| `latest_build`                              | [codersdk.WorkspaceBuild](#codersdkworkspacebuild)     | false    |              |             |
+| `name`                                      | string                                                 | false    |              |             |
+| `organization_id`                           | string                                                 | false    |              |             |
+| `outdated`                                  | boolean                                                | false    |              |             |
+| `owner_id`                                  | string                                                 | false    |              |             |
+| `owner_name`                                | string                                                 | false    |              |             |
+| `template_allow_user_cancel_workspace_jobs` | boolean                                                | false    |              |             |
+| `template_display_name`                     | string                                                 | false    |              |             |
+| `template_icon`                             | string                                                 | false    |              |             |
+| `template_id`                               | string                                                 | false    |              |             |
+| `template_name`                             | string                                                 | false    |              |             |
+| `ttl_ms`                                    | integer                                                | false    |              |             |
+| `updated_at`                                | string                                                 | false    |              |             |
+
+#### Enumerated Values
+
+| Property            | Value    |
+| ------------------- | -------- |
+| `automatic_updates` | `always` |
+| `automatic_updates` | `never`  |
 
 ## codersdk.WorkspaceAgent
 
@@ -5594,6 +5634,7 @@ Parameter represents a set value for the scope.
   "count": 0,
   "workspaces": [
     {
+      "automatic_updates": "always",
       "autostart_schedule": "string",
       "created_at": "2019-08-24T14:15:22Z",
       "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",

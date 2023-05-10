@@ -250,6 +250,7 @@ type sqlcQuerier interface {
 	UpdateWorkspaceAgentStartupByID(ctx context.Context, arg UpdateWorkspaceAgentStartupByIDParams) error
 	UpdateWorkspaceAgentStartupLogOverflowByID(ctx context.Context, arg UpdateWorkspaceAgentStartupLogOverflowByIDParams) error
 	UpdateWorkspaceAppHealthByID(ctx context.Context, arg UpdateWorkspaceAppHealthByIDParams) error
+	UpdateWorkspaceAutomaticUpdates(ctx context.Context, arg UpdateWorkspaceAutomaticUpdatesParams) error
 	UpdateWorkspaceAutostart(ctx context.Context, arg UpdateWorkspaceAutostartParams) error
 	UpdateWorkspaceBuildByID(ctx context.Context, arg UpdateWorkspaceBuildByIDParams) (WorkspaceBuild, error)
 	UpdateWorkspaceBuildCostByID(ctx context.Context, arg UpdateWorkspaceBuildCostByIDParams) (WorkspaceBuild, error)

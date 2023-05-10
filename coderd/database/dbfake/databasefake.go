@@ -3420,6 +3420,7 @@ func (q *fakeQuerier) InsertWorkspace(_ context.Context, arg database.InsertWork
 		AutostartSchedule: arg.AutostartSchedule,
 		Ttl:               arg.Ttl,
 		LastUsedAt:        arg.LastUsedAt,
+		AutomaticUpdates:  arg.AutomaticUpdates,
 	}
 	q.workspaces = append(q.workspaces, workspace)
 	return workspace, nil
@@ -3917,6 +3918,26 @@ func (q *fakeQuerier) UpdateWorkspaceLastUsedAt(_ context.Context, arg database.
 			continue
 		}
 		workspace.LastUsedAt = arg.LastUsedAt
+		q.workspaces[index] = workspace
+		return nil
+	}
+
+	return sql.ErrNoRows
+}
+
+func (q *fakeQuerier) UpdateWorkspaceAutomaticUpdates(_ context.Context, arg database.UpdateWorkspaceAutomaticUpdatesParams) error {
+	if err := validateDatabaseType(arg); err != nil {
+		return err
+	}
+
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	for index, workspace := range q.workspaces {
+		if workspace.ID != arg.ID {
+			continue
+		}
+		workspace.AutomaticUpdates = arg.AutomaticUpdates
 		q.workspaces[index] = workspace
 		return nil
 	}
