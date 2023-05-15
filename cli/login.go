@@ -41,10 +41,11 @@ func (r *RootCmd) login() *clibase.Cmd {
 	const firstUserTrialEnv = "CODER_FIRST_USER_TRIAL"
 
 	var (
-		email    string
-		username string
-		password string
-		trial    bool
+		firstEmail    string
+		firstUsername string
+		firstPassword string
+		firstTrial    bool
+		interactive   bool
 	)
 	cmd := &clibase.Cmd{
 		Use:        "login <url>",
@@ -96,7 +97,7 @@ func (r *RootCmd) login() *clibase.Cmd {
 			if !hasInitialUser {
 				_, _ = fmt.Fprintf(inv.Stdout, Caret+"Your Coder deployment hasn't been set up!\n")
 
-				if username == "" {
+				if firstUsername == "" {
 					if !isTTY(inv) {
 						return xerrors.New("the initial user cannot be created in non-interactive mode. use the API")
 					}
@@ -115,7 +116,7 @@ func (r *RootCmd) login() *clibase.Cmd {
 					if err != nil {
 						return xerrors.Errorf("get current user: %w", err)
 					}
-					username, err = cliui.Prompt(inv, cliui.PromptOptions{
+					firstUsername, err = cliui.Prompt(inv, cliui.PromptOptions{
 						Text:    "What " + cliui.Styles.Field.Render("username") + " would you like?",
 						Default: currentUser.Username,
 					})
@@ -127,8 +128,8 @@ func (r *RootCmd) login() *clibase.Cmd {
 					}
 				}
 
-				if email == "" {
-					email, err = cliui.Prompt(inv, cliui.PromptOptions{
+				if firstEmail == "" {
+					firstEmail, err = cliui.Prompt(inv, cliui.PromptOptions{
 						Text: "What's your " + cliui.Styles.Field.Render("email") + "?",
 						Validate: func(s string) error {
 							err := validator.New().Var(s, "email")
@@ -143,11 +144,11 @@ func (r *RootCmd) login() *clibase.Cmd {
 					}
 				}
 
-				if password == "" {
+				if firstPassword == "" {
 					var matching bool
 
 					for !matching {
-						password, err = cliui.Prompt(inv, cliui.PromptOptions{
+						firstPassword, err = cliui.Prompt(inv, cliui.PromptOptions{
 							Text:   "Enter a " + cliui.Styles.Field.Render("password") + ":",
 							Secret: true,
 							Validate: func(s string) error {
@@ -166,7 +167,7 @@ func (r *RootCmd) login() *clibase.Cmd {
 							return xerrors.Errorf("confirm password prompt: %w", err)
 						}
 
-						matching = confirm == password
+						matching = confirm == firstPassword
 						if !matching {
 							_, _ = fmt.Fprintln(inv.Stdout, cliui.Styles.Error.Render("Passwords do not match"))
 						}
@@ -179,21 +180,21 @@ func (r *RootCmd) login() *clibase.Cmd {
 						IsConfirm: true,
 						Default:   "yes",
 					})
-					trial = v == "yes" || v == "y"
+					firstTrial = v == "yes" || v == "y"
 				}
 
 				_, err = client.CreateFirstUser(inv.Context(), codersdk.CreateFirstUserRequest{
-					Email:    email,
-					Username: username,
-					Password: password,
-					Trial:    trial,
+					Email:    firstEmail,
+					Username: firstUsername,
+					Password: firstPassword,
+					Trial:    firstTrial,
 				})
 				if err != nil {
 					return xerrors.Errorf("create initial user: %w", err)
 				}
 				resp, err := client.LoginWithPassword(inv.Context(), codersdk.LoginWithPasswordRequest{
-					Email:    email,
-					Password: password,
+					Email:    firstEmail,
+					Password: firstPassword,
 				})
 				if err != nil {
 					return xerrors.Errorf("login with password: %w", err)
@@ -211,7 +212,7 @@ func (r *RootCmd) login() *clibase.Cmd {
 				}
 
 				_, _ = fmt.Fprintf(inv.Stdout,
-					cliui.Styles.Paragraph.Render(fmt.Sprintf("Welcome to Coder, %s! You're authenticated.", cliui.Styles.Keyword.Render(username)))+"\n")
+					cliui.Styles.Paragraph.Render(fmt.Sprintf("Welcome to Coder, %s! You're authenticated.", cliui.Styles.Keyword.Render(firstUsername)))+"\n")
 
 				_, _ = fmt.Fprintf(inv.Stdout,
 					cliui.Styles.Paragraph.Render("Get started by creating a template: "+cliui.Styles.Code.Render("coder templates init"))+"\n")
@@ -273,25 +274,25 @@ func (r *RootCmd) login() *clibase.Cmd {
 			Flag:        "first-user-email",
 			Env:         "CODER_FIRST_USER_EMAIL",
 			Description: "Specifies an email address to use if creating the first user for the deployment.",
-			Value:       clibase.StringOf(&email),
+			Value:       clibase.StringOf(&firstEmail),
 		},
 		{
 			Flag:        "first-user-username",
 			Env:         "CODER_FIRST_USER_USERNAME",
 			Description: "Specifies a username to use if creating the first user for the deployment.",
-			Value:       clibase.StringOf(&username),
+			Value:       clibase.StringOf(&firstUsername),
 		},
 		{
 			Flag:        "first-user-password",
 			Env:         "CODER_FIRST_USER_PASSWORD",
 			Description: "Specifies a password to use if creating the first user for the deployment.",
-			Value:       clibase.StringOf(&password),
+			Value:       clibase.StringOf(&firstPassword),
 		},
 		{
 			Flag:        "first-user-trial",
 			Env:         firstUserTrialEnv,
 			Description: "Specifies whether a trial license should be provisioned for the Coder deployment or not.",
-			Value:       clibase.BoolOf(&trial),
+			Value:       clibase.BoolOf(&firstTrial),
 		},
 	}
 	return cmd
