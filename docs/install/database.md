@@ -82,19 +82,11 @@ export CODER_BUILT_IN_DB_URL=$(sudo -u coder /bin/bash -c 'coder server postgres
 pg_dump $CODER_BUILT_IN_DB_URL --no-publications --no-owner > coder.sql
 ```
 
-To 
+To restore,
 
 ```sh
 export CODER_EXTERNAL_DB_URL=postgres://coder:secret42@localhost/coder?sslmode=disable
-pg_restore -d $CODER_EXTERNAL_DB_URL coder.sql
-
 psql $CODER_EXTERNAL_DB_URL -f coder.sql
-
-SELECT 'ALTER TABLE public.' || table_name || ' SET SCHEMA myschema;' FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
-
-
-
-psq
 ```
 
 ## Troubleshooting
