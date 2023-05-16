@@ -70,6 +70,33 @@ Using the `search_path` in the connection string corresponds to the following `p
 ALTER ROLE coder SET search_path = myschema;
 ```
 
+## Migrating from the built-in database
+
+If you installed Coder on a VM and would like to migrate your built-in database, you can dump the database and restore on the external database.
+
+```sh
+# Get the built in Postgres URL for the "coder" user
+export CODER_BUILT_IN_DB_URL=$(sudo -u coder /bin/bash -c 'coder server postgres-builtin-url --raw-url')
+
+# Dump the "coder" database to coder.sql (PostgreSQL client required)
+pg_dump $CODER_BUILT_IN_DB_URL --no-publications --no-owner > coder.sql
+```
+
+To 
+
+```sh
+export CODER_EXTERNAL_DB_URL=postgres://coder:secret42@localhost/coder?sslmode=disable
+pg_restore -d $CODER_EXTERNAL_DB_URL coder.sql
+
+psql $CODER_EXTERNAL_DB_URL -f coder.sql
+
+SELECT 'ALTER TABLE public.' || table_name || ' SET SCHEMA myschema;' FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
+
+
+
+psq
+```
+
 ## Troubleshooting
 
 ### Coder server fails startup with "current_schema: converting NULL to string is unsupported"
