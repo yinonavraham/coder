@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -196,8 +197,14 @@ func (e *executor) init(ctx, killCtx context.Context, logr logSink) error {
 	ctx, span := e.server.startTrace(ctx, tracing.FuncName())
 	defer span.End()
 
+	start := time.Now()
 	initMut.Lock()
-	defer initMut.Unlock()
+	defer func() {
+		initMut.Unlock()
+		fmt.Println("------ held initMu for", time.Since(start), "------")
+		fmt.Println("------ held initMu for", time.Since(start), "------")
+		fmt.Println("------ held initMu for", time.Since(start), "------")
+	}()
 
 	e.mut.Lock()
 	defer e.mut.Unlock()

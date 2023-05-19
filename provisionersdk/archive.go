@@ -2,7 +2,6 @@ package provisionersdk
 
 import (
 	"archive/tar"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -87,8 +86,6 @@ func Tar(w io.Writer, directory string, limit int64) error {
 		// 	// Don't store tfstate!
 		// 	return nil
 		// }
-
-		fmt.Println("rel", rel)
 
 		// Use unix paths in the tar archive.
 		header.Name = filepath.ToSlash(rel)
