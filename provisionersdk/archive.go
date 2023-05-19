@@ -73,18 +73,20 @@ func Tar(w io.Writer, directory string, limit int64) error {
 		if err != nil {
 			return err
 		}
-		if (strings.HasPrefix(rel, ".") || strings.HasPrefix(filepath.Base(rel), ".")) && filepath.Base(rel) != ".terraform.lock.hcl" {
-			if fileInfo.IsDir() && rel != "." {
-				// Don't archive hidden files!
-				return filepath.SkipDir
-			}
-			// Don't archive hidden files!
-			return nil
-		}
-		if strings.Contains(rel, ".tfstate") {
-			// Don't store tfstate!
-			return nil
-		}
+
+		// if (strings.HasPrefix(rel, ".") || strings.HasPrefix(filepath.Base(rel), ".")) && filepath.Base(rel) != ".terraform.lock.hcl" {
+		// 	if fileInfo.IsDir() && rel != "." {
+		// 		// Don't archive hidden files!
+		// 		return filepath.SkipDir
+		// 	}
+		// 	// Don't archive hidden files!
+		// 	return nil
+		// }
+		// if strings.Contains(rel, ".tfstate") {
+		// 	// Don't store tfstate!
+		// 	return nil
+		// }
+
 		// Use unix paths in the tar archive.
 		header.Name = filepath.ToSlash(rel)
 		if err := tarWriter.WriteHeader(header); err != nil {
