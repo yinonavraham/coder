@@ -73,7 +73,7 @@ func Tar(w io.Writer, directory string, limit int64) error {
 		if err != nil {
 			return err
 		}
-		if strings.HasPrefix(rel, ".") || strings.HasPrefix(filepath.Base(rel), ".") {
+		if (strings.HasPrefix(rel, ".") || strings.HasPrefix(filepath.Base(rel), ".")) && filepath.Base(rel) != ".terraform.lock.hcl" {
 			if fileInfo.IsDir() && rel != "." {
 				// Don't archive hidden files!
 				return filepath.SkipDir
