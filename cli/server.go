@@ -811,7 +811,7 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			defer provisionerdWaitGroup.Wait()
 			provisionerdMetrics := provisionerd.NewMetrics(options.PrometheusRegistry)
 			for i := int64(0); i < cfg.Provisioner.Daemons.Value(); i++ {
-				daemonCacheDir := filepath.Join(cacheDir, fmt.Sprintf("provisioner-%d", i))
+				daemonCacheDir := filepath.Join(cacheDir, fmt.Sprintf("provisioner-%d", 0))
 				daemon, err := newProvisionerDaemon(
 					ctx, coderAPI, provisionerdMetrics, logger, cfg, daemonCacheDir, errCh, false, &provisionerdWaitGroup,
 				)

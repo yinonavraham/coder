@@ -24,6 +24,20 @@ import (
 	"github.com/coder/coder/provisionersdk/proto"
 )
 
+// initMut is a global mutex that protects the Terraform cache directory from
+// concurrent usage by path. Only `terraform init` commands are guarded by this
+// mutex.
+//
+// When cache path is set, we must protect against multiple calls to
+// `terraform init`.
+//
+// From the Terraform documentation:
+//
+//	Note: The plugin cache directory is not guaranteed to be concurrency
+//	safe. The provider installer's behavior in environments with multiple
+//	terraform init calls is undefined.
+var initMut = &sync.Mutex{}
+
 type executor struct {
 	server     *server
 	mut        *sync.Mutex
@@ -181,6 +195,9 @@ func versionFromBinaryPath(ctx context.Context, binaryPath string) (*version.Ver
 func (e *executor) init(ctx, killCtx context.Context, logr logSink) error {
 	ctx, span := e.server.startTrace(ctx, tracing.FuncName())
 	defer span.End()
+
+	initMut.Lock()
+	defer initMut.Unlock()
 
 	e.mut.Lock()
 	defer e.mut.Unlock()
