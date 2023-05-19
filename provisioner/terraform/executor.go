@@ -199,10 +199,11 @@ func (e *executor) init(ctx, killCtx context.Context, logr logSink) error {
 
 	start := time.Now()
 	initMut.Lock()
+	waited := time.Since(start)
 	held := time.Now()
 	defer func() {
 		initMut.Unlock()
-		fmt.Println("------ held initMu for", time.Since(held), "waited for", time.Since(start), "------")
+		fmt.Println("------ held initMu for", time.Since(held), "waited for", waited, "------")
 	}()
 
 	e.mut.Lock()
