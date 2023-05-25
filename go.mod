@@ -36,7 +36,7 @@ replace github.com/dlclark/regexp2 => github.com/dlclark/regexp2 v1.7.0
 
 // There are a few minor changes we make to Tailscale that we're slowly upstreaming. Compare here:
 // https://github.com/tailscale/tailscale/compare/main...coder:tailscale:main
-replace tailscale.com => github.com/coder/tailscale v0.0.0-20230522123520-74712221d00f
+replace tailscale.com => github.com/coder/tailscale v1.1.1-0.20230525114851-c9cd3cef997c
 
 // Switch to our fork that imports fixes from http://github.com/tailscale/ssh.
 // See: https://github.com/coder/coder/issues/3371
@@ -126,7 +126,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/moby v24.0.1+incompatible
-	github.com/muesli/reflow v0.3.0
+	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/open-policy-agent/opa v0.51.0
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/pion/udp v0.1.2
@@ -174,7 +174,7 @@ require (
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
-	gvisor.dev/gvisor v0.0.0-20221203005347-703fd9b7fbc0
+	gvisor.dev/gvisor v0.0.0-20230504175454-7b0a1988a28f
 	nhooyr.io/websocket v1.8.7
 	storj.io/drpc v0.0.33-0.20230420154621-9716137f6037
 	tailscale.com v1.32.3
@@ -218,7 +218,6 @@ require (
 	github.com/docker/docker v23.0.3+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/go-windows v1.0.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
