@@ -27,6 +27,12 @@ func LatencyCheck(allowAll bool, allowedOrigins ...*url.URL) http.HandlerFunc {
 		// Allowing timing information to be shared. This allows the browser
 		// to exclude TLS handshake timing.
 		rw.Header().Set("Timing-Allow-Origin", origins)
+		// Always allow all CORs on this route.
+		rw.Header().Set("Access-Control-Allow-Origin", "*")
+		rw.Header().Set("Access-Control-Allow-Headers", "*")
+		rw.Header().Set("Access-Control-Allow-Credentials", "false")
+		// Always allow the calling method
+		rw.Header().Set("Access-Control-Allow-Methods", r.Method)
 		rw.WriteHeader(http.StatusOK)
 	}
 }
