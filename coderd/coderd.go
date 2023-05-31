@@ -833,7 +833,7 @@ func New(options *Options) *API {
 	// This is the only route we add before all the middleware.
 	// We want to time the latency of the request, so any middleware will
 	// interfere with that timing.
-	rootRouter.Get("/latency-check", prometheusMW(LatencyCheck(options.DeploymentValues.Dangerous.AllowAllCors.Value(), api.AccessURL)).ServeHTTP)
+	rootRouter.Get("/latency-check", prometheusMW(LatencyCheck()).ServeHTTP)
 	rootRouter.Mount("/", r)
 	api.RootHandler = rootRouter
 
