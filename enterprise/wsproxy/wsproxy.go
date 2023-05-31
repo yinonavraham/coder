@@ -259,7 +259,7 @@ func New(ctx context.Context, opts *Options) (*Server, error) {
 	// See coderd/coderd.go for why we need this.
 	rootRouter := chi.NewRouter()
 	// Make sure to add the cors middleware to the latency check route.
-	rootRouter.Get("/latency-check", prometheusMW(coderd.LatencyCheck(opts.AllowAllCors, s.DashboardURL, s.AppServer.AccessURL)).ServeHTTP)
+	rootRouter.Get("/latency-check", prometheusMW(coderd.LatencyCheck()).ServeHTTP)
 	rootRouter.Mount("/", r)
 	s.Handler = rootRouter
 
