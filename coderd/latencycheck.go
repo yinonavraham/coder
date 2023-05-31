@@ -34,5 +34,6 @@ func LatencyCheck(allowAll bool, allowedOrigins ...*url.URL) http.HandlerFunc {
 		// Always allow the calling method
 		rw.Header().Set("Access-Control-Allow-Methods", r.Method)
 		rw.WriteHeader(http.StatusOK)
+		_, _ = rw.Write([]byte("OK"))
 	}
 }
