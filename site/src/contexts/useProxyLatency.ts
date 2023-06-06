@@ -20,6 +20,14 @@ interface ProxyLatencyAction {
   report: ProxyLatencyReport
 }
 
+interface FetchRequest {
+  // The time the fetch request was made.
+  at: Date
+  // takeLowest is an option that if set to true, will only overwrite the
+  // latency report if the new value is lower then the current value.
+  takeLowest: boolean
+}
+
 const proxyLatenciesReducer = (
   state: Record<string, ProxyLatencyReport>,
   action: ProxyLatencyAction,
@@ -44,12 +52,37 @@ export const useProxyLatency = (
   )
 
   // This latestFetchRequest is used to trigger a refetch of the proxy latencies.
-  const [latestFetchRequest, setLatestFetchRequest] = useState(
-    new Date().toISOString(),
-  )
-  const refetch = () => {
-    setLatestFetchRequest(new Date().toISOString())
+  const [latestFetchRequest, setLatestFetchRequest] = useState({
+    at:  new Date(),
+    takeLowest: true,
+  } as FetchRequest)
+  // By default calling a refetch will always update the latency report to the newly
+  // fetched latency.
+  const refetch = (takeLowest = false) => {
+    setLatestFetchRequest({
+      at:  new Date(),
+      takeLowest,
+    })
   }
+
+  useEffect(() => {
+    const onPageLoad = () => {
+      // We want to refetch the proxy latencies on page load.
+      // This is because the first latency check tends to be slower
+      // then after the page has loaded and done it's initial requests.
+      //
+      // This behavior is hard to debug, so this solution is a bit of a kludge.
+      // It adds 1 more network request per proxy on page load. Another solution
+      // should be investigated.
+      refetch(true)
+    }
+
+    if(document.readyState === "complete") {
+      onPageLoad()
+    } else {
+      window.addEventListener("load", onPageLoad)
+    }
+  }, [])
 
   // Only run latency updates when the proxies change.
   useEffect(() => {
