@@ -32,6 +32,7 @@ import (
 
 	"github.com/coder/coder/buildinfo"
 	"github.com/coder/coder/cli/clibase"
+	"github.com/coder/coder/cli/clitiming"
 	"github.com/coder/coder/cli/cliui"
 	"github.com/coder/coder/cli/config"
 	"github.com/coder/coder/coderd"
@@ -75,6 +76,9 @@ const (
 var errUnauthenticated = xerrors.New(notLoggedInMessage)
 
 func (r *RootCmd) Core() []*clibase.Cmd {
+	clitiming.Record("enter Core")
+	defer clitiming.Record("exit Core")
+
 	// Please re-sort this list alphabetically if you change it!
 	return []*clibase.Cmd{
 		r.dotfiles(),
@@ -144,6 +148,7 @@ func (r *RootCmd) RunMain(subcommands []*clibase.Cmd) {
 }
 
 func (r *RootCmd) Command(subcommands []*clibase.Cmd) (*clibase.Cmd, error) {
+	clitiming.Record("enter Command")
 	fmtLong := `Coder %s — A tool for provisioning self-hosted development environments with Terraform.
 `
 	cmd := &clibase.Cmd{

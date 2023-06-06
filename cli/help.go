@@ -18,6 +18,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/coder/coder/cli/clibase"
+	"github.com/coder/coder/cli/clitiming"
 	"github.com/coder/coder/cli/cliui"
 )
 
@@ -267,6 +268,8 @@ var usageWantsArgRe = regexp.MustCompile(`<.*>`)
 // output for a given command.
 func helpFn() clibase.HandlerFunc {
 	return func(inv *clibase.Invocation) error {
+		clitiming.Record("enter HelpFunc")
+		defer clitiming.Record("exit HelpFunc")
 		// We use stdout for help and not stderr since there's no straightforward
 		// way to distinguish between a user error and a help request.
 		//
