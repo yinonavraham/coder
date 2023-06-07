@@ -17,11 +17,15 @@ import (
 
 	"github.com/coder/coder/agent/agentssh"
 	"github.com/coder/coder/cli/clibase"
+	"github.com/coder/coder/cli/clitiming"
 	"github.com/coder/coder/cli/cliui"
 	"github.com/coder/coder/codersdk"
 )
 
 func (r *RootCmd) portForward() *clibase.Cmd {
+	clitiming.Record("enter portForward")
+	defer clitiming.Record("exit portForward")
+
 	var (
 		tcpForwards []string // <port>:<port>
 		udpForwards []string // <port>:<port>

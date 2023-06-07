@@ -7,6 +7,7 @@ import (
 
 	"github.com/coder/coder/buildinfo"
 	"github.com/coder/coder/cli/clibase"
+	"github.com/coder/coder/cli/clitiming"
 	"github.com/coder/coder/cli/cliui"
 )
 
@@ -35,9 +36,9 @@ func (vi versionInfo) String() string {
 	_, _ = str.WriteString("\r\n" + vi.ExternalURL + "\r\n\r\n")
 
 	if vi.Slim {
-		_, _ = str.WriteString(fmt.Sprintf("Slim build of Coder, does not support the %s subcommand.", cliui.Styles.Code.Render("server")))
+		_, _ = str.WriteString(fmt.Sprintf("Slim build of Coder, does not support the %s subcommand.", cliui.DefaultStyles.Code.Render("server")))
 	} else {
-		_, _ = str.WriteString(fmt.Sprintf("Full build of Coder, supports the %s subcommand.", cliui.Styles.Code.Render("server")))
+		_, _ = str.WriteString(fmt.Sprintf("Full build of Coder, supports the %s subcommand.", cliui.DefaultStyles.Code.Render("server")))
 	}
 	return str.String()
 }
@@ -55,6 +56,8 @@ func defaultVersionInfo() *versionInfo {
 
 // version prints the coder version
 func (*RootCmd) version(versionInfo func() *versionInfo) *clibase.Cmd {
+	clitiming.Record("enter version")
+	defer clitiming.Record("exit version")
 	var (
 		formatter = cliui.NewOutputFormatter(
 			cliui.TextFormat(),

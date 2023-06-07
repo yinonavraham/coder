@@ -29,6 +29,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gobwas/httphead"
 	"github.com/mattn/go-isatty"
+	"github.com/mitchellh/go-wordwrap"
 
 	"github.com/coder/coder/buildinfo"
 	"github.com/coder/coder/cli/clibase"
@@ -43,7 +44,7 @@ import (
 )
 
 var (
-	Caret = cliui.Styles.Prompt.String()
+	Caret = cliui.DefaultStyles.Prompt.String()
 
 	// Applied as annotations to workspace commands
 	// so they display in a separated "help" section.
@@ -543,14 +544,14 @@ func (r *RootCmd) InitClient(client *codersdk.Client) clibase.MiddlewareFunc {
 				// Just log the error here. We never want to fail a command
 				// due to a pre-run.
 				_, _ = fmt.Fprintf(inv.Stderr,
-					cliui.Styles.Warn.Render("check versions error: %s"), err)
+					cliui.DefaultStyles.Warn.Render("check versions error: %s"), err)
 				_, _ = fmt.Fprintln(inv.Stderr)
 			}
 
 			if err = <-warningErr; err != nil {
 				// Same as above
 				_, _ = fmt.Fprintf(inv.Stderr,
-					cliui.Styles.Warn.Render("check entitlement warnings error: %s"), err)
+					cliui.DefaultStyles.Warn.Render("check entitlement warnings error: %s"), err)
 				_, _ = fmt.Fprintln(inv.Stderr)
 			}
 
@@ -681,17 +682,23 @@ type example struct {
 // formatExamples formats the examples as width wrapped bulletpoint
 // descriptions with the command underneath.
 func formatExamples(examples ...example) string {
-	wrap := cliui.Styles.Wrap.Copy()
-	wrap.PaddingLeft(4)
+	clitiming.Record("enter formatExamples")
+	defer clitiming.Record("exit formatExamples")
+
 	var sb strings.Builder
+
+	padStyle := cliui.DefaultStyles.Wrap.Clone().PadLeft(4)
 	for i, e := range examples {
 		if len(e.Description) > 0 {
-			_, _ = sb.WriteString("  - " + wrap.Render(e.Description + ":")[4:] + "\n\n    ")
+			wordwrap.WrapString(e.Description, 80)
+			_, _ = sb.WriteString(
+				"  - " + cliui.Pad(wordwrap.WrapString(e.Description+":", 80), 4)[4:] + "\n\n    ",
+			)
 		}
 		// We add 1 space here because `cliui.Styles.Code` adds an extra
 		// space. This makes the code block align at an even 2 or 6
 		// spaces for symmetry.
-		_, _ = sb.WriteString(" " + cliui.Styles.Code.Render(fmt.Sprintf("$ %s", e.Command)))
+		_, _ = sb.WriteString(" " + cliui.DefaultStyles.Code.Render(fmt.Sprintf("$ %s", e.Command)))
 		if i < len(examples)-1 {
 			_, _ = sb.WriteString("\n\n")
 		}
@@ -729,7 +736,7 @@ func (r *RootCmd) checkVersions(i *clibase.Invocation, client *codersdk.Client) 
 	}
 
 	if !buildinfo.VersionsMatch(clientVersion, info.Version) {
-		warn := cliui.Styles.Warn.Copy().Align(lipgloss.Left)
+		warn := cliui.DefaultStyles.Warn.Copy().Align(lipgloss.Left)
 		_, _ = fmt.Fprintf(i.Stderr, warn.Render(fmtWarningText), clientVersion, info.Version, strings.TrimPrefix(info.CanonicalVersion(), "v"))
 		_, _ = fmt.Fprintln(i.Stderr)
 	}
@@ -748,7 +755,7 @@ func (r *RootCmd) checkWarnings(i *clibase.Invocation, client *codersdk.Client) 
 	entitlements, err := client.Entitlements(ctx)
 	if err == nil {
 		for _, w := range entitlements.Warnings {
-			_, _ = fmt.Fprintln(i.Stderr, cliui.Styles.Warn.Render(w))
+			_, _ = fmt.Fprintln(i.Stderr, cliui.DefaultStyles.Warn.Render(w))
 		}
 	}
 	return nil
