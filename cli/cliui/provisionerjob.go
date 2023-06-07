@@ -209,7 +209,7 @@ func ProvisionerJob(ctx context.Context, writer io.Writer, opts ProvisionerJobOp
 				}
 				output = DefaultStyles.Placeholder.Render(log.Output)
 			case codersdk.LogLevelError:
-				output = charmStyles.Error.Render(log.Output)
+				output = DefaultStyles.Error.Render(log.Output)
 			case codersdk.LogLevelWarn:
 				output = DefaultStyles.Warn.Render(log.Output)
 			case codersdk.LogLevelInfo:

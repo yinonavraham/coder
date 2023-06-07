@@ -9,22 +9,41 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var (
-	Canceled = xerrors.New("canceled")
-
-	charmStyles = common.DefaultStyles()
-)
+var Canceled = xerrors.New("canceled")
 
 // DefaultStyles compose visual elements of the UI.
 var DefaultStyles Styles
+
+type Styles struct {
+	Bold,
+	Checkmark,
+	Code,
+	Crossmark,
+	DateTimeStamp,
+	Error,
+	Field,
+	Keyword,
+	Paragraph,
+	Placeholder,
+	Prompt,
+	FocusedPrompt,
+	Fuchsia,
+	Logo,
+	Warn,
+	Wrap lipgloss.Style
+}
 
 func init() {
 	lipgloss.SetDefaultRenderer(
 		lipgloss.NewRenderer(os.Stdout, termenv.WithColorCache(true)),
 	)
-	// Styles is set after we change the DefaultRender so that the ColorCache
+
+	// All Styles are set after we change the DefaultRender so that the ColorCache
 	// is in effect, mitigating the severe issues seen here:
 	// https://github.com/coder/coder/issues/7884.
+
+	charmStyles := common.DefaultStyles()
+
 	DefaultStyles = Styles{
 		Bold:          lipgloss.NewStyle().Bold(true),
 		Checkmark:     charmStyles.Checkmark,
@@ -53,23 +72,4 @@ func ValidateNotEmpty(s string) error {
 		return xerrors.New("Must be provided!")
 	}
 	return nil
-}
-
-type Styles struct {
-	Bold,
-	Checkmark,
-	Code,
-	Crossmark,
-	DateTimeStamp,
-	Error,
-	Field,
-	Keyword,
-	Paragraph,
-	Placeholder,
-	Prompt,
-	FocusedPrompt,
-	Fuchsia,
-	Logo,
-	Warn,
-	Wrap lipgloss.Style
 }

@@ -126,7 +126,7 @@ func Prompt(inv *clibase.Invocation, opts PromptOptions) (string, error) {
 		if opts.Validate != nil {
 			err := opts.Validate(line)
 			if err != nil {
-				_, _ = fmt.Fprintln(inv.Stdout, charmStyles.Error.Render(err.Error()))
+				_, _ = fmt.Fprintln(inv.Stdout, DefaultStyles.Error.Render(err.Error()))
 				return Prompt(inv, opts)
 			}
 		}

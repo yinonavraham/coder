@@ -687,12 +687,12 @@ func formatExamples(examples ...example) string {
 
 	var sb strings.Builder
 
-	padStyle := cliui.DefaultStyles.Wrap.Clone().PadLeft(4)
+	padStyle := cliui.DefaultStyles.Wrap.Copy().PaddingLeft(4)
 	for i, e := range examples {
 		if len(e.Description) > 0 {
 			wordwrap.WrapString(e.Description, 80)
 			_, _ = sb.WriteString(
-				"  - " + cliui.Pad(wordwrap.WrapString(e.Description+":", 80), 4)[4:] + "\n\n    ",
+				"  - " + padStyle.Render(e.Description + ":")[4:] + "\n\n    ",
 			)
 		}
 		// We add 1 space here because `cliui.Styles.Code` adds an extra
