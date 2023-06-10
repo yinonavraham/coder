@@ -92,7 +92,7 @@ jobs:
         run: |
           echo "${{ toJSON(steps.filter )}}"
 
-  lint:
+  static-lint:
     runs-on: ${{ github.repository_owner == 'coder' && 'buildjet-8vcpu-ubuntu-2204' || 'ubuntu-latest' }}
     steps:
       - name: Checkout
@@ -144,7 +144,7 @@ jobs:
       - name: Check for AGPL code importing Enterprise...
         run: ./scripts/check_enterprise_imports.sh
 
-  gen:
+  static-gen:
     timeout-minutes: 8
     runs-on: ${{ github.repository_owner == 'coder' && 'buildjet-8vcpu-ubuntu-2204' || 'ubuntu-latest' }}
     needs: changes
@@ -188,7 +188,7 @@ jobs:
       - name: Check for unstaged files
         run: ./scripts/check_unstaged.sh
 
-  fmt:
+  static-fmt:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -565,7 +565,7 @@ jobs:
 
   required:
     runs-on: ubuntu-latest
-    needs: [gen, test-go, test-go-pg, test-go-race, test-js]
+    needs: [static-lint, static-gen, static-fmt, test-go, test-go-pg, test-go-race, test-js]
     # Allow this job to run even if the needed jobs fail, are skipped or
     # cancelled.
     if: always()
