@@ -25,6 +25,7 @@ import (
 	"text/template" // html/template escapes some nonces
 	"time"
 
+	"github.com/ammario/promise"
 	"github.com/google/uuid"
 	"github.com/justinas/nosurf"
 	"github.com/klauspost/compress/zstd"
@@ -294,25 +295,22 @@ func (h *Handler) renderHTMLWithState(rw http.ResponseWriter, r *http.Request, f
 	if apiKey != nil && actor != nil {
 		ctx := dbauthz.As(r.Context(), actor.Actor)
 
-		var eg errgroup.Group
-		var user database.User
-		orgIDs := []uuid.UUID{}
-		eg.Go(func() error {
-			var err error
-			user, err = h.opts.Database.GetUserByID(ctx, apiKey.UserID)
-			return err
+		userPromise := promise.Go(func() (database.User, error) {
+			return h.opts.Database.GetUserByID(ctx, apiKey.UserID)
 		})
-		eg.Go(func() error {
+
+		orgIDsPromise := promise.Go(func() ([]uuid.UUID, error) {
 			memberIDs, err := h.opts.Database.GetOrganizationIDsByMemberIDs(ctx, []uuid.UUID{apiKey.UserID})
 			if errors.Is(err, sql.ErrNoRows) || len(memberIDs) == 0 {
-				return nil
+				return nil, nil
 			}
 			if err != nil {
-				return nil
+				return nil, nil
 			}
-			orgIDs = memberIDs[0].OrganizationIDs
-			return err
+			orgIDs := memberIDs[0].OrganizationIDs
+			return orgIDs, nil
 		})
+
 		err := eg.Wait()
 		if err == nil {
 			var wg sync.WaitGroup
