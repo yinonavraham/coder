@@ -25,7 +25,10 @@ CREATE TYPE audit_action AS ENUM (
 CREATE TYPE build_reason AS ENUM (
     'initiator',
     'autostart',
-    'autostop'
+    'autostop',
+    'autolock',
+    'failedstop',
+    'autodelete'
 );
 
 CREATE TYPE log_level AS ENUM (
@@ -816,7 +819,8 @@ CREATE TABLE workspaces (
     name character varying(64) NOT NULL,
     autostart_schedule text,
     ttl bigint,
-    last_used_at timestamp without time zone DEFAULT '0001-01-01 00:00:00'::timestamp without time zone NOT NULL
+    last_used_at timestamp without time zone DEFAULT '0001-01-01 00:00:00'::timestamp without time zone NOT NULL,
+    locked_at timestamp with time zone
 );
 
 ALTER TABLE ONLY licenses ALTER COLUMN id SET DEFAULT nextval('licenses_id_seq'::regclass);

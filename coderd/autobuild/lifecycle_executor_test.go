@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"cdr.dev/slog/sloggers/slogtest"
-
 	"github.com/coder/coder/coderd/autobuild"
 	"github.com/coder/coder/coderd/coderdtest"
 	"github.com/coder/coder/coderd/database"
