@@ -274,6 +274,86 @@ func (h *Handler) serveHTML(resp http.ResponseWriter, request *http.Request, req
 	return false
 }
 
+func (h *Handler) fillUserState(ctx context.Context, apiKey *database.APIKey, actor *httpmw.Authorization, state *htmlState) error {
+	userPromise := promise.Go(func() (database.User, error) {
+		return h.opts.Database.GetUserByID(ctx, apiKey.UserID)
+	})
+
+	orgIDsPromise := promise.Go(func() ([]uuid.UUID, error) {
+		memberIDs, err := h.opts.Database.GetOrganizationIDsByMemberIDs(ctx, []uuid.UUID{apiKey.UserID})
+		if errors.Is(err, sql.ErrNoRows) || len(memberIDs) == 0 {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		orgIDs := memberIDs[0].OrganizationIDs
+		return orgIDs, nil
+	})
+
+	appearanceConfigPromise := promise.Go(func() (codersdk.AppearanceConfig, error) {
+		if h.AppearanceFetcher == nil {
+			return codersdk.AppearanceConfig{}, nil
+		}
+		return h.AppearanceFetcher(ctx)
+	})
+
+	dbUser, err := userPromise.Resolve()
+	if err != nil {
+		return err
+	}
+
+	orgIDs, err := orgIDsPromise.Resolve()
+	if err != nil {
+		return err
+	}
+
+	user, err := json.Marshal(db2sdk.User(dbUser, orgIDs))
+	if err != nil {
+		state.User = html.EscapeString(string(user))
+	}
+
+	entitlements := h.Entitlements.Load()
+	if entitlements != nil {
+		entitlements, err := json.Marshal(entitlements)
+		if err != nil {
+			return xerrors.Errorf("marshal entitlements: %w", err)
+		}
+		state.Entitlements = html.EscapeString(string(entitlements))
+	}
+
+	appearanceConfig, err := appearanceConfigPromise.Resolve()
+	if err == nil {
+		appearance, err := json.Marshal(appearanceConfig)
+		if err != nil {
+			return xerrors.Errorf("marshal appearance: %w", err)
+		}
+		state.Appearance = html.EscapeString(string(appearance))
+	}
+
+	if h.RegionsFetcher != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			regions, err := h.RegionsFetcher(ctx)
+			if err == nil {
+			}
+		}()
+	}
+	experiments := h.Experiments.Load()
+	if experiments != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			experiments, err := json.Marshal(experiments)
+			if err == nil {
+				state.Experiments = html.EscapeString(string(experiments))
+			}
+		}()
+	}
+	wg.Wait()
+}
+
 // renderWithState will render the file using the given nonce if the file exists
 // as a template. If it does not, it will return an error.
 func (h *Handler) renderHTMLWithState(rw http.ResponseWriter, r *http.Request, filePath string, state htmlState) ([]byte, error) {
@@ -294,84 +374,8 @@ func (h *Handler) renderHTMLWithState(rw http.ResponseWriter, r *http.Request, f
 	})
 	if apiKey != nil && actor != nil {
 		ctx := dbauthz.As(r.Context(), actor.Actor)
+		err = h.fillUserState(ctx, apiKey, actor, &state)
 
-		userPromise := promise.Go(func() (database.User, error) {
-			return h.opts.Database.GetUserByID(ctx, apiKey.UserID)
-		})
-
-		orgIDsPromise := promise.Go(func() ([]uuid.UUID, error) {
-			memberIDs, err := h.opts.Database.GetOrganizationIDsByMemberIDs(ctx, []uuid.UUID{apiKey.UserID})
-			if errors.Is(err, sql.ErrNoRows) || len(memberIDs) == 0 {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, nil
-			}
-			orgIDs := memberIDs[0].OrganizationIDs
-			return orgIDs, nil
-		})
-
-		err := eg.Wait()
-		if err == nil {
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				user, err := json.Marshal(db2sdk.User(user, orgIDs))
-				if err == nil {
-					state.User = html.EscapeString(string(user))
-				}
-			}()
-			entitlements := h.Entitlements.Load()
-			if entitlements != nil {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					entitlements, err := json.Marshal(entitlements)
-					if err == nil {
-						state.Entitlements = html.EscapeString(string(entitlements))
-					}
-				}()
-			}
-			if h.AppearanceFetcher != nil {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					cfg, err := h.AppearanceFetcher(ctx)
-					if err == nil {
-						appearance, err := json.Marshal(cfg)
-						if err == nil {
-							state.Appearance = html.EscapeString(string(appearance))
-						}
-					}
-				}()
-			}
-			if h.RegionsFetcher != nil {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					regions, err := h.RegionsFetcher(ctx)
-					if err == nil {
-						regions, err := json.Marshal(regions)
-						if err == nil {
-							state.Regions = html.EscapeString(string(regions))
-						}
-					}
-				}()
-			}
-			experiments := h.Experiments.Load()
-			if experiments != nil {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					experiments, err := json.Marshal(experiments)
-					if err == nil {
-						state.Experiments = html.EscapeString(string(experiments))
-					}
-				}()
-			}
-			wg.Wait()
-		}
 	}
 
 	err := tmpl.Execute(&buf, state)
