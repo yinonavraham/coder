@@ -3463,6 +3463,18 @@ func (q *fakeQuerier) GetWorkspacesEligibleForTransition(ctx context.Context, no
 			workspaces = append(workspaces, workspace)
 			continue
 		}
+		template, err := q.GetTemplateByID(ctx, workspace.TemplateID)
+		if err != nil {
+			return nil, xerrors.Errorf("get template by ID: %w", err)
+		}
+		if !workspace.LockedAt.Valid && template.InactivityTTL > 0 {
+			workspaces = append(workspaces, workspace)
+			continue
+		}
+		if workspace.LockedAt.Valid && template.LockedTTL > 0 {
+			workspaces = append(workspaces, workspace)
+			continue
+		}
 	}
 
 	return workspaces, nil
@@ -5161,7 +5173,23 @@ func (q *fakeQuerier) UpdateWorkspaceLastUsedAt(_ context.Context, arg database.
 }
 
 func (q *fakeQuerier) UpdateWorkspaceLockedAt(ctx context.Context, arg database.UpdateWorkspaceLockedAtParams) error {
-	panic("Not implemented")
+	if err := validateDatabaseType(arg); err != nil {
+		return err
+	}
+
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	for index, workspace := range q.workspaces {
+		if workspace.ID != arg.ID {
+			continue
+		}
+		workspace.LockedAt = arg.LockedAt
+		q.workspaces[index] = workspace
+		return nil
+	}
+
+	return sql.ErrNoRows
 }
 
 func (q *fakeQuerier) UpdateWorkspaceProxy(_ context.Context, arg database.UpdateWorkspaceProxyParams) (database.WorkspaceProxy, error) {

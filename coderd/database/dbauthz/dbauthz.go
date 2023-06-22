@@ -2491,7 +2491,7 @@ func (q *querier) UpdateWorkspaceLastUsedAt(ctx context.Context, arg database.Up
 }
 
 func (q *querier) UpdateWorkspaceLockedAt(ctx context.Context, arg database.UpdateWorkspaceLockedAtParams) error {
-	panic("Not implemented")
+	return q.db.UpdateWorkspaceLockedAt(ctx, arg)
 }
 
 func (q *querier) UpdateWorkspaceProxy(ctx context.Context, arg database.UpdateWorkspaceProxyParams) (database.WorkspaceProxy, error) {

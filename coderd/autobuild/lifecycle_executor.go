@@ -181,7 +181,8 @@ func (e *Executor) runOnce(t time.Time) Stats {
 					err = tx.UpdateWorkspaceLockedAt(e.ctx, database.UpdateWorkspaceLockedAtParams{
 						ID: ws.ID,
 						LockedAt: sql.NullTime{
-							Time: database.Now(),
+							Time:  database.Now(),
+							Valid: true,
 						},
 					})
 					if err != nil {
@@ -199,33 +200,23 @@ func (e *Executor) runOnce(t time.Time) Stats {
 					)
 				}
 
-				if reason == database.BuildReasonAutodelete {
-					err = tx.UpdateWorkspaceDeletedByID(e.ctx, database.UpdateWorkspaceDeletedByIDParams{
-						// TODO: who tf should this be.
-						ID:      uuid.Nil,
-						Deleted: true,
-					})
-					if err != nil {
-						log.Error(e.ctx, "unable to delete workspace",
-							slog.F("transition", nextTransition),
-							slog.Error(err),
-						)
-						return nil
-					}
+				if nextTransition == database.WorkspaceTransitionDelete {
 					log.Info(e.ctx, "deleted workspace",
 						slog.F("locked_at", ws.LockedAt.Time),
 						slog.F("locked_ttl", templateSchedule.LockedTTL),
 					)
 				}
 
-				statsMu.Lock()
-				stats.Transitions[ws.ID] = nextTransition
-				statsMu.Unlock()
+				if nextTransition != "" {
+					statsMu.Lock()
+					stats.Transitions[ws.ID] = nextTransition
+					statsMu.Unlock()
 
-				log.Info(e.ctx, "scheduling workspace transition",
-					slog.F("transition", nextTransition),
-					slog.F("reason", reason),
-				)
+					log.Info(e.ctx, "scheduling workspace transition",
+						slog.F("transition", nextTransition),
+						slog.F("reason", reason),
+					)
+				}
 
 				return nil
 
@@ -271,7 +262,7 @@ func getNextTransition(
 	case isEligibleForAutostart(ws, latestBuild, latestJob, templateSchedule, currentTick):
 		return database.WorkspaceTransitionStart, database.BuildReasonAutostart, nil
 	case isEligibleForFailedStop(latestBuild, latestJob, templateSchedule):
-		return database.WorkspaceTransitionStop, database.BuildReasonAutostop, nil
+		return database.WorkspaceTransitionStop, database.BuildReasonFailedstop, nil
 	case isEligibleForLockedStop(ws, templateSchedule):
 		// Only stop started workspaces.
 		if latestBuild.Transition == database.WorkspaceTransitionStart {
