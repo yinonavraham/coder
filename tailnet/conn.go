@@ -27,6 +27,7 @@ import (
 	"tailscale.com/net/tsdial"
 	"tailscale.com/net/tstun"
 	"tailscale.com/tailcfg"
+	"tailscale.com/tsd"
 	"tailscale.com/types/ipproto"
 	"tailscale.com/types/key"
 	tslogger "tailscale.com/types/logger"
@@ -139,13 +140,15 @@ func NewConn(options *Options) (conn *Conn, err error) {
 		}
 	}()
 
+	sys := new(tsd.System)
 	dialer := &tsdial.Dialer{
 		Logf: Logger(options.Logger.Named("tsdial")),
 	}
 	wireguardEngine, err := wgengine.NewUserspaceEngine(Logger(options.Logger.Named("wgengine")), wgengine.Config{
-		NetMon:     wireguardMonitor,
-		Dialer:     dialer,
-		ListenPort: options.ListenPort,
+		NetMon:       wireguardMonitor,
+		Dialer:       dialer,
+		ListenPort:   options.ListenPort,
+		SetSubsystem: sys.Set,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("create wgengine: %w", err)
@@ -160,16 +163,12 @@ func NewConn(options *Options) (conn *Conn, err error) {
 		return ok
 	}
 
-	// This is taken from Tailscale:
-	// https://github.com/tailscale/tailscale/blob/0f05b2c13ff0c305aa7a1655fa9c17ed969d65be/tsnet/tsnet.go#L247-L255
-	wireguardInternals, ok := wireguardEngine.(wgengine.InternalsGetter)
-	if !ok {
-		return nil, xerrors.Errorf("wireguard engine isn't the correct type %T", wireguardEngine)
-	}
-	tunDevice, magicConn, dnsManager, ok := wireguardInternals.GetInternals()
-	if !ok {
-		return nil, xerrors.New("get wireguard internals")
-	}
+	sys.Set(wireguardEngine)
+
+	tunDevice := sys.Tun.Get()
+	magicConn := sys.MagicSock.Get()
+	dnsManager := sys.DNSManager.Get()
+
 	if options.DERPHeader != nil {
 		magicConn.SetDERPHeader(options.DERPHeader.Clone())
 	}

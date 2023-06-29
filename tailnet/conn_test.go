@@ -269,7 +269,7 @@ func runTestTransmitHang(t *testing.T, timeout time.Duration) {
 	require.NoError(t, err)
 	defer sendCapture.Close()
 
-	logger := slogtest.Make(t, nil).
+	logger := slogtest.Make(t, &slogtest.Options{IgnoreErrors: true}).
 		Leveled(slog.LevelDebug).
 		AppendSinks(sloghuman.Sink(testLog))
 
