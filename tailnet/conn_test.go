@@ -360,12 +360,13 @@ func runTestTransmitHang(t *testing.T, timeout time.Duration) {
 
 	now := time.Now()
 
-	payload := []byte(strings.Repeat("hello world\n", 65536/12))
+	// payload := []byte(strings.Repeat("0", 65536))
+	payload := []byte(strings.Repeat("0", 65536*2))
 	size := 0
 	retries := 0
 	writeTimeout := 2 * time.Second
 	goroutineGoodDumpWritten := false
-	for i := 0; i < 1024*2; i++ {
+	for i := 0; i < 1024; i++ {
 		logger.Debug(ctx, "write payload", slog.F("num", i), slog.F("transmitted_kb", size/1024))
 	Retry:
 		n := 0
