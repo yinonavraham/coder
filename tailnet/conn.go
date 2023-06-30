@@ -762,6 +762,7 @@ func (c *Conn) Listen(network, addr string) (net.Listener, error) {
 }
 
 func (c *Conn) DialContextTCP(ctx context.Context, ipp netip.AddrPort) (*gonet.TCPConn, error) {
+	ctx = context.WithValue(ctx, "gvisor:logger", c.logger.Named("netstack"))
 	return c.netStack.DialContextTCP(ctx, ipp)
 }
 
@@ -776,6 +777,8 @@ func (c *Conn) forwardTCP(_, dst netip.AddrPort) (handler func(net.Conn), opts [
 	if !ok {
 		return nil, nil, false
 	}
+
+	opts = append(opts, tcpip.LoggerOption(c.logger.Named("netstack")))
 
 	// See: https://github.com/tailscale/tailscale/blob/c7cea825aea39a00aca71ea02bab7266afc03e7c/wgengine/netstack/netstack.go#L888
 	if dst.Port() == WorkspaceAgentSSHPort || dst.Port() == 22 {
