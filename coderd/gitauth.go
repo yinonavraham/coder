@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"golang.org/x/sync/errgroup"
 
@@ -186,6 +187,103 @@ func (*API) gitAuthDeviceByID(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.Write(ctx, rw, http.StatusOK, deviceAuth)
+}
+
+// @Summary List git auth repos by id
+// @ID list-git-auth-repos-by-id
+// @Security CoderSessionToken
+// @Produce json
+// @Tags Git
+// @Param gitauth path string true "Git Provider ID" format(string)
+// @Param page query int 1 "Page number"
+// @Param per_page query int 1 "Number of items per page"
+// @Param installation_id query int 0 "Installation ID to filter by"
+// @Success 200 {object} codersdk.GitReposResponse
+// @Router /gitauth/{gitauth}/repos [get]
+func (api *API) gitAuthReposByID(rw http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	q := r.URL.Query()
+	pageRaw := q.Get("page")
+	if pageRaw == "" {
+		pageRaw = "1"
+	}
+	perPageRaw := q.Get("per_page")
+	if perPageRaw == "" {
+		perPageRaw = "30"
+	}
+	installIDRaw := q.Get("installation_id")
+	if installIDRaw == "" {
+		installIDRaw = "0"
+	}
+	page, err := strconv.Atoi(pageRaw)
+	if err != nil {
+		httpapi.Write(r.Context(), rw, http.StatusBadRequest, codersdk.Response{
+			Message: "Invalid page.",
+			Detail:  err.Error(),
+		})
+		return
+	}
+	perPage, err := strconv.Atoi(perPageRaw)
+	if err != nil {
+		httpapi.Write(r.Context(), rw, http.StatusBadRequest, codersdk.Response{
+			Message: "Invalid per_page.",
+			Detail:  err.Error(),
+		})
+		return
+	}
+	installID, err := strconv.Atoi(installIDRaw)
+	if err != nil {
+		httpapi.Write(r.Context(), rw, http.StatusBadRequest, codersdk.Response{
+			Message: "Invalid installation_id.",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	apiKey := httpmw.APIKey(r)
+	config := httpmw.GitAuthParam(r)
+
+	link, err := api.Database.GetGitAuthLink(ctx, database.GetGitAuthLinkParams{
+		ProviderID: config.ID,
+		UserID:     apiKey.UserID,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			httpapi.Write(r.Context(), rw, http.StatusUnauthorized, codersdk.Response{
+				Message: "You must authenticate with the git auth provider!",
+			})
+			return
+		}
+		httpapi.Write(r.Context(), rw, http.StatusInternalServerError, codersdk.Response{
+			Message: "Failed to get git auth link.",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	link, _, err = config.RefreshToken(ctx, api.Database, link)
+	if err != nil {
+		httpapi.Write(r.Context(), rw, http.StatusInternalServerError, codersdk.Response{
+			Message: "Failed to refresh git auth link.",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	repos, err := config.Repos(ctx, link.OAuthAccessToken, &codersdk.GitReposOptions{
+		Page:           page,
+		PerPage:        perPage,
+		InstallationID: installID,
+	})
+	if err != nil {
+		httpapi.Write(r.Context(), rw, http.StatusInternalServerError, codersdk.Response{
+			Message: "Failed to get git repos.",
+			Detail:  err.Error(),
+		})
+		return
+	}
+
+	httpapi.Write(ctx, rw, http.StatusOK, repos)
 }
 
 func (api *API) gitAuthCallback(gitAuthConfig *gitauth.Config) http.HandlerFunc {

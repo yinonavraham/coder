@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 type GitAuth struct {
@@ -49,6 +50,16 @@ type GitAuthDeviceExchange struct {
 	DeviceCode string `json:"device_code"`
 }
 
+type GitRepo struct {
+	Name            string
+	Description     string
+	Owner           GitAuthUser
+	URL             string
+	StargazersCount int
+	Language        string
+	DefaultBranch   string
+}
+
 func (c *Client) GitAuthDeviceByID(ctx context.Context, provider string) (GitAuthDevice, error) {
 	res, err := c.Request(ctx, http.MethodGet, fmt.Sprintf("/api/v2/gitauth/%s/device", provider), nil)
 	if err != nil {
@@ -87,4 +98,48 @@ func (c *Client) GitAuthByID(ctx context.Context, provider string) (GitAuth, err
 	}
 	var gitauth GitAuth
 	return gitauth, json.NewDecoder(res.Body).Decode(&gitauth)
+}
+
+type GitReposOptions struct {
+	// Default is 1.
+	Page int
+	// Default is 30. Max is 100.
+	PerPage int
+
+	// InstallationID is the ID of the installation to list repos for.
+	// This is only used for GitHub.
+	InstallationID int
+}
+
+type GitReposResponse struct {
+	Total int       `json:"total"`
+	Repos []GitRepo `json:"repos"`
+}
+
+// GitAuthReposByID lists the git repos for the given provider by ID.
+func (c *Client) GitAuthReposByID(ctx context.Context, provider string, opts *GitReposOptions) (GitReposResponse, error) {
+	if opts == nil {
+		opts = &GitReposOptions{}
+	}
+	res, err := c.Request(ctx, http.MethodGet, fmt.Sprintf("/api/v2/gitauth/%s/repos", provider), nil, func(r *http.Request) {
+		q := r.URL.Query()
+		if opts.Page > 0 {
+			q.Set("page", strconv.Itoa(opts.Page))
+		}
+		if opts.PerPage > 0 {
+			q.Set("per_page", strconv.Itoa(opts.PerPage))
+		}
+		if opts.InstallationID > 0 {
+			q.Set("installation_id", strconv.Itoa(opts.InstallationID))
+		}
+	})
+	if err != nil {
+		return GitReposResponse{}, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return GitReposResponse{}, ReadBodyAsError(res)
+	}
+	var repos GitReposResponse
+	return repos, json.NewDecoder(res.Body).Decode(&repos)
 }

@@ -216,6 +216,41 @@ func TestGitAuthDevice(t *testing.T) {
 	})
 }
 
+func TestGitAuthRepos(t *testing.T) {
+	t.Parallel()
+	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			httpapi.Write(r.Context(), w, http.StatusOK, &github.ListRepositories{
+				TotalCount: github.Int(1),
+				Repositories: []*github.Repository{{
+					ID:   github.Int64(1),
+					Name: github.String("test"),
+				}},
+			})
+		}))
+		defer srv.Close()
+		client := coderdtest.New(t, &coderdtest.Options{
+			GitAuthConfigs: []*gitauth.Config{{
+				OAuth2Config: &testutil.OAuth2Config{},
+				ID:           "test",
+				Type:         codersdk.GitProviderGitHub,
+				ReposURL: func(opts *codersdk.GitReposOptions) string {
+					return srv.URL
+				},
+			}},
+		})
+		coderdtest.CreateFirstUser(t, client)
+		resp := coderdtest.RequestGitAuthCallback(t, "test", client)
+		_ = resp.Body.Close()
+		repos, err := client.GitAuthReposByID(ctx, "test", nil)
+		require.NoError(t, err)
+		require.Len(t, repos.Repos, 1)
+		require.Equal(t, "test", repos.Repos[0].Name)
+	})
+}
+
 // nolint:bodyclose
 func TestGitAuthCallback(t *testing.T) {
 	t.Parallel()

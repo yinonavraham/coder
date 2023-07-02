@@ -49,9 +49,12 @@ type Config struct {
 	// of the application, and user authentication. It's possible
 	// for the user to authenticate but the application to not.
 	AppInstallURL string
-	// InstallationsURL is an API endpoint that returns a list of
+	// AppInstallationsURL is an API endpoint that returns a list of
 	// installations for the user. This is used for GitHub Apps.
 	AppInstallationsURL string
+	// AppInstallationReposURL is an API endpoint that returns a list of
+	// repositories for the installation. This is used for GitHub Apps.
+	ReposURL func(opts *codersdk.GitReposOptions) string
 	// DeviceAuth is set if the provider uses the device flow.
 	DeviceAuth *DeviceAuth
 }
@@ -201,6 +204,56 @@ func (c *Config) AppInstallations(ctx context.Context, token string) ([]codersdk
 		}
 	}
 	return installs, true, nil
+}
+
+// Repos returns a list of repositories for the given token.
+func (c *Config) Repos(ctx context.Context, token string, opts *codersdk.GitReposOptions) (*codersdk.GitReposResponse, error) {
+	if c.ReposURL == nil {
+		return nil, xerrors.New("repos URL is not configured")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.ReposURL(opts), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		data, _ := io.ReadAll(res.Body)
+		return nil, xerrors.Errorf("status %d: body: %s", res.StatusCode, data)
+	}
+	var repos codersdk.GitReposResponse
+	if c.Type == codersdk.GitProviderGitHub {
+		var ghRepos *github.ListRepositories
+		err = json.NewDecoder(res.Body).Decode(&ghRepos)
+		if err != nil {
+			return nil, err
+		}
+		repos = codersdk.GitReposResponse{
+			Repos: make([]codersdk.GitRepo, 0, len(ghRepos.Repositories)),
+		}
+		for _, ghRepo := range ghRepos.Repositories {
+			repos.Repos = append(repos.Repos, codersdk.GitRepo{
+				Name: ghRepo.GetName(),
+				Owner: codersdk.GitAuthUser{
+					Login:      ghRepo.GetOwner().GetLogin(),
+					AvatarURL:  ghRepo.GetOwner().GetAvatarURL(),
+					ProfileURL: ghRepo.GetOwner().GetHTMLURL(),
+					Name:       ghRepo.GetOwner().GetName(),
+				},
+				Description:     ghRepo.GetDescription(),
+				URL:             ghRepo.GetHTMLURL(),
+				StargazersCount: ghRepo.GetStargazersCount(),
+				Language:        ghRepo.GetLanguage(),
+				DefaultBranch:   ghRepo.GetDefaultBranch(),
+			})
+		}
+		repos.Total = ghRepos.GetTotalCount()
+	}
+	return &repos, nil
 }
 
 // ConvertConfig converts the SDK configuration entry format

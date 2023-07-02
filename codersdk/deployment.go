@@ -307,6 +307,7 @@ type GitAuthConfig struct {
 	ValidateURL         string   `json:"validate_url"`
 	AppInstallURL       string   `json:"app_install_url"`
 	AppInstallationsURL string   `json:"app_installations_url"`
+	ReposURL            string   `json:"repos_url"`
 	Regex               string   `json:"regex"`
 	NoRefresh           bool     `json:"no_refresh"`
 	Scopes              []string `json:"scopes"`

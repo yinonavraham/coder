@@ -527,6 +527,7 @@ func New(options *Options) *API {
 			r.Get("/", api.gitAuthByID)
 			r.Post("/device", api.postGitAuthDeviceByID)
 			r.Get("/device", api.gitAuthDeviceByID)
+			r.Get("/repos", api.gitAuthReposByID)
 		})
 		r.Route("/organizations", func(r chi.Router) {
 			r.Use(

@@ -3,6 +3,7 @@ package gitauth
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -44,6 +45,17 @@ var deviceAuthURL = map[codersdk.GitProvider]string{
 
 var appInstallationsURL = map[codersdk.GitProvider]string{
 	codersdk.GitProviderGitHub: "https://api.github.com/user/installations",
+}
+
+var reposURL = map[codersdk.GitProvider]func(opts *codersdk.GitReposOptions) string{
+	codersdk.GitProviderGitHub: func(opts *codersdk.GitReposOptions) string {
+		base := "https://api.github.com/user/repos"
+		if opts.InstallationID != 0 {
+			base = fmt.Sprintf("https://api.github.com/user/installations/%d/repositories", opts.InstallationID)
+		}
+		base += fmt.Sprintf("?page=%d&per_page=%d", opts.Page, opts.PerPage)
+		return base
+	},
 }
 
 // scope contains defaults for each Git provider.
