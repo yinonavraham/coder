@@ -811,7 +811,7 @@ func TestUserOIDC(t *testing.T) {
 		})
 
 		var err error
-		user.HTTPClient.Jar, err = cookiejar.New(nil)
+		user.HTTPClient().Jar, err = cookiejar.New(nil)
 		require.NoError(t, err)
 
 		ctx := testutil.Context(t, testutil.WaitShort)
@@ -951,7 +951,7 @@ func TestUserLogout(t *testing.T) {
 	require.NoError(t, err)
 
 	// Log in with basic auth and keep the the session token (but don't use it).
-	userClient := codersdk.New(client.URL)
+	userClient := codersdk.New(client.URL())
 	loginRes1, err := userClient.LoginWithPassword(ctx, codersdk.LoginWithPasswordRequest{
 		Email:    email,
 		Password: password,
@@ -1025,12 +1025,12 @@ func TestUserLogout(t *testing.T) {
 }
 
 func oauth2Callback(t *testing.T, client *codersdk.Client) *http.Response {
-	client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
 
 	state := "somestate"
-	oauthURL, err := client.URL.Parse("/api/v2/users/oauth2/github/callback?code=asd&state=" + state)
+	oauthURL, err := client.URL().Parse("/api/v2/users/oauth2/github/callback?code=asd&state=" + state)
 	require.NoError(t, err)
 	req, err := http.NewRequestWithContext(context.Background(), "GET", oauthURL.String(), nil)
 	require.NoError(t, err)
@@ -1038,7 +1038,7 @@ func oauth2Callback(t *testing.T, client *codersdk.Client) *http.Response {
 		Name:  codersdk.OAuth2StateCookie,
 		Value: state,
 	})
-	res, err := client.HTTPClient.Do(req)
+	res, err := client.HTTPClient().Do(req)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = res.Body.Close()
@@ -1053,10 +1053,10 @@ func oidcCallback(t *testing.T, client *codersdk.Client, code string) *http.Resp
 func oidcCallbackWithState(t *testing.T, client *codersdk.Client, code, state string) *http.Response {
 	t.Helper()
 
-	client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
-	oauthURL, err := client.URL.Parse(fmt.Sprintf("/api/v2/users/oidc/callback?code=%s&state=%s", code, state))
+	oauthURL, err := client.URL().Parse(fmt.Sprintf("/api/v2/users/oidc/callback?code=%s&state=%s", code, state))
 	require.NoError(t, err)
 	req, err := http.NewRequestWithContext(context.Background(), "GET", oauthURL.String(), nil)
 	require.NoError(t, err)
@@ -1064,7 +1064,7 @@ func oidcCallbackWithState(t *testing.T, client *codersdk.Client, code, state st
 		Name:  codersdk.OAuth2StateCookie,
 		Value: state,
 	})
-	res, err := client.HTTPClient.Do(req)
+	res, err := client.HTTPClient().Do(req)
 	require.NoError(t, err)
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)

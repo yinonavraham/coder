@@ -57,8 +57,8 @@ func prepareTestGitSSH(ctx context.Context, t *testing.T) (*codersdk.Client, str
 	coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
 	// start workspace agent
-	inv, root := clitest.New(t, "agent", "--agent-token", agentToken, "--agent-url", client.URL.String())
-	agentClient := codersdk.New(client.URL)
+	inv, root := clitest.New(t, "agent", "--agent-token", agentToken, "--agent-url", client.URL().String())
+	agentClient := codersdk.New(client.URL())
 	agentClient.SetSessionToken(agentToken)
 	clitest.SetupConfig(t, agentClient, root)
 	clitest.Start(t, inv)
@@ -140,7 +140,7 @@ func TestGitSSH(t *testing.T) {
 		// set to agent config dir
 		inv, _ := clitest.New(t,
 			"gitssh",
-			"--agent-url", client.URL.String(),
+			"--agent-url", client.URL().String(),
 			"--agent-token", token,
 			"--",
 			fmt.Sprintf("-p%d", addr.Port),
@@ -203,7 +203,7 @@ func TestGitSSH(t *testing.T) {
 		pty := ptytest.New(t)
 		cmdArgs := []string{
 			"gitssh",
-			"--agent-url", client.URL.String(),
+			"--agent-url", client.URL().String(),
 			"--agent-token", token,
 			"--",
 			"-F", config,

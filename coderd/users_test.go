@@ -204,7 +204,7 @@ func TestPostLogin(t *testing.T) {
 
 		dc.DisablePasswordAuth = clibase.Bool(true)
 
-		userClient := codersdk.New(client.URL)
+		userClient := codersdk.New(client.URL())
 		_, err = userClient.LoginWithPassword(ctx, codersdk.LoginWithPasswordRequest{
 			Email:    user.Email,
 			Password: password,
@@ -369,7 +369,7 @@ func TestPostLogout(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, keyID, apiKey.ID, "API key should exist in the database")
 
-		fullURL, err := client.URL.Parse("/api/v2/users/logout")
+		fullURL, err := client.URL().Parse("/api/v2/users/logout")
 		require.NoError(t, err, "Server URL should parse successfully")
 
 		res, err := client.Request(ctx, http.MethodPost, fullURL.String(), nil)
@@ -1493,7 +1493,7 @@ func TestWorkspacesByUser(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		newUserClient := codersdk.New(client.URL)
+		newUserClient := codersdk.New(client.URL())
 		newUserClient.SetSessionToken(auth.SessionToken)
 		version := coderdtest.CreateTemplateVersion(t, client, user.OrganizationID, nil)
 		coderdtest.AwaitTemplateVersionJob(t, client, version.ID)

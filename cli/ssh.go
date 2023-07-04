@@ -119,7 +119,7 @@ func (r *RootCmd) ssh() *clibase.Cmd {
 				}
 
 				// log HTTP requests
-				client.Logger = logger
+				client.SetLogger(logger)
 			}
 
 			workspace, workspaceAgent, err := getWorkspaceAndAgent(ctx, inv, client, codersdk.Me, inv.Args[0])
@@ -617,7 +617,7 @@ func verifyWorkspaceOutdated(client *codersdk.Client, workspace codersdk.Workspa
 		return "", false // workspace is up-to-date
 	}
 
-	workspaceLink := buildWorkspaceLink(client.URL, workspace)
+	workspaceLink := buildWorkspaceLink(client.URL(), workspace)
 	return fmt.Sprintf("👋 Your workspace is outdated! Update it here: %s\n", workspaceLink), true
 }
 

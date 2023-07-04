@@ -69,7 +69,7 @@ func TestRegions(t *testing.T) {
 		require.Equal(t, "Default", regions[0].DisplayName)
 		require.NotEmpty(t, regions[0].IconURL)
 		require.True(t, regions[0].Healthy)
-		require.Equal(t, client.URL.String(), regions[0].PathAppURL)
+		require.Equal(t, client.URL().String(), regions[0].PathAppURL)
 		require.Equal(t, appHostname, regions[0].WildcardHostname)
 
 		// Ensure the primary region ID is constant.
@@ -133,7 +133,7 @@ func TestRegions(t *testing.T) {
 		require.Equal(t, "Default", regions[0].DisplayName)
 		require.NotEmpty(t, regions[0].IconURL)
 		require.True(t, regions[0].Healthy)
-		require.Equal(t, client.URL.String(), regions[0].PathAppURL)
+		require.Equal(t, client.URL().String(), regions[0].PathAppURL)
 		require.Equal(t, appHostname, regions[0].WildcardHostname)
 
 		// Region 1 is the proxy.
@@ -165,7 +165,7 @@ func TestRegions(t *testing.T) {
 		})
 		_ = coderdtest.CreateFirstUser(t, client)
 
-		unauthedClient := codersdk.New(client.URL)
+		unauthedClient := codersdk.New(client.URL())
 		regions, err := unauthedClient.Regions(ctx)
 		require.Error(t, err)
 		require.Empty(t, regions)
@@ -366,7 +366,7 @@ func TestIssueSignedAppToken(t *testing.T) {
 	workspace.LatestBuild = build
 
 	// Connect an agent to the workspace
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 	agentCloser := agent.New(agent.Options{
 		Client: agentClient,
@@ -387,7 +387,7 @@ func TestIssueSignedAppToken(t *testing.T) {
 
 	t.Run("BadAppRequest", func(t *testing.T) {
 		t.Parallel()
-		proxyClient := wsproxysdk.New(client.URL)
+		proxyClient := wsproxysdk.New(client.URL())
 		proxyClient.SetSessionToken(proxyRes.ProxyToken)
 
 		ctx := testutil.Context(t, testutil.WaitLong)
@@ -409,7 +409,7 @@ func TestIssueSignedAppToken(t *testing.T) {
 	}
 	t.Run("OK", func(t *testing.T) {
 		t.Parallel()
-		proxyClient := wsproxysdk.New(client.URL)
+		proxyClient := wsproxysdk.New(client.URL())
 		proxyClient.SetSessionToken(proxyRes.ProxyToken)
 
 		ctx := testutil.Context(t, testutil.WaitLong)
@@ -419,7 +419,7 @@ func TestIssueSignedAppToken(t *testing.T) {
 
 	t.Run("OKHTML", func(t *testing.T) {
 		t.Parallel()
-		proxyClient := wsproxysdk.New(client.URL)
+		proxyClient := wsproxysdk.New(client.URL())
 		proxyClient.SetSessionToken(proxyRes.ProxyToken)
 
 		rw := httptest.NewRecorder()
@@ -478,7 +478,7 @@ func TestReconnectingPTYSignedToken(t *testing.T) {
 
 	// Connect an agent to the workspace
 	agentID := build.Resources[0].Agents[0].ID
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 	agentCloser := agent.New(agent.Options{
 		Client: agentClient,
@@ -600,7 +600,7 @@ func TestReconnectingPTYSignedToken(t *testing.T) {
 	t.Run("NoToken", func(t *testing.T) {
 		t.Parallel()
 
-		unauthedClient := codersdk.New(client.URL)
+		unauthedClient := codersdk.New(client.URL())
 
 		ctx := testutil.Context(t, testutil.WaitLong)
 		res, err := unauthedClient.IssueReconnectingPTYSignedToken(ctx, codersdk.IssueReconnectingPTYSignedTokenRequest{

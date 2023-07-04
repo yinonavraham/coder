@@ -116,7 +116,7 @@ func (d *Details) AppClient(t *testing.T) *codersdk.Client {
 	client := codersdk.New(d.PathAppBaseURL)
 	client.SetSessionToken(d.SDKClient.SessionToken())
 	forceURLTransport(t, client)
-	client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
 
@@ -166,7 +166,7 @@ func setupProxyTestWithFactory(t *testing.T, factory DeploymentFactory, opts *De
 
 	// Configure the HTTP client to not follow redirects and to route all
 	// requests regardless of hostname to the coderd test server.
-	deployment.SDKClient.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	deployment.SDKClient.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
 	forceURLTransport(t, deployment.SDKClient)
@@ -339,7 +339,7 @@ func createWorkspaceWithApps(t *testing.T, client *codersdk.Client, orgID uuid.U
 	workspace := coderdtest.CreateWorkspace(t, client, orgID, template.ID, workspaceMutators...)
 	coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 
 	// TODO (@dean): currently, the primary app host is used when generating
@@ -387,7 +387,7 @@ func doWithRetries(t require.TestingT, client *codersdk.Client, req *http.Reques
 	var err error
 	require.Eventually(t, func() bool {
 		// nolint // only requests which are not passed upstream have a body closed
-		resp, err = client.HTTPClient.Do(req)
+		resp, err = client.HTTPClient().Do(req)
 		if resp != nil && resp.StatusCode == http.StatusBadGateway {
 			if resp.Body != nil {
 				resp.Body.Close()
@@ -423,9 +423,9 @@ func forceURLTransport(t *testing.T, client *codersdk.Client) {
 	require.True(t, ok)
 	transport := defaultTransport.Clone()
 	transport.DialContext = func(ctx context.Context, network, _ string) (net.Conn, error) {
-		return (&net.Dialer{}).DialContext(ctx, network, client.URL.Host)
+		return (&net.Dialer{}).DialContext(ctx, network, client.URL().Host)
 	}
-	client.HTTPClient.Transport = transport
+	client.HTTPClient().Transport = transport
 	t.Cleanup(func() {
 		transport.CloseIdleConnections()
 	})

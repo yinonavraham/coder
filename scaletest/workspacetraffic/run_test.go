@@ -63,7 +63,7 @@ func TestRun(t *testing.T) {
 	)
 
 	// We also need a running agent to run this test.
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 	agentCloser := agent.New(agent.Options{
 		Client: agentClient,

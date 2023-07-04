@@ -117,10 +117,11 @@ func (c *Client) Manifest(ctx context.Context) (Manifest, error) {
 	if err != nil {
 		return Manifest{}, err
 	}
-	accessingPort := c.SDK.URL.Port()
+	u := c.SDK.URL()
+	accessingPort := u.Port()
 	if accessingPort == "" {
 		accessingPort = "80"
-		if c.SDK.URL.Scheme == "https" {
+		if u.Scheme == "https" {
 			accessingPort = "443"
 		}
 	}
@@ -143,9 +144,9 @@ func (c *Client) Manifest(ctx context.Context) (Manifest, error) {
 			if node.STUNOnly {
 				continue
 			}
-			node.HostName = c.SDK.URL.Hostname()
+			node.HostName = u.Hostname()
 			node.DERPPort = accessPort
-			node.ForceHTTP = c.SDK.URL.Scheme == "http"
+			node.ForceHTTP = u.Scheme == "http"
 		}
 	}
 	return agentMeta, nil
@@ -154,7 +155,7 @@ func (c *Client) Manifest(ctx context.Context) (Manifest, error) {
 // Listen connects to the workspace agent coordinate WebSocket
 // that handles connection negotiation.
 func (c *Client) Listen(ctx context.Context) (net.Conn, error) {
-	coordinateURL, err := c.SDK.URL.Parse("/api/v2/workspaceagents/me/coordinate")
+	coordinateURL, err := c.SDK.URL().Parse("/api/v2/workspaceagents/me/coordinate")
 	if err != nil {
 		return nil, xerrors.Errorf("parse url: %w", err)
 	}
@@ -168,7 +169,7 @@ func (c *Client) Listen(ctx context.Context) (net.Conn, error) {
 	}})
 	httpClient := &http.Client{
 		Jar:       jar,
-		Transport: c.SDK.HTTPClient.Transport,
+		Transport: c.SDK.HTTPClient().Transport,
 	}
 	// nolint:bodyclose
 	conn, res, err := websocket.Dial(ctx, coordinateURL.String(), &websocket.DialOptions{
@@ -194,7 +195,7 @@ func (c *Client) Listen(ctx context.Context) (net.Conn, error) {
 		ticker := time.NewTicker(tick)
 		defer ticker.Stop()
 		defer func() {
-			c.SDK.Logger.Debug(ctx, "coordinate pinger exited")
+			c.SDK.Logger().Debug(ctx, "coordinate pinger exited")
 		}()
 		for {
 			select {
@@ -205,18 +206,18 @@ func (c *Client) Listen(ctx context.Context) (net.Conn, error) {
 
 				err := conn.Ping(ctx)
 				if err != nil {
-					c.SDK.Logger.Error(ctx, "workspace agent coordinate ping", slog.Error(err))
+					c.SDK.Logger().Error(ctx, "workspace agent coordinate ping", slog.Error(err))
 
 					err := conn.Close(websocket.StatusGoingAway, "Ping failed")
 					if err != nil {
-						c.SDK.Logger.Error(ctx, "close workspace agent coordinate websocket", slog.Error(err))
+						c.SDK.Logger().Error(ctx, "close workspace agent coordinate websocket", slog.Error(err))
 					}
 
 					cancel()
 					return
 				}
 
-				c.SDK.Logger.Debug(ctx, "got coordinate pong", slog.F("took", time.Since(start)))
+				c.SDK.Logger().Debug(ctx, "got coordinate pong", slog.F("took", time.Since(start)))
 				cancel()
 			}
 		}
@@ -271,7 +272,7 @@ func (c *Client) AuthGoogleInstanceIdentity(ctx context.Context, serviceAccount 
 		serviceAccount = "default"
 	}
 	if gcpClient == nil {
-		gcpClient = metadata.NewClient(c.SDK.HTTPClient)
+		gcpClient = metadata.NewClient(c.SDK.HTTPClient())
 	}
 	// "format=full" is required, otherwise the responding payload will be missing "instance_id".
 	jwt, err := gcpClient.Get(fmt.Sprintf("instance/service-accounts/%s/identity?audience=coder&format=full", serviceAccount))
@@ -307,7 +308,7 @@ func (c *Client) AuthAWSInstanceIdentity(ctx context.Context) (AuthenticateRespo
 		return AuthenticateResponse{}, nil
 	}
 	req.Header.Set("X-aws-ec2-metadata-token-ttl-seconds", "21600")
-	res, err := c.SDK.HTTPClient.Do(req)
+	res, err := c.SDK.HTTPClient().Do(req)
 	if err != nil {
 		return AuthenticateResponse{}, err
 	}
@@ -322,7 +323,7 @@ func (c *Client) AuthAWSInstanceIdentity(ctx context.Context) (AuthenticateRespo
 		return AuthenticateResponse{}, nil
 	}
 	req.Header.Set("X-aws-ec2-metadata-token", string(token))
-	res, err = c.SDK.HTTPClient.Do(req)
+	res, err = c.SDK.HTTPClient().Do(req)
 	if err != nil {
 		return AuthenticateResponse{}, err
 	}
@@ -337,7 +338,7 @@ func (c *Client) AuthAWSInstanceIdentity(ctx context.Context) (AuthenticateRespo
 		return AuthenticateResponse{}, nil
 	}
 	req.Header.Set("X-aws-ec2-metadata-token", string(token))
-	res, err = c.SDK.HTTPClient.Do(req)
+	res, err = c.SDK.HTTPClient().Do(req)
 	if err != nil {
 		return AuthenticateResponse{}, err
 	}
@@ -375,7 +376,7 @@ func (c *Client) AuthAzureInstanceIdentity(ctx context.Context) (AuthenticateRes
 		return AuthenticateResponse{}, nil
 	}
 	req.Header.Set("Metadata", "true")
-	res, err := c.SDK.HTTPClient.Do(req)
+	res, err := c.SDK.HTTPClient().Do(req)
 	if err != nil {
 		return AuthenticateResponse{}, err
 	}

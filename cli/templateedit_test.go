@@ -317,7 +317,7 @@ func TestTemplateEdit(t *testing.T) {
 				}
 
 				// Otherwise, proxy the request to the real API server.
-				httputil.NewSingleHostReverseProxy(client.URL).ServeHTTP(w, r)
+				httputil.NewSingleHostReverseProxy(client.URL()).ServeHTTP(w, r)
 			}))
 			defer proxy.Close()
 
@@ -404,7 +404,7 @@ func TestTemplateEdit(t *testing.T) {
 				}
 
 				// Otherwise, proxy the request to the real API server.
-				httputil.NewSingleHostReverseProxy(client.URL).ServeHTTP(w, r)
+				httputil.NewSingleHostReverseProxy(client.URL()).ServeHTTP(w, r)
 			}))
 			defer proxy.Close()
 
@@ -535,7 +535,7 @@ func TestTemplateEdit(t *testing.T) {
 				}
 
 				// Otherwise, proxy the request to the real API server.
-				httputil.NewSingleHostReverseProxy(client.URL).ServeHTTP(w, r)
+				httputil.NewSingleHostReverseProxy(client.URL()).ServeHTTP(w, r)
 			}))
 			defer proxy.Close()
 
@@ -639,7 +639,7 @@ func TestTemplateEdit(t *testing.T) {
 				}
 
 				// Otherwise, proxy the request to the real API server.
-				httputil.NewSingleHostReverseProxy(client.URL).ServeHTTP(w, r)
+				httputil.NewSingleHostReverseProxy(client.URL()).ServeHTTP(w, r)
 			}))
 			defer proxy.Close()
 

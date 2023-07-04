@@ -118,7 +118,7 @@ func TestDERPHeaders(t *testing.T) {
 		cancelFunc()
 		_ = provisionerCloser.Close()
 		_ = coderAPI.Close()
-		client.HTTPClient.CloseIdleConnections()
+		client.HTTPClient().CloseIdleConnections()
 	})
 
 	var (

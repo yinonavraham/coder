@@ -131,7 +131,7 @@ func Test_Runner(t *testing.T) {
 			for i, authToken := range []string{authToken1, authToken2, authToken3} {
 				i := i + 1
 
-				agentClient := agentsdk.New(client.URL)
+				agentClient := agentsdk.New(client.URL())
 				agentClient.SetSessionToken(authToken)
 				agentCloser := agent.New(agent.Options{
 					Client: agentClient,

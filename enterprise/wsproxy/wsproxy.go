@@ -129,7 +129,7 @@ func New(ctx context.Context, opts *Options) (*Server, error) {
 
 	// Use the configured client if provided.
 	if opts.HTTPClient != nil {
-		client.SDKClient.HTTPClient = opts.HTTPClient
+		client.SDKClient.SetHTTPClient(opts.HTTPClient)
 	}
 
 	// TODO: Probably do some version checking here

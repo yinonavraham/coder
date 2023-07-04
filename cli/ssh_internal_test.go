@@ -22,7 +22,8 @@ func TestVerifyWorkspaceOutdated(t *testing.T) {
 	serverURL, err := url.Parse(fakeServerURL)
 	require.NoError(t, err)
 
-	client := codersdk.Client{URL: serverURL}
+	client := codersdk.Client{}
+	client.SetURL(serverURL)
 
 	t.Run("Up-to-date", func(t *testing.T) {
 		t.Parallel()

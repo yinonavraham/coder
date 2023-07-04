@@ -237,7 +237,7 @@ func TestGitAuthCallback(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		_, err := agentClient.GitAuth(context.Background(), "github.com", false)
 		var apiError *codersdk.Error
@@ -282,7 +282,7 @@ func TestGitAuthCallback(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		token, err := agentClient.GitAuth(context.Background(), "github.com/asd/asd", false)
 		require.NoError(t, err)
@@ -352,7 +352,7 @@ func TestGitAuthCallback(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		resp := coderdtest.RequestGitAuthCallback(t, "github", client)
@@ -410,7 +410,7 @@ func TestGitAuthCallback(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		token, err := agentClient.GitAuth(context.Background(), "github.com/asd/asd", false)
@@ -453,7 +453,7 @@ func TestGitAuthCallback(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		token, err := agentClient.GitAuth(context.Background(), "github.com/asd/asd", false)

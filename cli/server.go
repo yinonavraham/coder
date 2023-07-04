@@ -829,19 +829,19 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 			if localURL.Scheme == "https" && IsLocalhost(localURL.Hostname()) {
 				// The certificate will likely be self-signed or for a different
 				// hostname, so we need to skip verification.
-				client.HTTPClient.Transport = &http.Transport{
+				client.HTTPClient().Transport = &http.Transport{
 					TLSClientConfig: &tls.Config{
 						//nolint:gosec
 						InsecureSkipVerify: true,
 					},
 				}
 			}
-			defer client.HTTPClient.CloseIdleConnections()
+			defer client.HTTPClient().CloseIdleConnections()
 
 			// This is helpful for tests, but can be silently ignored.
 			// Coder may be ran as users that don't have permission to write in the homedir,
 			// such as via the systemd service.
-			err = config.URL().Write(client.URL.String())
+			err = config.URL().Write(client.URL().String())
 			if err != nil && flag.Lookup("test.v") != nil {
 				return xerrors.Errorf("write config url: %w", err)
 			}
@@ -856,8 +856,8 @@ func (r *RootCmd) Server(newAPI func(context.Context, *coderd.Options) (*coderd.
 				// We have no graceful shutdown of provisionerDaemons
 				// here because that's handled at the end of main, this
 				// is here in case the program exits early.
-				for _, daemon := range provisionerDaemons {
-					_ = daemon.Close()
+				for _, pd := range provisionerDaemons {
+					_ = pd.Close()
 				}
 			}()
 

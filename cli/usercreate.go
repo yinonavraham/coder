@@ -82,7 +82,7 @@ Share the instructions below to get them started.
 Download the Coder command line for your operating system:
 https://github.com/coder/coder/releases
 
-Run `+cliui.DefaultStyles.Code.Render("coder login "+client.URL.String())+` to authenticate.
+Run `+cliui.DefaultStyles.Code.Render("coder login "+client.URL().String())+` to authenticate.
 
 Your email is: `+cliui.DefaultStyles.Field.Render(email)+`
 `+authenticationMethod+`

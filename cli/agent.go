@@ -167,12 +167,12 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 				slog.F("version", version),
 			)
 			client := agentsdk.New(r.agentURL)
-			client.SDK.Logger = logger
+			client.SDK.SetLogger(logger)
 			// Set a reasonable timeout so requests can't hang forever!
 			// The timeout needs to be reasonably long, because requests
 			// with large payloads can take a bit. e.g. startup scripts
 			// may take a while to insert.
-			client.SDK.HTTPClient.Timeout = 30 * time.Second
+			client.SDK.HTTPClient().Timeout = 30 * time.Second
 
 			// Enable pprof handler
 			// This prevents the pprof import from being accidentally deleted.
@@ -221,7 +221,7 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 				if awsClientRaw != nil {
 					awsClient, _ = awsClientRaw.(*http.Client)
 					if awsClient != nil {
-						client.SDK.HTTPClient = awsClient
+						client.SDK.SetHTTPClient(awsClient)
 					}
 				}
 				exchangeToken = func(ctx context.Context) (agentsdk.AuthenticateResponse, error) {
@@ -235,7 +235,7 @@ func (r *RootCmd) workspaceAgent() *clibase.Cmd {
 				if azureClientRaw != nil {
 					azureClient, _ = azureClientRaw.(*http.Client)
 					if azureClient != nil {
-						client.SDK.HTTPClient = azureClient
+						client.SDK.SetHTTPClient(azureClient)
 					}
 				}
 				exchangeToken = func(ctx context.Context) (agentsdk.AuthenticateResponse, error) {

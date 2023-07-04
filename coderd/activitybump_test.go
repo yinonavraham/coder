@@ -79,7 +79,7 @@ func TestWorkspaceActivityBump(t *testing.T) {
 		})
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(agentToken)
 		agentCloser := agent.New(agent.Options{
 			Client: agentClient,

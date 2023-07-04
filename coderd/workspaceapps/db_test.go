@@ -172,7 +172,7 @@ func Test_ResolveRequest(t *testing.T) {
 	workspace := coderdtest.CreateWorkspace(t, client, firstUser.OrganizationID, template.ID)
 	coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(agentAuthToken)
 	agentCloser := agent.New(agent.Options{
 		Client: agentClient,

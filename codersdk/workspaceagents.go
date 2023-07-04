@@ -234,7 +234,7 @@ func (c *Client) DialWorkspaceAgent(ctx context.Context, agentID uuid.UUID, opti
 
 	ip := tailnet.IP()
 	var header http.Header
-	headerTransport, ok := c.HTTPClient.Transport.(interface {
+	headerTransport, ok := c.HTTPClient().Transport.(interface {
 		Header() http.Header
 	})
 	if ok {
@@ -245,7 +245,7 @@ func (c *Client) DialWorkspaceAgent(ctx context.Context, agentID uuid.UUID, opti
 		DERPMap:        connInfo.DERPMap,
 		DERPHeader:     &header,
 		Logger:         options.Logger,
-		BlockEndpoints: c.DisableDirectConnections || options.BlockEndpoints,
+		BlockEndpoints: c.DisableDirectConnections() || options.BlockEndpoints,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("create tailnet: %w", err)
@@ -256,14 +256,14 @@ func (c *Client) DialWorkspaceAgent(ctx context.Context, agentID uuid.UUID, opti
 		}
 	}()
 
-	coordinateURL, err := c.URL.Parse(fmt.Sprintf("/api/v2/workspaceagents/%s/coordinate", agentID))
+	coordinateURL, err := c.URL().Parse(fmt.Sprintf("/api/v2/workspaceagents/%s/coordinate", agentID))
 	if err != nil {
 		return nil, xerrors.Errorf("parse url: %w", err)
 	}
 	coordinateHeaders := make(http.Header)
 	tokenHeader := SessionTokenHeader
-	if c.SessionTokenHeader != "" {
-		tokenHeader = c.SessionTokenHeader
+	if h := c.SessionTokenHeader(); h != "" {
+		tokenHeader = h
 	}
 	coordinateHeaders.Set(tokenHeader, c.SessionToken())
 	ctx, cancel := context.WithCancel(ctx)
@@ -281,7 +281,7 @@ func (c *Client) DialWorkspaceAgent(ctx context.Context, agentID uuid.UUID, opti
 			options.Logger.Debug(ctx, "connecting")
 			// nolint:bodyclose
 			ws, res, err := websocket.Dial(ctx, coordinateURL.String(), &websocket.DialOptions{
-				HTTPClient: c.HTTPClient,
+				HTTPClient: c.HTTPClient(),
 				HTTPHeader: coordinateHeaders,
 				// Need to disable compression to avoid a data-race.
 				CompressionMode: websocket.CompressionDisabled,
@@ -489,7 +489,7 @@ type WorkspaceAgentReconnectingPTYOpts struct {
 // It communicates using `agent.ReconnectingPTYRequest` marshaled as JSON.
 // Responses are PTY output that can be rendered.
 func (c *Client) WorkspaceAgentReconnectingPTY(ctx context.Context, opts WorkspaceAgentReconnectingPTYOpts) (net.Conn, error) {
-	serverURL, err := c.URL.Parse(fmt.Sprintf("/api/v2/workspaceagents/%s/pty", opts.AgentID))
+	serverURL, err := c.URL().Parse(fmt.Sprintf("/api/v2/workspaceagents/%s/pty", opts.AgentID))
 	if err != nil {
 		return nil, xerrors.Errorf("parse url: %w", err)
 	}
@@ -506,7 +506,7 @@ func (c *Client) WorkspaceAgentReconnectingPTY(ctx context.Context, opts Workspa
 
 	// If we're not using a signed token, we need to set the session token as a
 	// cookie.
-	httpClient := c.HTTPClient
+	httpClient := c.HTTPClient()
 	if opts.SignedToken == "" {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
@@ -518,7 +518,7 @@ func (c *Client) WorkspaceAgentReconnectingPTY(ctx context.Context, opts Workspa
 		}})
 		httpClient = &http.Client{
 			Jar:       jar,
-			Transport: c.HTTPClient.Transport,
+			Transport: c.HTTPClient().Transport,
 		}
 	}
 	conn, res, err := websocket.Dial(ctx, serverURL.String(), &websocket.DialOptions{
@@ -561,7 +561,7 @@ func (c *Client) WorkspaceAgentStartupLogsAfter(ctx context.Context, agentID uui
 	if len(queryParams) > 0 {
 		query = "?" + strings.Join(queryParams, "&")
 	}
-	reqURL, err := c.URL.Parse(fmt.Sprintf("/api/v2/workspaceagents/%s/startup-logs%s", agentID, query))
+	reqURL, err := c.URL().Parse(fmt.Sprintf("/api/v2/workspaceagents/%s/startup-logs%s", agentID, query))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -599,7 +599,7 @@ func (c *Client) WorkspaceAgentStartupLogsAfter(ctx context.Context, agentID uui
 	}})
 	httpClient := &http.Client{
 		Jar:       jar,
-		Transport: c.HTTPClient.Transport,
+		Transport: c.HTTPClient().Transport,
 	}
 	conn, res, err := websocket.Dial(ctx, reqURL.String(), &websocket.DialOptions{
 		HTTPClient:      httpClient,

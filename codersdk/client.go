@@ -85,8 +85,8 @@ var loggableMimeTypes = map[string]struct{}{
 // New creates a Coder client for the provided URL.
 func New(serverURL *url.URL) *Client {
 	return &Client{
-		URL:        serverURL,
-		HTTPClient: &http.Client{},
+		url:        serverURL,
+		httpClient: &http.Client{},
 	}
 }
 
@@ -96,32 +96,32 @@ type Client struct {
 	mu           sync.RWMutex // Protects following.
 	sessionToken string
 
-	HTTPClient *http.Client
-	URL        *url.URL
+	httpClient *http.Client
+	url        *url.URL
 
-	// SessionTokenHeader is an optional custom header to use for setting tokens. By
+	// sessionTokenHeader is an optional custom header to use for setting tokens. By
 	// default 'Coder-Session-Token' is used.
-	SessionTokenHeader string
+	sessionTokenHeader string
 
-	// Logger is optionally provided to log requests.
+	// logger is optionally provided to log requests.
 	// Method, URL, and response code will be logged by default.
-	Logger slog.Logger
+	logger slog.Logger
 
-	// LogBodies can be enabled to print request and response bodies to the logger.
-	LogBodies bool
+	// logBodies can be enabled to print request and response bodies to the logger.
+	logBodies bool
 
-	// PlainLogger may be set to log HTTP traffic in a human-readable form.
+	// plainLogger may be set to log HTTP traffic in a human-readable form.
 	// It uses the LogBodies option.
-	PlainLogger io.Writer
+	plainLogger io.Writer
 
-	// Trace can be enabled to propagate tracing spans to the Coder API.
+	// trace can be enabled to propagate tracing spans to the Coder API.
 	// This is useful for tracking a request end-to-end.
-	Trace bool
+	trace bool
 
-	// DisableDirectConnections forces any connections to workspaces to go
+	// disableDirectConnections forces any connections to workspaces to go
 	// through DERP, regardless of the BlockEndpoints setting on each
 	// connection.
-	DisableDirectConnections bool
+	disableDirectConnections bool
 }
 
 // SessionToken returns the currently set token for the client.
@@ -136,6 +136,118 @@ func (c *Client) SetSessionToken(token string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.sessionToken = token
+}
+
+// Logger gets the logger for the client.
+func (c *Client) Logger() slog.Logger {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.logger
+}
+
+// SetLogger sets the logger for the client.
+func (c *Client) SetLogger(logger slog.Logger) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.logger = logger
+}
+
+// LogBodies returns the log bodies option for the client.
+func (c *Client) LogBodies() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.logBodies
+}
+
+// SetLogBodies sets the log bodies option for the client.
+func (c *Client) SetLogBodies(logBodies bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.logBodies = logBodies
+}
+
+// URL returns the URL for the client.
+func (c *Client) URL() *url.URL {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.url
+}
+
+// SetURL sets the URL for the client.
+func (c *Client) SetURL(url *url.URL) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.url = url
+}
+
+// Trace returns the trace option for the client.
+func (c *Client) Trace() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.trace
+}
+
+// SetTrace sets the trace option for the client.
+func (c *Client) SetTrace(trace bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.trace = trace
+}
+
+// PlainLogger returns the plain logger for the client.
+func (c *Client) PlainLogger() io.Writer {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.plainLogger
+}
+
+// SetPlainLogger sets the plain logger for the client.
+func (c *Client) SetPlainLogger(plainLogger io.Writer) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.plainLogger = plainLogger
+}
+
+// DisableDirectConnections returns the disable direct connections option for the client.
+func (c *Client) DisableDirectConnections() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.disableDirectConnections
+}
+
+// HTTPClient returns the *http.Client used by client.
+func (c *Client) HTTPClient() *http.Client {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.httpClient
+}
+
+// SetHTTPClient sets *http.Client for the client.
+func (c *Client) SetHTTPClient(httpClient *http.Client) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.httpClient = httpClient
+}
+
+// SetDisableDirectConnections sets the disable direct connections option for the client.
+func (c *Client) SetDisableDirectConnections(disableDirectConnections bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.disableDirectConnections = disableDirectConnections
+}
+
+// SessionTokenHeader returns the session token header for the client.
+func (c *Client) SessionTokenHeader() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.sessionTokenHeader
+}
+
+// SetSessionTokenHeader sets the session token header for the client.
+func (c *Client) SetSessionTokenHeader(sessionTokenHeader string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.sessionTokenHeader = sessionTokenHeader
 }
 
 func prefixLines(prefix, s []byte) []byte {
@@ -154,7 +266,7 @@ func (c *Client) Request(ctx context.Context, method, path string, body interfac
 	ctx, span := tracing.StartSpanWithName(ctx, tracing.FuncNameSkip(1))
 	defer span.End()
 
-	serverURL, err := c.URL.Parse(path)
+	serverURL, err := c.URL().Parse(path)
 	if err != nil {
 		return nil, xerrors.Errorf("parse url: %w", err)
 	}
@@ -181,7 +293,7 @@ func (c *Client) Request(ctx context.Context, method, path string, body interfac
 
 	// Copy the request body so we can log it.
 	var reqBody []byte
-	if r != nil && c.LogBodies {
+	if r != nil && c.LogBodies() {
 		reqBody, err = io.ReadAll(r)
 		if err != nil {
 			return nil, xerrors.Errorf("read request body: %w", err)
@@ -194,7 +306,7 @@ func (c *Client) Request(ctx context.Context, method, path string, body interfac
 		return nil, xerrors.Errorf("create request: %w", err)
 	}
 
-	tokenHeader := c.SessionTokenHeader
+	tokenHeader := c.sessionTokenHeader
 	if tokenHeader == "" {
 		tokenHeader = SessionTokenHeader
 	}
@@ -210,7 +322,7 @@ func (c *Client) Request(ctx context.Context, method, path string, body interfac
 	span.SetAttributes(httpconv.ClientRequest(req)...)
 
 	// Inject tracing headers if enabled.
-	if c.Trace {
+	if c.Trace() {
 		tmp := otel.GetTextMapPropagator()
 		hc := propagation.HeaderCarrier(req.Header)
 		tmp.Inject(ctx, hc)
@@ -223,33 +335,33 @@ func (c *Client) Request(ctx context.Context, method, path string, body interfac
 		slog.F("url", req.URL.String()),
 	)
 	tracing.RunWithoutSpan(ctx, func(ctx context.Context) {
-		c.Logger.Debug(ctx, "sdk request", slog.F("body", string(reqBody)))
+		c.Logger().Debug(ctx, "sdk request", slog.F("body", string(reqBody)))
 	})
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 
 	// We log after sending the request because the HTTP Transport may modify
 	// the request within Do, e.g. by adding headers.
-	if resp != nil && c.PlainLogger != nil {
-		out, err := httputil.DumpRequest(resp.Request, c.LogBodies)
+	if resp != nil && c.PlainLogger() != nil {
+		out, err := httputil.DumpRequest(resp.Request, c.LogBodies())
 		if err != nil {
 			return nil, xerrors.Errorf("dump request: %w", err)
 		}
 		out = prefixLines([]byte("http --> "), out)
-		_, _ = c.PlainLogger.Write(out)
+		_, _ = c.PlainLogger().Write(out)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	if c.PlainLogger != nil {
-		out, err := httputil.DumpResponse(resp, c.LogBodies)
+	if c.PlainLogger() != nil {
+		out, err := httputil.DumpResponse(resp, c.LogBodies())
 		if err != nil {
 			return nil, xerrors.Errorf("dump response: %w", err)
 		}
 		out = prefixLines([]byte("http <-- "), out)
-		_, _ = c.PlainLogger.Write(out)
+		_, _ = c.PlainLogger().Write(out)
 	}
 
 	span.SetAttributes(httpconv.ClientResponse(resp)...)
@@ -257,7 +369,7 @@ func (c *Client) Request(ctx context.Context, method, path string, body interfac
 
 	// Copy the response body so we can log it if it's a loggable mime type.
 	var respBody []byte
-	if resp.Body != nil && c.LogBodies {
+	if resp.Body != nil && c.LogBodies() {
 		mimeType := parseMimeType(resp.Header.Get("Content-Type"))
 		if _, ok := loggableMimeTypes[mimeType]; ok {
 			respBody, err = io.ReadAll(resp.Body)
@@ -274,7 +386,7 @@ func (c *Client) Request(ctx context.Context, method, path string, body interfac
 
 	// See above for why this is not logged to the span.
 	tracing.RunWithoutSpan(ctx, func(ctx context.Context) {
-		c.Logger.Debug(ctx, "sdk response",
+		c.Logger().Debug(ctx, "sdk response",
 			slog.F("status", resp.StatusCode),
 			slog.F("body", string(respBody)),
 			slog.F("trace_id", resp.Header.Get("X-Trace-Id")),

@@ -46,7 +46,7 @@ func TestWorkspaceAgent(t *testing.T) {
 			"agent",
 			"--auth", "token",
 			"--agent-token", authToken,
-			"--agent-url", client.URL.String(),
+			"--agent-url", client.URL().String(),
 			"--log-dir", logDir,
 		)
 
@@ -95,7 +95,7 @@ func TestWorkspaceAgent(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		inv, _ := clitest.New(t, "agent", "--auth", "azure-instance-identity", "--agent-url", client.URL.String())
+		inv, _ := clitest.New(t, "agent", "--auth", "azure-instance-identity", "--agent-url", client.URL().String())
 		inv = inv.WithContext(
 			//nolint:revive,staticcheck
 			context.WithValue(inv.Context(), "azure-client", metadataClient),
@@ -147,7 +147,7 @@ func TestWorkspaceAgent(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		inv, _ := clitest.New(t, "agent", "--auth", "aws-instance-identity", "--agent-url", client.URL.String())
+		inv, _ := clitest.New(t, "agent", "--auth", "aws-instance-identity", "--agent-url", client.URL().String())
 		inv = inv.WithContext(
 			//nolint:revive,staticcheck
 			context.WithValue(inv.Context(), "aws-client", metadataClient),
@@ -199,7 +199,7 @@ func TestWorkspaceAgent(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		inv, cfg := clitest.New(t, "agent", "--auth", "google-instance-identity", "--agent-url", client.URL.String())
+		inv, cfg := clitest.New(t, "agent", "--auth", "google-instance-identity", "--agent-url", client.URL().String())
 		ptytest.New(t).Attach(inv)
 		clitest.SetupConfig(t, client, cfg)
 		clitest.Start(t,
@@ -261,7 +261,7 @@ func TestWorkspaceAgent(t *testing.T) {
 			"agent",
 			"--auth", "token",
 			"--agent-token", authToken,
-			"--agent-url", client.URL.String(),
+			"--agent-url", client.URL().String(),
 			"--log-dir", logDir,
 		)
 		// Set the subsystem for the agent.

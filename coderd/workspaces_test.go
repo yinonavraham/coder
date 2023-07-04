@@ -1142,7 +1142,7 @@ func TestWorkspaceFilterManual(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		agentCloser := agent.New(agent.Options{
 			Client: agentClient,
@@ -1959,7 +1959,7 @@ func TestWorkspaceWatcher(t *testing.T) {
 	wait("agent timeout after create", nil)
 	wait("agent timeout after start", nil)
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 	agentCloser := agent.New(agent.Options{
 		Client: agentClient,

@@ -438,13 +438,14 @@ type RootCmd struct {
 }
 
 func addTelemetryHeader(client *codersdk.Client, inv *clibase.Invocation) {
-	transport, ok := client.HTTPClient.Transport.(*headerTransport)
+	hc := client.HTTPClient()
+	transport, ok := hc.Transport.(*headerTransport)
 	if !ok {
 		transport = &headerTransport{
-			transport: client.HTTPClient.Transport,
+			transport: hc.Transport,
 			header:    http.Header{},
 		}
-		client.HTTPClient.Transport = transport
+		hc.Transport = transport
 	}
 
 	var topts []telemetry.CLIOption
@@ -530,10 +531,10 @@ func (r *RootCmd) InitClient(client *codersdk.Client) clibase.MiddlewareFunc {
 			client.SetSessionToken(r.token)
 
 			if r.debugHTTP {
-				client.PlainLogger = os.Stderr
-				client.LogBodies = true
+				client.SetPlainLogger(os.Stderr)
+				client.SetLogBodies(true)
 			}
-			client.DisableDirectConnections = r.disableDirect
+			client.SetDisableDirectConnections(r.disableDirect)
 
 			// We send these requests in parallel to minimize latency.
 			var (
@@ -582,10 +583,10 @@ func (r *RootCmd) setClient(client *codersdk.Client, serverURL *url.URL) error {
 		}
 		transport.header.Add(parts[0], parts[1])
 	}
-	client.URL = serverURL
-	client.HTTPClient = &http.Client{
+	client.SetURL(serverURL)
+	client.SetHTTPClient(&http.Client{
 		Transport: transport,
-	}
+	})
 	return nil
 }
 

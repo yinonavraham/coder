@@ -114,8 +114,8 @@ func Test_Client(t *testing.T) {
 	client.SetSessionToken(token)
 
 	logBuf := bytes.NewBuffer(nil)
-	client.Logger = slog.Make(sloghuman.Sink(logBuf)).Leveled(slog.LevelDebug)
-	client.LogBodies = true
+	client.SetLogger(slog.Make(sloghuman.Sink(logBuf)).Leveled(slog.LevelDebug))
+	client.SetLogBodies(true)
 
 	// Setup tracing.
 	res := resource.NewWithAttributes(
@@ -135,7 +135,7 @@ func Test_Client(t *testing.T) {
 		),
 	)
 	otel.SetLogger(logr.Discard())
-	client.Trace = true
+	client.SetTrace(true)
 
 	ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 	defer cancel()

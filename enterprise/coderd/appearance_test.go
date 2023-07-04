@@ -109,7 +109,7 @@ func TestServiceBanners(t *testing.T) {
 		require.NoError(t, err)
 
 		authToken := uuid.NewString()
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		version := coderdtest.CreateTemplateVersion(t, client, user.OrganizationID, &echo.Responses{
 			Parse:          echo.ParseComplete,
@@ -129,7 +129,7 @@ func TestServiceBanners(t *testing.T) {
 		client = coderdtest.New(t, &coderdtest.Options{
 			IncludeProvisionerDaemon: true,
 		})
-		agentClient = agentsdk.New(client.URL)
+		agentClient = agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		banner, err = agentClient.GetServiceBanner(ctx)
 		require.NoError(t, err)

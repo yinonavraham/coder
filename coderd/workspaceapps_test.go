@@ -199,7 +199,7 @@ func TestWorkspaceApplicationAuth(t *testing.T) {
 			_ = coderdtest.CreateFirstUser(t, client)
 
 			// Disable redirects.
-			client.HTTPClient.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+			client.HTTPClient().CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
 				return http.ErrUseLastResponse
 			}
 
@@ -283,7 +283,7 @@ func TestWorkspaceApps(t *testing.T) {
 			Options:        opts,
 			SDKClient:      client,
 			FirstUser:      user,
-			PathAppBaseURL: client.URL,
+			PathAppBaseURL: client.URL(),
 		}
 	})
 }

@@ -116,7 +116,7 @@ func TestAgentGitSSHKey(t *testing.T) {
 	workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, project.ID)
 	coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 
 	ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)

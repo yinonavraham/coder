@@ -104,7 +104,7 @@ func Test_Runner(t *testing.T) {
 
 			coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-			agentClient := agentsdk.New(client.URL)
+			agentClient := agentsdk.New(client.URL())
 			agentClient.SetSessionToken(authToken)
 			agentCloser := agent.New(agent.Options{
 				Client: agentClient,

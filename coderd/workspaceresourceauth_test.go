@@ -50,7 +50,7 @@ func TestPostWorkspaceAuthAzureInstanceIdentity(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 	defer cancel()
 
-	client.HTTPClient = metadataClient
+	client.SetHTTPClient(metadataClient)
 	agentClient := &agentsdk.Client{
 		SDK: client,
 	}
@@ -95,7 +95,7 @@ func TestPostWorkspaceAuthAWSInstanceIdentity(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 		defer cancel()
 
-		client.HTTPClient = metadataClient
+		client.SetHTTPClient(metadataClient)
 		agentClient := &agentsdk.Client{
 			SDK: client,
 		}

@@ -384,14 +384,14 @@ func (r *RootCmd) scaletestCleanup() *clibase.Cmd {
 				return err
 			}
 
-			client.HTTPClient = &http.Client{
+			client.SetHTTPClient(&http.Client{
 				Transport: &headerTransport{
 					transport: http.DefaultTransport,
 					header: map[string][]string{
 						codersdk.BypassRatelimitHeader: {"true"},
 					},
 				},
-			}
+			})
 
 			cliui.Infof(inv.Stdout, "Fetching scaletest workspaces...")
 			workspaces, err := getScaletestWorkspaces(ctx, client)
@@ -518,14 +518,14 @@ func (r *RootCmd) scaletestCreateWorkspaces() *clibase.Cmd {
 				return err
 			}
 
-			client.HTTPClient = &http.Client{
+			client.SetHTTPClient(&http.Client{
 				Transport: &headerTransport{
 					transport: http.DefaultTransport,
 					header: map[string][]string{
 						codersdk.BypassRatelimitHeader: {"true"},
 					},
 				},
-			}
+			})
 
 			if count <= 0 {
 				return xerrors.Errorf("--count is required and must be greater than 0")
@@ -874,14 +874,14 @@ func (r *RootCmd) scaletestWorkspaceTraffic() *clibase.Cmd {
 			defer prometheusSrvClose()
 
 			// Bypass rate limiting
-			client.HTTPClient = &http.Client{
+			client.SetHTTPClient(&http.Client{
 				Transport: &headerTransport{
 					transport: http.DefaultTransport,
 					header: map[string][]string{
 						codersdk.BypassRatelimitHeader: {"true"},
 					},
 				},
-			}
+			})
 
 			workspaces, err := getScaletestWorkspaces(inv.Context(), client)
 			if err != nil {

@@ -29,7 +29,7 @@ func TestVSCodeSSH(t *testing.T) {
 	user, err := client.User(ctx, codersdk.Me)
 	require.NoError(t, err)
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(agentToken)
 	agentCloser := agent.New(agent.Options{
 		Client: agentClient,
@@ -41,7 +41,7 @@ func TestVSCodeSSH(t *testing.T) {
 	coderdtest.AwaitWorkspaceAgents(t, client, workspace.ID)
 
 	fs := afero.NewMemMapFs()
-	err = afero.WriteFile(fs, "/url", []byte(client.URL.String()), 0o600)
+	err = afero.WriteFile(fs, "/url", []byte(client.URL().String()), 0o600)
 	require.NoError(t, err)
 	err = afero.WriteFile(fs, "/token", []byte(client.SessionToken()), 0o600)
 	require.NoError(t, err)

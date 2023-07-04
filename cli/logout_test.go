@@ -195,7 +195,7 @@ func login(t *testing.T, pty *ptytest.PTY) config.Root {
 	coderdtest.CreateFirstUser(t, client)
 
 	doneChan := make(chan struct{})
-	root, cfg := clitest.New(t, "login", "--force-tty", client.URL.String(), "--no-open")
+	root, cfg := clitest.New(t, "login", "--force-tty", client.URL().String(), "--no-open")
 	root.Stdin = pty.Input()
 	root.Stdout = pty.Output()
 	go func() {

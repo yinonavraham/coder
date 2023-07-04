@@ -29,7 +29,7 @@ func TestAccessURL(t *testing.T) {
 		defer cancel()
 
 		report.Run(ctx, &healthcheck.AccessURLReportOptions{
-			AccessURL: client.URL,
+			AccessURL: client.URL(),
 		})
 
 		assert.True(t, report.Healthy)

@@ -136,7 +136,7 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 			require.NoError(t, err)
 
 			// Make an unauthenticated client.
-			unauthedAppClient := codersdk.New(appDetails.AppClient(t).URL)
+			unauthedAppClient := codersdk.New(appDetails.AppClient(t).URL())
 			conn, err := unauthedAppClient.WorkspaceAgentReconnectingPTY(ctx, codersdk.WorkspaceAgentReconnectingPTYOpts{
 				AgentID:     appDetails.Agent.ID,
 				Reconnect:   uuid.New(),
@@ -245,7 +245,7 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 			require.Equal(t, http.StatusSeeOther, resp.StatusCode)
 			loc, err := resp.Location()
 			require.NoError(t, err)
-			require.Equal(t, appDetails.SDKClient.URL.Host, loc.Host)
+			require.Equal(t, appDetails.SDKClient.URL().Host, loc.Host)
 			require.Equal(t, "/api/v2/applications/auth-redirect", loc.Path)
 
 			redirectURIStr := loc.Query().Get("redirect_uri")
@@ -336,9 +336,9 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 			// Ensure the signed app token cookie is valid.
 			appTokenClient := appDetails.AppClient(t)
 			appTokenClient.SetSessionToken("")
-			appTokenClient.HTTPClient.Jar, err = cookiejar.New(nil)
+			appTokenClient.HTTPClient().Jar, err = cookiejar.New(nil)
 			require.NoError(t, err)
-			appTokenClient.HTTPClient.Jar.SetCookies(u, []*http.Cookie{appTokenCookie})
+			appTokenClient.HTTPClient().Jar.SetCookies(u, []*http.Cookie{appTokenCookie})
 
 			resp, err = requestWithRetries(ctx, t, appTokenClient, http.MethodGet, u.String(), nil)
 			require.NoError(t, err)
@@ -497,7 +497,7 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 					gotLocation, err := resp.Location()
 					require.NoError(t, err)
 					// This should always redirect to the primary access URL.
-					require.Equal(t, appDetails.SDKClient.URL.Host, gotLocation.Host)
+					require.Equal(t, appDetails.SDKClient.URL().Host, gotLocation.Host)
 					require.Equal(t, "/api/v2/applications/auth-redirect", gotLocation.Path)
 					require.Equal(t, u.String(), gotLocation.Query().Get("redirect_uri"))
 
@@ -550,10 +550,10 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 					require.EqualValues(t, currentAPIKey.LifetimeSeconds, apiKeyInfo.LifetimeSeconds)
 
 					// Verify the API key permissions
-					appTokenAPIClient := codersdk.New(appDetails.SDKClient.URL)
+					appTokenAPIClient := codersdk.New(appDetails.SDKClient.URL())
 					appTokenAPIClient.SetSessionToken(apiKey)
-					appTokenAPIClient.HTTPClient.CheckRedirect = appDetails.SDKClient.HTTPClient.CheckRedirect
-					appTokenAPIClient.HTTPClient.Transport = appDetails.SDKClient.HTTPClient.Transport
+					appTokenAPIClient.HTTPClient().CheckRedirect = appDetails.SDKClient.HTTPClient().CheckRedirect
+					appTokenAPIClient.HTTPClient().Transport = appDetails.SDKClient.HTTPClient().Transport
 
 					var (
 						canCreateApplicationConnect = "can-create-application_connect"
@@ -617,7 +617,7 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 		ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 		defer cancel()
 
-		u := *appDetails.SDKClient.URL
+		u := *appDetails.SDKClient.URL()
 		u.Host = "app--agent--workspace--username.test.coder.com"
 		u.Path = "/api/v2/users/me"
 		resp, err := requestWithRetries(ctx, t, appDetails.AppClient(t), http.MethodGet, u.String(), nil)
@@ -749,9 +749,9 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 			// Ensure the signed app token cookie is valid.
 			appTokenClient := appDetails.AppClient(t)
 			appTokenClient.SetSessionToken("")
-			appTokenClient.HTTPClient.Jar, err = cookiejar.New(nil)
+			appTokenClient.HTTPClient().Jar, err = cookiejar.New(nil)
 			require.NoError(t, err)
-			appTokenClient.HTTPClient.Jar.SetCookies(u, []*http.Cookie{appTokenCookie})
+			appTokenClient.HTTPClient().Jar.SetCookies(u, []*http.Cookie{appTokenCookie})
 
 			resp, err = requestWithRetries(ctx, t, appTokenClient, http.MethodGet, u.String(), nil)
 			require.NoError(t, err)
@@ -915,14 +915,14 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 			})
 			require.NoError(t, err)
 
-			client = codersdk.New(ownerClient.URL)
+			client = codersdk.New(ownerClient.URL())
 			loginRes, err := client.LoginWithPassword(ctx, codersdk.LoginWithPasswordRequest{
 				Email:    user.Email,
 				Password: password,
 			})
 			require.NoError(t, err)
 			client.SetSessionToken(loginRes.SessionToken)
-			client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			}
 			forceURLTransport(t, client)
@@ -962,21 +962,21 @@ func Run(t *testing.T, appHostIsPrimary bool, factory DeploymentFactory) {
 			})
 			require.NoError(t, err)
 
-			clientInOtherOrg = codersdk.New(client.URL)
+			clientInOtherOrg = codersdk.New(client.URL())
 			loginRes, err = clientInOtherOrg.LoginWithPassword(ctx, codersdk.LoginWithPasswordRequest{
 				Email:    userInOtherOrg.Email,
 				Password: password,
 			})
 			require.NoError(t, err)
 			clientInOtherOrg.SetSessionToken(loginRes.SessionToken)
-			clientInOtherOrg.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			clientInOtherOrg.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			}
 			forceURLTransport(t, clientInOtherOrg)
 
 			// Create an unauthenticated codersdk client.
-			clientWithNoAuth = codersdk.New(client.URL)
-			clientWithNoAuth.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			clientWithNoAuth = codersdk.New(client.URL())
+			clientWithNoAuth.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			}
 			forceURLTransport(t, clientWithNoAuth)

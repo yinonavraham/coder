@@ -46,7 +46,7 @@ func TestDERP(t *testing.T) {
 
 	logger := slogtest.Make(t, nil).Leveled(slog.LevelDebug)
 
-	derpPort, err := strconv.Atoi(client.URL.Port())
+	derpPort, err := strconv.Atoi(client.URL().Port())
 	require.NoError(t, err)
 	derpMap := &tailcfg.DERPMap{
 		Regions: map[int]*tailcfg.DERPRegion{
@@ -57,7 +57,7 @@ func TestDERP(t *testing.T) {
 				Nodes: []*tailcfg.DERPNode{{
 					Name:      "1a",
 					RegionID:  1,
-					HostName:  client.URL.Hostname(),
+					HostName:  client.URL().Hostname(),
 					DERPPort:  derpPort,
 					STUNPort:  -1,
 					ForceHTTP: true,

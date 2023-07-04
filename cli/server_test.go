@@ -349,15 +349,15 @@ func TestServer(t *testing.T) {
 		accessURL := waitAccessURL(t, cfg)
 		require.Equal(t, "https", accessURL.Scheme)
 		client := codersdk.New(accessURL)
-		client.HTTPClient = &http.Client{
+		client.SetHTTPClient(&http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					//nolint:gosec
 					InsecureSkipVerify: true,
 				},
 			},
-		}
-		defer client.HTTPClient.CloseIdleConnections()
+		})
+		defer client.HTTPClient().CloseIdleConnections()
 		_, err := client.HasFirstUser(ctx)
 		require.NoError(t, err)
 	})
@@ -394,7 +394,7 @@ func TestServer(t *testing.T) {
 			dials      int64
 		)
 		client := codersdk.New(accessURL)
-		client.HTTPClient = &http.Client{
+		client.SetHTTPClient(&http.Client{
 			Transport: &http.Transport{
 				DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 					atomic.AddInt64(&dials, 1)
@@ -424,18 +424,18 @@ func TestServer(t *testing.T) {
 					return conn, nil
 				},
 			},
-		}
-		defer client.HTTPClient.CloseIdleConnections()
+		})
+		defer client.HTTPClient().CloseIdleConnections()
 
 		// Use the first certificate and hostname.
-		client.URL.Host = "alpaca.com:443"
+		client.URL().Host = "alpaca.com:443"
 		expectAddr = "alpaca.com:443"
 		_, err := client.HasFirstUser(ctx)
 		require.NoError(t, err)
 		require.EqualValues(t, 1, atomic.LoadInt64(&dials))
 
 		// Use the second certificate (wildcard) and hostname.
-		client.URL.Host = "hi.llama.com:443"
+		client.URL().Host = "hi.llama.com:443"
 		expectAddr = "hi.llama.com:443"
 		_, err = client.HasFirstUser(ctx)
 		require.NoError(t, err)
@@ -479,7 +479,7 @@ func TestServer(t *testing.T) {
 		httpURL, err := url.Parse(httpAddr)
 		require.NoError(t, err)
 		client := codersdk.New(httpURL)
-		client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
 		_, err = client.HasFirstUser(ctx)
@@ -489,18 +489,18 @@ func TestServer(t *testing.T) {
 		tlsURL, err := url.Parse(tlsAddr)
 		require.NoError(t, err)
 		client = codersdk.New(tlsURL)
-		client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
-		client.HTTPClient = &http.Client{
+		client.SetHTTPClient(&http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					//nolint:gosec
 					InsecureSkipVerify: true,
 				},
 			},
-		}
-		defer client.HTTPClient.CloseIdleConnections()
+		})
+		defer client.HTTPClient().CloseIdleConnections()
 		_, err = client.HasFirstUser(ctx)
 		require.NoError(t, err)
 	})
@@ -629,7 +629,7 @@ func TestServer(t *testing.T) {
 					httpURL, err := url.Parse(httpAddr)
 					require.NoError(t, err)
 					client := codersdk.New(httpURL)
-					client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+					client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 						return http.ErrUseLastResponse
 					}
 					resp, err := client.Request(ctx, http.MethodGet, "/api/v2/buildinfo", nil)
@@ -814,15 +814,15 @@ func TestServer(t *testing.T) {
 			accessURL := waitAccessURL(t, cfg)
 			require.Equal(t, "https", accessURL.Scheme)
 			client := codersdk.New(accessURL)
-			client.HTTPClient = &http.Client{
+			client.SetHTTPClient(&http.Client{
 				Transport: &http.Transport{
 					TLSClientConfig: &tls.Config{
 						//nolint:gosec
 						InsecureSkipVerify: true,
 					},
 				},
-			}
-			defer client.HTTPClient.CloseIdleConnections()
+			})
+			defer client.HTTPClient().CloseIdleConnections()
 			_, err := client.HasFirstUser(ctx)
 			require.NoError(t, err)
 		})
@@ -1008,14 +1008,14 @@ func TestServer(t *testing.T) {
 		clitest.Start(t, inv)
 		accessURL := waitAccessURL(t, cfg)
 		client := codersdk.New(accessURL)
-		client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
 		githubURL, err := accessURL.Parse("/api/v2/users/oauth2/github")
 		require.NoError(t, err)
 		req, err := http.NewRequestWithContext(inv.Context(), http.MethodGet, githubURL.String(), nil)
 		require.NoError(t, err)
-		res, err := client.HTTPClient.Do(req)
+		res, err := client.HTTPClient().Do(req)
 		require.NoError(t, err)
 		defer res.Body.Close()
 		fakeURL, err := res.Location()

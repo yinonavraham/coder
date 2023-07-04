@@ -106,7 +106,7 @@ func (c *Client) provisionerJobLogsAfter(ctx context.Context, path string, after
 	if after != 0 {
 		afterQuery = fmt.Sprintf("&after=%d", after)
 	}
-	followURL, err := c.URL.Parse(fmt.Sprintf("%s?follow%s", path, afterQuery))
+	followURL, err := c.URL().Parse(fmt.Sprintf("%s?follow%s", path, afterQuery))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,7 +120,7 @@ func (c *Client) provisionerJobLogsAfter(ctx context.Context, path string, after
 	}})
 	httpClient := &http.Client{
 		Jar:       jar,
-		Transport: c.HTTPClient.Transport,
+		Transport: c.HTTPClient().Transport,
 	}
 	conn, res, err := websocket.Dial(ctx, followURL.String(), &websocket.DialOptions{
 		HTTPClient:      httpClient,
@@ -168,7 +168,7 @@ func (c *Client) provisionerJobLogsAfter(ctx context.Context, path string, after
 // implementation. The context is during dial, not during the lifetime of the
 // client. Client should be closed after use.
 func (c *Client) ServeProvisionerDaemon(ctx context.Context, organization uuid.UUID, provisioners []ProvisionerType, tags map[string]string) (proto.DRPCProvisionerDaemonClient, error) {
-	serverURL, err := c.URL.Parse(fmt.Sprintf("/api/v2/organizations/%s/provisionerdaemons/serve", organization))
+	serverURL, err := c.URL().Parse(fmt.Sprintf("/api/v2/organizations/%s/provisionerdaemons/serve", organization))
 	if err != nil {
 		return nil, xerrors.Errorf("parse url: %w", err)
 	}
@@ -190,7 +190,7 @@ func (c *Client) ServeProvisionerDaemon(ctx context.Context, organization uuid.U
 	}})
 	httpClient := &http.Client{
 		Jar:       jar,
-		Transport: c.HTTPClient.Transport,
+		Transport: c.HTTPClient().Transport,
 	}
 	conn, res, err := websocket.Dial(ctx, serverURL.String(), &websocket.DialOptions{
 		HTTPClient: httpClient,

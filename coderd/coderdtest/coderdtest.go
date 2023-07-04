@@ -417,7 +417,7 @@ func NewWithAPI(t testing.TB, options *Options) (*codersdk.Client, io.Closer, *c
 		cancelFunc()
 		_ = provisionerCloser.Close()
 		_ = coderAPI.Close()
-		client.HTTPClient.CloseIdleConnections()
+		client.HTTPClient().CloseIdleConnections()
 	})
 	return client, provisionerCloser, coderAPI
 }
@@ -572,10 +572,10 @@ func createAnotherUserRetry(t *testing.T, client *codersdk.Client, organizationI
 		sessionToken = token.Key
 	}
 
-	other := codersdk.New(client.URL)
+	other := codersdk.New(client.URL())
 	other.SetSessionToken(sessionToken)
 	t.Cleanup(func() {
-		other.HTTPClient.CloseIdleConnections()
+		other.HTTPClient().CloseIdleConnections()
 	})
 
 	if len(roles) > 0 {
@@ -825,11 +825,11 @@ func MustWorkspace(t *testing.T, client *codersdk.Client, workspaceID uuid.UUID)
 // RequestGitAuthCallback makes a request with the proper OAuth2 state cookie
 // to the git auth callback endpoint.
 func RequestGitAuthCallback(t *testing.T, providerID string, client *codersdk.Client) *http.Response {
-	client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
 	state := "somestate"
-	oauthURL, err := client.URL.Parse(fmt.Sprintf("/gitauth/%s/callback?code=asd&state=%s", providerID, state))
+	oauthURL, err := client.URL().Parse(fmt.Sprintf("/gitauth/%s/callback?code=asd&state=%s", providerID, state))
 	require.NoError(t, err)
 	req, err := http.NewRequestWithContext(context.Background(), "GET", oauthURL.String(), nil)
 	require.NoError(t, err)
@@ -841,7 +841,7 @@ func RequestGitAuthCallback(t *testing.T, providerID string, client *codersdk.Cl
 		Name:  codersdk.SessionTokenCookie,
 		Value: client.SessionToken(),
 	})
-	res, err := client.HTTPClient.Do(req)
+	res, err := client.HTTPClient().Do(req)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = res.Body.Close()

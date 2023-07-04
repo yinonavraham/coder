@@ -313,7 +313,7 @@ func runAgent(t *testing.T, client *codersdk.Client, userID uuid.UUID) codersdk.
 	coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
 	// Start workspace agent in a goroutine
-	inv, root := clitest.New(t, "agent", "--agent-token", agentToken, "--agent-url", client.URL.String())
+	inv, root := clitest.New(t, "agent", "--agent-token", agentToken, "--agent-url", client.URL().String())
 	clitest.SetupConfig(t, client, root)
 	pty := ptytest.New(t)
 	inv.Stdin = pty.Input()

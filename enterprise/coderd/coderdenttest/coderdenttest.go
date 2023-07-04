@@ -91,14 +91,14 @@ func NewWithAPI(t *testing.T, options *Options) (*codersdk.Client, io.Closer, *c
 		_ = coderAPI.Close()
 	})
 	client := codersdk.New(serverURL)
-	client.HTTPClient = &http.Client{
+	client.SetHTTPClient(&http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				//nolint:gosec
 				InsecureSkipVerify: true,
 			},
 		},
-	}
+	})
 	return client, provisionerCloser, coderAPI
 }
 

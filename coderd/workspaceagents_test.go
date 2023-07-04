@@ -205,7 +205,7 @@ func TestWorkspaceAgentStartupLogs(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		build := coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		err := agentClient.PatchStartupLogs(ctx, agentsdk.PatchStartupLogs{
 			Logs: []agentsdk.StartupLog{
@@ -272,7 +272,7 @@ func TestWorkspaceAgentStartupLogs(t *testing.T) {
 		updates, err := client.WatchWorkspace(ctx, workspace.ID)
 		require.NoError(t, err)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		err = agentClient.PatchStartupLogs(ctx, agentsdk.PatchStartupLogs{
 			Logs: []agentsdk.StartupLog{{
@@ -331,7 +331,7 @@ func TestWorkspaceAgentStartupLogs(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		build := coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		logs, closer, err := client.WorkspaceAgentStartupLogsAfter(ctx, build.Resources[0].Agents[0].ID, 0, true)
@@ -403,7 +403,7 @@ func TestWorkspaceAgentStartupLogs(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		_ = coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		err := agentClient.PostLifecycle(ctx, agentsdk.PostLifecycleRequest{
@@ -445,7 +445,7 @@ func TestWorkspaceAgentListen(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		agentCloser := agent.New(agent.Options{
 			Client: agentClient,
@@ -519,7 +519,7 @@ func TestWorkspaceAgentListen(t *testing.T) {
 		require.NoError(t, err)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, stopBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		_, err = agentClient.Listen(ctx)
@@ -544,7 +544,7 @@ func TestWorkspaceAgentTailnet(t *testing.T) {
 	coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 	daemonCloser.Close()
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 	agentCloser := agent.New(agent.Options{
 		Client: agentClient,
@@ -599,7 +599,7 @@ func TestWorkspaceAgentTailnetDirectDisabled(t *testing.T) {
 	ctx := testutil.Context(t, testutil.WaitLong)
 
 	// Verify that the manifest has DisableDirectConnections set to true.
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 	manifest, err := agentClient.Manifest(ctx)
 	require.NoError(t, err)
@@ -657,7 +657,7 @@ func TestWorkspaceAgentListeningPorts(t *testing.T) {
 		client := coderdtest.New(t, &coderdtest.Options{
 			IncludeProvisionerDaemon: true,
 		})
-		coderdPort, err := strconv.Atoi(client.URL.Port())
+		coderdPort, err := strconv.Atoi(client.URL().Port())
 		require.NoError(t, err)
 
 		user := coderdtest.CreateFirstUser(t, client)
@@ -688,7 +688,7 @@ func TestWorkspaceAgentListeningPorts(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 		agentCloser := agent.New(agent.Options{
 			Client: agentClient,
@@ -948,7 +948,7 @@ func TestWorkspaceAgentAppHealth(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 	defer cancel()
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 
 	manifest, err := agentClient.Manifest(ctx)
@@ -1017,7 +1017,7 @@ func TestWorkspaceAgentReportStats(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		_, err := agentClient.PostStats(context.Background(), &agentsdk.Stats{
@@ -1072,7 +1072,7 @@ func TestWorkspaceAgent_LifecycleState(t *testing.T) {
 			}
 		}
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		tests := []struct {
@@ -1182,7 +1182,7 @@ func TestWorkspaceAgent_Metadata(t *testing.T) {
 		}
 	}
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(authToken)
 
 	ctx := testutil.Context(t, testutil.WaitMedium)
@@ -1308,7 +1308,7 @@ func TestWorkspaceAgent_Startup(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		ctx := testutil.Context(t, testutil.WaitMedium)
@@ -1354,7 +1354,7 @@ func TestWorkspaceAgent_Startup(t *testing.T) {
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(authToken)
 
 		ctx := testutil.Context(t, testutil.WaitMedium)

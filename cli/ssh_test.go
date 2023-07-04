@@ -49,7 +49,7 @@ func setupWorkspaceForAgent(t *testing.T, mutate func([]*proto.Agent) []*proto.A
 		}
 	}
 	client := coderdtest.New(t, &coderdtest.Options{IncludeProvisionerDaemon: true})
-	client.Logger = slogtest.Make(t, nil).Named("client").Leveled(slog.LevelDebug)
+	client.SetLogger(slogtest.Make(t, nil).Named("client").Leveled(slog.LevelDebug))
 	user := coderdtest.CreateFirstUser(t, client)
 	agentToken := uuid.NewString()
 	version := coderdtest.CreateTemplateVersion(t, client, user.OrganizationID, &echo.Responses{
@@ -101,7 +101,7 @@ func TestSSH(t *testing.T) {
 		})
 		pty.ExpectMatch("Waiting")
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(agentToken)
 		agentCloser := agent.New(agent.Options{
 			Client: agentClient,
@@ -165,7 +165,7 @@ func TestSSH(t *testing.T) {
 		})
 		pty.ExpectMatch("Waiting")
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(agentToken)
 		agentCloser := agent.New(agent.Options{
 			Client: agentClient,
@@ -194,7 +194,7 @@ func TestSSH(t *testing.T) {
 		_, _ = tGoContext(t, func(ctx context.Context) {
 			// Run this async so the SSH command has to wait for
 			// the build and agent to connect!
-			agentClient := agentsdk.New(client.URL)
+			agentClient := agentsdk.New(client.URL())
 			agentClient.SetSessionToken(agentToken)
 			agentCloser := agent.New(agent.Options{
 				Client: agentClient,
@@ -262,7 +262,7 @@ func TestSSH(t *testing.T) {
 		_, _ = tGoContext(t, func(ctx context.Context) {
 			// Run this async so the SSH command has to wait for
 			// the build and agent to connect.
-			agentClient := agentsdk.New(client.URL)
+			agentClient := agentsdk.New(client.URL())
 			agentClient.SetSessionToken(agentToken)
 			agentCloser := agent.New(agent.Options{
 				Client: agentClient,
@@ -331,7 +331,7 @@ func TestSSH(t *testing.T) {
 
 		client, workspace, agentToken := setupWorkspaceForAgent(t, nil)
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(agentToken)
 		agentCloser := agent.New(agent.Options{
 			Client: agentClient,
@@ -421,7 +421,7 @@ func TestSSH(t *testing.T) {
 
 		pty.ExpectMatch("Waiting")
 
-		agentClient := agentsdk.New(client.URL)
+		agentClient := agentsdk.New(client.URL())
 		agentClient.SetSessionToken(agentToken)
 		agentCloser := agent.New(agent.Options{
 			Client: agentClient,
@@ -597,7 +597,7 @@ Expire-Date: 0
 
 	client, workspace, agentToken := setupWorkspaceForAgent(t, nil)
 
-	agentClient := agentsdk.New(client.URL)
+	agentClient := agentsdk.New(client.URL())
 	agentClient.SetSessionToken(agentToken)
 	agentCloser := agent.New(agent.Options{
 		Client: agentClient,

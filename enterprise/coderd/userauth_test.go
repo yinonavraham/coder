@@ -223,10 +223,10 @@ func TestUserOIDC(t *testing.T) {
 
 func oidcCallback(t *testing.T, client *codersdk.Client, code string) *http.Response {
 	t.Helper()
-	client.HTTPClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	client.HTTPClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
-	oauthURL, err := client.URL.Parse(fmt.Sprintf("/api/v2/users/oidc/callback?code=%s&state=somestate", code))
+	oauthURL, err := client.URL().Parse(fmt.Sprintf("/api/v2/users/oidc/callback?code=%s&state=somestate", code))
 	require.NoError(t, err)
 	req, err := http.NewRequestWithContext(context.Background(), "GET", oauthURL.String(), nil)
 	require.NoError(t, err)
@@ -234,7 +234,7 @@ func oidcCallback(t *testing.T, client *codersdk.Client, code string) *http.Resp
 		Name:  codersdk.OAuth2StateCookie,
 		Value: "somestate",
 	})
-	res, err := client.HTTPClient.Do(req)
+	res, err := client.HTTPClient().Do(req)
 	require.NoError(t, err)
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)

@@ -43,7 +43,7 @@ func TestRegions(t *testing.T) {
 		require.Equal(t, "Default", regions[0].DisplayName)
 		require.NotEmpty(t, regions[0].IconURL)
 		require.True(t, regions[0].Healthy)
-		require.Equal(t, client.URL.String(), regions[0].PathAppURL)
+		require.Equal(t, client.URL().String(), regions[0].PathAppURL)
 		require.Equal(t, appHostname, regions[0].WildcardHostname)
 
 		// Ensure the primary region ID is constant.
@@ -59,7 +59,7 @@ func TestRegions(t *testing.T) {
 		client := coderdtest.New(t, nil)
 		_ = coderdtest.CreateFirstUser(t, client)
 
-		unauthedClient := codersdk.New(client.URL)
+		unauthedClient := codersdk.New(client.URL())
 		regions, err := unauthedClient.Regions(ctx)
 		require.Error(t, err)
 		require.Empty(t, regions)
