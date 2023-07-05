@@ -762,7 +762,6 @@ func (c *Conn) Listen(network, addr string) (net.Listener, error) {
 }
 
 func (c *Conn) DialContextTCP(ctx context.Context, ipp netip.AddrPort) (*gonet.TCPConn, error) {
-	ctx = context.WithValue(ctx, "gvisor:logger", c.logger.Named("netstack"))
 	return c.netStack.DialContextTCP(ctx, ipp)
 }
 

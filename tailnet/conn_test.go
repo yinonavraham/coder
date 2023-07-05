@@ -352,6 +352,7 @@ func runTestTransmitHang(t *testing.T, timeout time.Duration) {
 	logger.Info(ctx, "dialing receiver")
 	var w net.Conn
 	pprof.Do(ctx, pprof.Labels("id", "tailnet.send.dial-recv"), func(ctx context.Context) {
+		ctx = context.WithValue(ctx, "gvisor:logger", logger.Named("send").Named("netstack"))
 		w, err = send.DialContextTCP(ctx, netip.AddrPortFrom(recvIP, 35565))
 	})
 	require.NoError(t, err)
