@@ -378,5 +378,17 @@ func (*EnterpriseTemplateScheduleStore) SetTemplateScheduleOptions(ctx context.C
 		}
 	}
 
+	// If we updated the locked_ttl we need to update all the workspaces deleting_at
+	// to ensure workspaces are being cleaned up correctly.
+	if opts.LockedTTL > 0 {
+		err = db.UpdateWorkspacesDeletingAtByTemplateID(ctx, database.UpdateWorkspacesDeletingAtByTemplateIDParams{
+			TemplateID:  template.ID,
+			LockedTtlMs: opts.LockedTTL.Milliseconds(),
+		})
+		if err != nil {
+			return database.Template{}, xerrors.Errorf("update deleting_at of all workspaces for new locked_ttl %q: %w", opts.LockedTTL, err)
+		}
+	}
+
 	return template, nil
 }

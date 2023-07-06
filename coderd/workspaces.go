@@ -785,10 +785,23 @@ func (api *API) putWorkspaceLock(rw http.ResponseWriter, r *http.Request) {
 		lockedAt.Time = database.Now()
 	}
 
-	err := api.Database.UpdateWorkspaceLockedAt(ctx, database.UpdateWorkspaceLockedAtParams{
-		ID:       workspace.ID,
-		LockedAt: lockedAt,
-	})
+	err := api.Database.InTx(func(tx database.Store) error {
+		template, err := tx.GetTemplateByID(ctx, workspace.TemplateID)
+		if err != nil {
+			return xerrors.Errorf("get template by id: %w", err)
+		}
+
+		err = tx.UpdateWorkspaceLockedDeletingAt(ctx, database.UpdateWorkspaceLockedDeletingAtParams{
+			ID:          workspace.ID,
+			LockedAt:    lockedAt,
+			LockedTtlMs: time.Duration(template.LockedTTL).Milliseconds(),
+		})
+		if err != nil {
+			return xerrors.Errorf("update workspace locked at: %w", err)
+		}
+		return nil
+	}, nil)
+
 	if err != nil {
 		httpapi.Write(ctx, rw, http.StatusInternalServerError, codersdk.Response{
 			Message: "Internal error updating workspace locked status.",

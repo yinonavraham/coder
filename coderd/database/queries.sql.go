@@ -8215,7 +8215,7 @@ func (q *sqlQuerier) GetDeploymentWorkspaceStats(ctx context.Context) (GetDeploy
 
 const getWorkspaceByAgentID = `-- name: GetWorkspaceByAgentID :one
 SELECT
-	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at
+	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at, deleting_at
 FROM
 	workspaces
 WHERE
@@ -8259,13 +8259,14 @@ func (q *sqlQuerier) GetWorkspaceByAgentID(ctx context.Context, agentID uuid.UUI
 		&i.Ttl,
 		&i.LastUsedAt,
 		&i.LockedAt,
+		&i.DeletingAt,
 	)
 	return i, err
 }
 
 const getWorkspaceByID = `-- name: GetWorkspaceByID :one
 SELECT
-	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at
+	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at, deleting_at
 FROM
 	workspaces
 WHERE
@@ -8290,13 +8291,14 @@ func (q *sqlQuerier) GetWorkspaceByID(ctx context.Context, id uuid.UUID) (Worksp
 		&i.Ttl,
 		&i.LastUsedAt,
 		&i.LockedAt,
+		&i.DeletingAt,
 	)
 	return i, err
 }
 
 const getWorkspaceByOwnerIDAndName = `-- name: GetWorkspaceByOwnerIDAndName :one
 SELECT
-	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at
+	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at, deleting_at
 FROM
 	workspaces
 WHERE
@@ -8328,13 +8330,14 @@ func (q *sqlQuerier) GetWorkspaceByOwnerIDAndName(ctx context.Context, arg GetWo
 		&i.Ttl,
 		&i.LastUsedAt,
 		&i.LockedAt,
+		&i.DeletingAt,
 	)
 	return i, err
 }
 
 const getWorkspaceByWorkspaceAppID = `-- name: GetWorkspaceByWorkspaceAppID :one
 SELECT
-	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at
+	id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at, deleting_at
 FROM
 	workspaces
 WHERE
@@ -8385,13 +8388,14 @@ func (q *sqlQuerier) GetWorkspaceByWorkspaceAppID(ctx context.Context, workspace
 		&i.Ttl,
 		&i.LastUsedAt,
 		&i.LockedAt,
+		&i.DeletingAt,
 	)
 	return i, err
 }
 
 const getWorkspaces = `-- name: GetWorkspaces :many
 SELECT
-	workspaces.id, workspaces.created_at, workspaces.updated_at, workspaces.owner_id, workspaces.organization_id, workspaces.template_id, workspaces.deleted, workspaces.name, workspaces.autostart_schedule, workspaces.ttl, workspaces.last_used_at, workspaces.locked_at, COUNT(*) OVER () as count
+	workspaces.id, workspaces.created_at, workspaces.updated_at, workspaces.owner_id, workspaces.organization_id, workspaces.template_id, workspaces.deleted, workspaces.name, workspaces.autostart_schedule, workspaces.ttl, workspaces.last_used_at, workspaces.locked_at, workspaces.deleting_at, COUNT(*) OVER () as count
 FROM
     workspaces
 JOIN
@@ -8602,6 +8606,7 @@ type GetWorkspacesRow struct {
 	Ttl               sql.NullInt64  `db:"ttl" json:"ttl"`
 	LastUsedAt        time.Time      `db:"last_used_at" json:"last_used_at"`
 	LockedAt          sql.NullTime   `db:"locked_at" json:"locked_at"`
+	DeletingAt        sql.NullTime   `db:"deleting_at" json:"deleting_at"`
 	Count             int64          `db:"count" json:"count"`
 }
 
@@ -8639,6 +8644,7 @@ func (q *sqlQuerier) GetWorkspaces(ctx context.Context, arg GetWorkspacesParams)
 			&i.Ttl,
 			&i.LastUsedAt,
 			&i.LockedAt,
+			&i.DeletingAt,
 			&i.Count,
 		); err != nil {
 			return nil, err
@@ -8656,7 +8662,7 @@ func (q *sqlQuerier) GetWorkspaces(ctx context.Context, arg GetWorkspacesParams)
 
 const getWorkspacesEligibleForTransition = `-- name: GetWorkspacesEligibleForTransition :many
 SELECT
-	workspaces.id, workspaces.created_at, workspaces.updated_at, workspaces.owner_id, workspaces.organization_id, workspaces.template_id, workspaces.deleted, workspaces.name, workspaces.autostart_schedule, workspaces.ttl, workspaces.last_used_at, workspaces.locked_at
+	workspaces.id, workspaces.created_at, workspaces.updated_at, workspaces.owner_id, workspaces.organization_id, workspaces.template_id, workspaces.deleted, workspaces.name, workspaces.autostart_schedule, workspaces.ttl, workspaces.last_used_at, workspaces.locked_at, workspaces.deleting_at
 FROM
 	workspaces
 LEFT JOIN
@@ -8742,6 +8748,7 @@ func (q *sqlQuerier) GetWorkspacesEligibleForTransition(ctx context.Context, now
 			&i.Ttl,
 			&i.LastUsedAt,
 			&i.LockedAt,
+			&i.DeletingAt,
 		); err != nil {
 			return nil, err
 		}
@@ -8771,7 +8778,7 @@ INSERT INTO
 		last_used_at
 	)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at
+	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at, deleting_at
 `
 
 type InsertWorkspaceParams struct {
@@ -8814,6 +8821,7 @@ func (q *sqlQuerier) InsertWorkspace(ctx context.Context, arg InsertWorkspacePar
 		&i.Ttl,
 		&i.LastUsedAt,
 		&i.LockedAt,
+		&i.DeletingAt,
 	)
 	return i, err
 }
@@ -8826,7 +8834,7 @@ SET
 WHERE
 	id = $1
 	AND deleted = false
-RETURNING id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at
+RETURNING id, created_at, updated_at, owner_id, organization_id, template_id, deleted, name, autostart_schedule, ttl, last_used_at, locked_at, deleting_at
 `
 
 type UpdateWorkspaceParams struct {
@@ -8850,6 +8858,7 @@ func (q *sqlQuerier) UpdateWorkspace(ctx context.Context, arg UpdateWorkspacePar
 		&i.Ttl,
 		&i.LastUsedAt,
 		&i.LockedAt,
+		&i.DeletingAt,
 	)
 	return i, err
 }
@@ -8911,23 +8920,28 @@ func (q *sqlQuerier) UpdateWorkspaceLastUsedAt(ctx context.Context, arg UpdateWo
 	return err
 }
 
-const updateWorkspaceLockedAt = `-- name: UpdateWorkspaceLockedAt :exec
-UPDATE
-	workspaces
+const updateWorkspaceLockedDeletingAt = `-- name: UpdateWorkspaceLockedDeletingAt :exec
+UPDATE workspaces
 SET
-	locked_at = $2,
-	last_used_at = now() at time zone 'utc'
+	locked_at = $1,
+	-- If locked_at is null (meaning unlocked) or the template-defined locked_ttl is 0 we should set
+	-- deleting_at to NULL else set it to the locked_at + locked_ttl duration.
+	deleting_at = CASE WHEN $1 IS NULL OR $2::bigint = 0 THEN NULL ELSE '@locked_at' + interval '1 millisecond' * $2::bigint END,
+	-- When a workspace is unlocked we want to update the last_used_at to avoid the workspace getting re-locked.
+	-- if we're locking the workspace then we leave it alone.
+	last_used_at = CASE WHEN $1 IS NULL THEN now() at time zone 'utc' ELSE last_used_at END
 WHERE
-	id = $1
+	id = $3
 `
 
-type UpdateWorkspaceLockedAtParams struct {
-	ID       uuid.UUID    `db:"id" json:"id"`
-	LockedAt sql.NullTime `db:"locked_at" json:"locked_at"`
+type UpdateWorkspaceLockedDeletingAtParams struct {
+	LockedAt    sql.NullTime `db:"locked_at" json:"locked_at"`
+	LockedTtlMs int64        `db:"locked_ttl_ms" json:"locked_ttl_ms"`
+	ID          uuid.UUID    `db:"id" json:"id"`
 }
 
-func (q *sqlQuerier) UpdateWorkspaceLockedAt(ctx context.Context, arg UpdateWorkspaceLockedAtParams) error {
-	_, err := q.db.ExecContext(ctx, updateWorkspaceLockedAt, arg.ID, arg.LockedAt)
+func (q *sqlQuerier) UpdateWorkspaceLockedDeletingAt(ctx context.Context, arg UpdateWorkspaceLockedDeletingAtParams) error {
+	_, err := q.db.ExecContext(ctx, updateWorkspaceLockedDeletingAt, arg.LockedAt, arg.LockedTtlMs, arg.ID)
 	return err
 }
 
@@ -8972,5 +8986,26 @@ type UpdateWorkspaceTTLToBeWithinTemplateMaxParams struct {
 
 func (q *sqlQuerier) UpdateWorkspaceTTLToBeWithinTemplateMax(ctx context.Context, arg UpdateWorkspaceTTLToBeWithinTemplateMaxParams) error {
 	_, err := q.db.ExecContext(ctx, updateWorkspaceTTLToBeWithinTemplateMax, arg.TemplateMaxTTL, arg.TemplateID)
+	return err
+}
+
+const updateWorkspacesDeletingAtByTemplateID = `-- name: UpdateWorkspacesDeletingAtByTemplateID :exec
+UPDATE
+	workspaces
+SET
+	deleting_at = locked_at + interval '1 milliseconds' * $1::bigint
+WHERE
+	template_id = $2
+AND
+	locked_at IS NOT NULL
+`
+
+type UpdateWorkspacesDeletingAtByTemplateIDParams struct {
+	LockedTtlMs int64     `db:"locked_ttl_ms" json:"locked_ttl_ms"`
+	TemplateID  uuid.UUID `db:"template_id" json:"template_id"`
+}
+
+func (q *sqlQuerier) UpdateWorkspacesDeletingAtByTemplateID(ctx context.Context, arg UpdateWorkspacesDeletingAtByTemplateIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateWorkspacesDeletingAtByTemplateID, arg.LockedTtlMs, arg.TemplateID)
 	return err
 }

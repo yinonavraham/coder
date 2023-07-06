@@ -5251,7 +5251,7 @@ func (q *fakeQuerier) UpdateWorkspaceLastUsedAt(_ context.Context, arg database.
 	return sql.ErrNoRows
 }
 
-func (q *fakeQuerier) UpdateWorkspaceLockedAt(_ context.Context, arg database.UpdateWorkspaceLockedAtParams) error {
+func (q *fakeQuerier) UpdateWorkspaceLockedDeletingAt(ctx context.Context, arg database.UpdateWorkspaceLockedDeletingAtParams) error {
 	if err := validateDatabaseType(arg); err != nil {
 		return err
 	}
@@ -5264,7 +5264,15 @@ func (q *fakeQuerier) UpdateWorkspaceLockedAt(_ context.Context, arg database.Up
 			continue
 		}
 		workspace.LockedAt = arg.LockedAt
-		workspace.LastUsedAt = database.Now()
+		if workspace.LockedAt.Time.IsZero() {
+			workspace.LastUsedAt = database.Now()
+		}
+		if arg.LockedTtlMs > 0 {
+			workspace.DeletingAt = sql.NullTime{
+				Valid: true,
+				Time:  workspace.LastUsedAt.Add(time.Duration(arg.LockedTtlMs) * time.Millisecond),
+			}
+		}
 		q.workspaces[index] = workspace
 		return nil
 	}
@@ -5350,6 +5358,15 @@ func (q *fakeQuerier) UpdateWorkspaceTTLToBeWithinTemplateMax(_ context.Context,
 	}
 
 	return nil
+}
+
+func (q *fakeQuerier) UpdateWorkspacesDeletingAtByTemplateID(ctx context.Context, arg database.UpdateWorkspacesDeletingAtByTemplateIDParams) error {
+	err := validateDatabaseType(arg)
+	if err != nil {
+		return err
+	}
+
+	panic("not implemented")
 }
 
 func (q *fakeQuerier) UpsertAppSecurityKey(_ context.Context, data string) error {

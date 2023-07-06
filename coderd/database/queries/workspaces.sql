@@ -470,11 +470,25 @@ WHERE
 		)
 	) AND workspaces.deleted = 'false';
 
--- name: UpdateWorkspaceLockedAt :exec
+-- name: UpdateWorkspaceLockedDeletingAt :exec
+UPDATE workspaces
+SET
+	locked_at = @locked_at,
+	-- If locked_at is null (meaning unlocked) or the template-defined locked_ttl is 0 we should set
+	-- deleting_at to NULL else set it to the locked_at + locked_ttl duration.
+	deleting_at = CASE WHEN @locked_at IS NULL OR @locked_ttl_ms::bigint = 0 THEN NULL ELSE '@locked_at' + interval '1 millisecond' * @locked_ttl_ms::bigint END,
+	-- When a workspace is unlocked we want to update the last_used_at to avoid the workspace getting re-locked.
+	-- if we're locking the workspace then we leave it alone.
+	last_used_at = CASE WHEN @locked_at IS NULL THEN now() at time zone 'utc' ELSE last_used_at END
+WHERE
+	id = @id;
+
+-- name: UpdateWorkspacesDeletingAtByTemplateID :exec
 UPDATE
 	workspaces
 SET
-	locked_at = $2,
-	last_used_at = now() at time zone 'utc'
+	deleting_at = locked_at + interval '1 milliseconds' * @locked_ttl_ms::bigint
 WHERE
-	id = $1;
+	template_id = @template_id
+AND
+	locked_at IS NOT NULL;
