@@ -185,7 +185,6 @@ func (api *API) workspaces(rw http.ResponseWriter, r *http.Request) {
 			if v.DeletingAt == nil {
 				continue
 			}
-			fmt.Println("WELL WE GOT ONE!")
 			// get the beginning of the day on which deletion is scheduled
 			truncatedDeletionAt := time.Date(v.DeletingAt.Year(), v.DeletingAt.Month(), v.DeletingAt.Day(), 0, 0, 0, 0, v.DeletingAt.Location())
 			if truncatedDeletionAt.After(*postFilter.DeletingBy) {
