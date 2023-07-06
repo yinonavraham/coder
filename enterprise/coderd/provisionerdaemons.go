@@ -307,4 +307,3 @@ func websocketNetConn(ctx context.Context, conn *websocket.Conn, msgType websock
 		Conn:   nc,
 	}
 }
-

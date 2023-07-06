@@ -5251,7 +5251,7 @@ func (q *fakeQuerier) UpdateWorkspaceLastUsedAt(_ context.Context, arg database.
 	return sql.ErrNoRows
 }
 
-func (q *fakeQuerier) UpdateWorkspaceLockedDeletingAt(ctx context.Context, arg database.UpdateWorkspaceLockedDeletingAtParams) error {
+func (q *fakeQuerier) UpdateWorkspaceLockedDeletingAt(_ context.Context, arg database.UpdateWorkspaceLockedDeletingAtParams) error {
 	if err := validateDatabaseType(arg); err != nil {
 		return err
 	}
@@ -5370,18 +5370,18 @@ func (q *fakeQuerier) UpdateWorkspacesDeletingAtByTemplateID(_ context.Context, 
 		return err
 	}
 
-	if arg.LockedTtlMs == 0 {
-		return nil
-	}
-
-	for _, ws := range q.workspaces {
+	for i, ws := range q.workspaces {
 		if ws.LockedAt.Time.IsZero() {
 			continue
 		}
-		ws.DeletingAt = sql.NullTime{
-			Valid: true,
-			Time:  ws.LockedAt.Time.Add(time.Duration(arg.LockedTtlMs) * time.Millisecond),
+		deletingAt := sql.NullTime{
+			Valid: arg.LockedTtlMs > 0,
 		}
+		if arg.LockedTtlMs > 0 {
+			deletingAt.Time = ws.LockedAt.Time.Add(time.Duration(arg.LockedTtlMs) * time.Millisecond)
+		}
+		ws.DeletingAt = deletingAt
+		q.workspaces[i] = ws
 	}
 
 	return nil

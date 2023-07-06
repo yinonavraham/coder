@@ -8993,7 +8993,7 @@ const updateWorkspacesDeletingAtByTemplateID = `-- name: UpdateWorkspacesDeletin
 UPDATE
 	workspaces
 SET
-	deleting_at = CASE WHEN $1::bigint = 0 OR locked_at IS NULL THEN NULL ELSE locked_at + interval '1 milliseconds' * $1::bigint END
+	deleting_at = CASE WHEN $1::bigint = 0 THEN NULL ELSE locked_at + interval '1 milliseconds' * $1::bigint END
 WHERE
 	template_id = $2
 AND
