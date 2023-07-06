@@ -2545,8 +2545,6 @@ func (q *querier) UpdateWorkspaceTTLToBeWithinTemplateMax(ctx context.Context, a
 }
 
 func (q *querier) UpdateWorkspacesDeletingAtByTemplateID(ctx context.Context, arg database.UpdateWorkspacesDeletingAtByTemplateIDParams) error {
-	// TODO: This is kinda messed up. We want to update this whenever we update the locked_ttl on a template. But a template
-	// admin may not have permissions to edit workspaces so this won't work.
 	fetch := func(ctx context.Context, arg database.UpdateWorkspacesDeletingAtByTemplateIDParams) (database.Template, error) {
 		return q.db.GetTemplateByID(ctx, arg.TemplateID)
 	}

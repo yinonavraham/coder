@@ -673,3 +673,65 @@ func TestWorkspacesFiltering(t *testing.T) {
 		assert.Equal(t, workspace.ID, res.Workspaces[0].ID)
 	})
 }
+
+func TestWorkspaceLock(t *testing.T) {
+	t.Parallel()
+
+	t.Run("TemplateLockedTTL", func(t *testing.T) {
+		t.Parallel()
+		var (
+			client = coderdenttest.New(t, &coderdenttest.Options{
+				Options: &coderdtest.Options{
+					IncludeProvisionerDaemon: true,
+					TemplateScheduleStore:    &coderd.EnterpriseTemplateScheduleStore{},
+				},
+			})
+
+			user      = coderdtest.CreateFirstUser(t, client)
+			_         = coderdenttest.AddFullLicense(t, client)
+			version   = coderdtest.CreateTemplateVersion(t, client, user.OrganizationID, nil)
+			_         = coderdtest.AwaitTemplateVersionJob(t, client, version.ID)
+			lockedTTL = time.Minute
+		)
+
+		template := coderdtest.CreateTemplate(t, client, user.OrganizationID, version.ID, func(ctr *codersdk.CreateTemplateRequest) {
+			ctr.LockedTTLMillis = ptr.Ref[int64](lockedTTL.Milliseconds())
+		})
+
+		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
+		_ = coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
+
+		ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
+		defer cancel()
+
+		lastUsedAt := workspace.LastUsedAt
+		err := client.UpdateWorkspaceLock(ctx, workspace.ID, codersdk.UpdateWorkspaceLock{
+			Lock: true,
+		})
+		require.NoError(t, err)
+
+		workspace = coderdtest.MustWorkspace(t, client, workspace.ID)
+		require.NoError(t, err, "fetch provisioned workspace")
+		require.NotNil(t, workspace.DeletingAt)
+		require.NotNil(t, workspace.LockedAt)
+		require.Equal(t, workspace.LockedAt.Add(lockedTTL), *workspace.DeletingAt)
+		require.WithinRange(t, *workspace.LockedAt, time.Now().Add(-time.Second*10), time.Now())
+		// Locking a workspace shouldn't update the last_used_at.
+		require.Equal(t, lastUsedAt, workspace.LastUsedAt)
+
+		workspace = coderdtest.MustWorkspace(t, client, workspace.ID)
+		lastUsedAt = workspace.LastUsedAt
+		err = client.UpdateWorkspaceLock(ctx, workspace.ID, codersdk.UpdateWorkspaceLock{
+			Lock: false,
+		})
+		require.NoError(t, err)
+
+		workspace, err = client.Workspace(ctx, workspace.ID)
+		require.NoError(t, err, "fetch provisioned workspace")
+		require.Nil(t, workspace.LockedAt)
+		// Unlocking a workspace should cause the deleting_at to be unset.
+		require.Nil(t, workspace.DeletingAt)
+		// The last_used_at should get updated when we unlock the workspace.
+		require.True(t, workspace.LastUsedAt.After(lastUsedAt))
+	})
+}

@@ -8962,25 +8962,25 @@ func (q *sqlQuerier) UpdateWorkspaceLastUsedAt(ctx context.Context, arg UpdateWo
 const updateWorkspaceLockedDeletingAt = `-- name: UpdateWorkspaceLockedDeletingAt :exec
 UPDATE workspaces
 SET
-	locked_at = $1,
-	-- If locked_at is null (meaning unlocked) or the template-defined locked_ttl is 0 we should set
-	-- deleting_at to NULL else set it to the locked_at + locked_ttl duration.
-	deleting_at = CASE WHEN $1 IS NULL OR $2::bigint = 0 THEN NULL ELSE '@locked_at' + interval '1 millisecond' * $2::bigint END,
+	locked_at = $2,
 	-- When a workspace is unlocked we want to update the last_used_at to avoid the workspace getting re-locked.
 	-- if we're locking the workspace then we leave it alone.
-	last_used_at = CASE WHEN $1 IS NULL THEN now() at time zone 'utc' ELSE last_used_at END
+	last_used_at = CASE WHEN $2::timestamptz IS NULL THEN now() at time zone 'utc' ELSE last_used_at END,
+	-- If locked_at is null (meaning unlocked) or the template-defined locked_ttl is 0 we should set
+	-- deleting_at to NULL else set it to the locked_at + locked_ttl duration.
+	deleting_at = CASE WHEN $2::timestamptz IS NULL OR $3::bigint = 0 THEN NULL ELSE $2::timestamptz + interval '1 millisecond' * $3::bigint END
 WHERE
-	id = $3
+	id = $1
 `
 
 type UpdateWorkspaceLockedDeletingAtParams struct {
+	ID          uuid.UUID    `db:"id" json:"id"`
 	LockedAt    sql.NullTime `db:"locked_at" json:"locked_at"`
 	LockedTtlMs int64        `db:"locked_ttl_ms" json:"locked_ttl_ms"`
-	ID          uuid.UUID    `db:"id" json:"id"`
 }
 
 func (q *sqlQuerier) UpdateWorkspaceLockedDeletingAt(ctx context.Context, arg UpdateWorkspaceLockedDeletingAtParams) error {
-	_, err := q.db.ExecContext(ctx, updateWorkspaceLockedDeletingAt, arg.LockedAt, arg.LockedTtlMs, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateWorkspaceLockedDeletingAt, arg.ID, arg.LockedAt, arg.LockedTtlMs)
 	return err
 }
 
@@ -9032,7 +9032,7 @@ const updateWorkspacesDeletingAtByTemplateID = `-- name: UpdateWorkspacesDeletin
 UPDATE
 	workspaces
 SET
-	deleting_at = locked_at + interval '1 milliseconds' * $1::bigint
+	deleting_at = CASE WHEN $1::bigint = 0 OR locked_at IS NULL THEN NULL ELSE locked_at + interval '1 milliseconds' * $1::bigint END
 WHERE
 	template_id = $2
 AND
