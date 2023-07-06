@@ -800,7 +800,6 @@ func (api *API) putWorkspaceLock(rw http.ResponseWriter, r *http.Request) {
 		}
 		return nil
 	}, nil)
-
 	if err != nil {
 		httpapi.Write(ctx, rw, http.StatusInternalServerError, codersdk.Response{
 			Message: "Internal error updating workspace locked status.",
@@ -1133,9 +1132,7 @@ func convertWorkspace(
 		}
 	}
 
-	var (
-		ttlMillis = convertWorkspaceTTLMillis(workspace.Ttl)
-	)
+	ttlMillis := convertWorkspaceTTLMillis(workspace.Ttl)
 
 	return codersdk.Workspace{
 		ID:                                   workspace.ID,
