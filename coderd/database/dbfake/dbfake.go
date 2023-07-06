@@ -664,6 +664,8 @@ func convertToWorkspaceRows(workspaces []database.Workspace, count int64) []data
 			AutostartSchedule: w.AutostartSchedule,
 			Ttl:               w.Ttl,
 			LastUsedAt:        w.LastUsedAt,
+			LockedAt:          w.LockedAt,
+			DeletingAt:        w.DeletingAt,
 			Count:             count,
 		}
 	}
