@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"cdr.dev/slog/sloggers/slogtest"
@@ -618,10 +617,10 @@ func TestWorkspaceAutobuild(t *testing.T) {
 func TestWorkspacesFiltering(t *testing.T) {
 	t.Parallel()
 
-	t.Run("FilterQueryHasDeletingByAndLicensed", func(t *testing.T) {
+	t.Run("DeletingBy", func(t *testing.T) {
 		t.Parallel()
 
-		inactivityTTL := 1 * 24 * time.Hour
+		lockedTTL := 24 * time.Hour
 
 		client := coderdenttest.New(t, &coderdenttest.Options{
 			Options: &coderdtest.Options{
@@ -629,42 +628,42 @@ func TestWorkspacesFiltering(t *testing.T) {
 			},
 		})
 		user := coderdtest.CreateFirstUser(t, client)
-		_ = coderdenttest.AddLicense(t, client, coderdenttest.LicenseOptions{
-			Features: license.Features{
-				codersdk.FeatureAdvancedTemplateScheduling: 1,
-			},
-		})
+		_ = coderdenttest.AddFullLicense(t, client)
 
 		version := coderdtest.CreateTemplateVersion(t, client, user.OrganizationID, nil)
+		_ = coderdtest.AwaitTemplateVersionJob(t, client, version.ID)
 		template := coderdtest.CreateTemplate(t, client, user.OrganizationID, version.ID)
-
-		coderdtest.AwaitTemplateVersionJob(t, client, version.ID)
 
 		// update template with inactivity ttl
 		ctx, cancel := context.WithTimeout(context.Background(), testutil.WaitLong)
 		defer cancel()
 
 		template, err := client.UpdateTemplateMeta(ctx, template.ID, codersdk.UpdateTemplateMeta{
-			InactivityTTLMillis: inactivityTTL.Milliseconds(),
+			LockedTTLMillis: lockedTTL.Milliseconds(),
 		})
-
-		assert.NoError(t, err)
-		assert.Equal(t, inactivityTTL.Milliseconds(), template.InactivityTTLMillis)
+		require.NoError(t, err)
+		require.Equal(t, lockedTTL.Milliseconds(), template.LockedTTLMillis)
 
 		workspace := coderdtest.CreateWorkspace(t, client, user.OrganizationID, template.ID)
-		coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
+		_ = coderdtest.AwaitWorkspaceBuildJob(t, client, workspace.LatestBuild.ID)
 
 		// stop build so workspace is inactive
 		stopBuild := coderdtest.CreateWorkspaceBuild(t, client, workspace, database.WorkspaceTransitionStop)
 		coderdtest.AwaitWorkspaceBuildJob(t, client, stopBuild.ID)
+		err = client.UpdateWorkspaceLock(ctx, workspace.ID, codersdk.UpdateWorkspaceLock{
+			Lock: true,
+		})
+		require.NoError(t, err)
+		workspace = coderdtest.MustWorkspace(t, client, workspace.ID)
+		require.NotNil(t, workspace.DeletingAt)
 
 		res, err := client.Workspaces(ctx, codersdk.WorkspaceFilter{
 			// adding a second to time.Now() to give some buffer in case test runs quickly
-			FilterQuery: fmt.Sprintf("deleting_by:%s", time.Now().Add(time.Second).Add(inactivityTTL).Format("2006-01-02")),
+			FilterQuery: fmt.Sprintf("deleting_by:%s", time.Now().Add(time.Second).Add(lockedTTL).Format("2006-01-02")),
 		})
-		assert.NoError(t, err)
-		assert.Len(t, res.Workspaces, 1)
-		assert.Equal(t, workspace.ID, res.Workspaces[0].ID)
+		require.NoError(t, err)
+		require.Len(t, res.Workspaces, 1)
+		require.Equal(t, workspace.ID, res.Workspaces[0].ID)
 	})
 }
 
