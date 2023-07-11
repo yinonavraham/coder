@@ -5,15 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
-	"os"
-	"strings"
-	"unicode"
-
 	"github.com/spf13/pflag"
 	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 	"gopkg.in/yaml.v3"
+	"io"
+	"os"
+	"strings"
+	"unicode"
 )
 
 // Cmd describes an executable command.
@@ -24,27 +23,21 @@ type Cmd struct {
 	Children []*Cmd
 	// Use is provided in form "command [flags] [args...]".
 	Use string
-
 	// Aliases is a list of alternative names for the command.
 	Aliases []string
-
 	// Short is a one-line description of the command.
 	Short string
-
 	// Hidden determines whether the command should be hidden from help.
 	Hidden bool
-
 	// RawArgs determines whether the command should receive unparsed arguments.
 	// No flags are parsed when set, and the command is responsible for parsing
 	// its own flags.
 	RawArgs bool
-
 	// Long is a detailed description of the command,
 	// presented on its help page. It may contain examples.
 	Long        string
 	Options     OptionSet
 	Annotations Annotations
-
 	// Middleware is called before the Handler.
 	// Use Chain() to combine multiple middlewares.
 	Middleware  MiddlewareFunc
@@ -52,8 +45,8 @@ type Cmd struct {
 	HelpHandler HandlerFunc
 }
 
-// AddSubcommands adds the given subcommands, setting their
-// Parent field automatically.
+// AddSubcommands registers the given subcommands to the parent command.
+// It adjusts the Parent for each added subcommand to point to the receiver (parent) command.
 func (c *Cmd) AddSubcommands(cmds ...*Cmd) {
 	for _, cmd := range cmds {
 		cmd.Parent = c
@@ -61,7 +54,10 @@ func (c *Cmd) AddSubcommands(cmds ...*Cmd) {
 	}
 }
 
-// Walk calls fn for the command and all its children.
+// Walk traverses the command tree depth-first, invoking the provided function
+// on the command itself and each of its descendants. The function is called with
+// the command as its parameter. During the traversal, the Parent field of a
+// child command is temporarily set to the current command.
 func (c *Cmd) Walk(fn func(*Cmd)) {
 	fn(c)
 	for _, child := range c.Children {
@@ -70,13 +66,18 @@ func (c *Cmd) Walk(fn func(*Cmd)) {
 	}
 }
 
-// PrepareAll performs initialization and linting on the command and all its children.
+// PrepareAll recursively initializes and performs linting on the command and its
+// descendants. This includes ensuring certain fields like 'Use' and 'Name' are set
+// and formatting requirements such as capital letters at the start of descriptions
+// are met. The method also facilitates the sorting of options and child commands
+// in lexicographical order. If an error is encountered in any command, the method
+// will return the combined errors. Errors are also propagated up from child command's
+// PrepareAll calls.
 func (c *Cmd) PrepareAll() error {
 	if c.Use == "" {
 		return xerrors.New("command must have a Use field so that it has a name")
 	}
 	var merr error
-
 	for i := range c.Options {
 		opt := &c.Options[i]
 		if opt.Name == "" {
@@ -101,7 +102,6 @@ func (c *Cmd) PrepareAll() error {
 			}
 		}
 	}
-
 	slices.SortFunc(c.Options, func(a, b Option) bool {
 		return a.Name < b.Name
 	})
@@ -118,7 +118,8 @@ func (c *Cmd) PrepareAll() error {
 	return merr
 }
 
-// Name returns the first word in the Use string.
+// Name extracts and returns the command name from the Use field of the command.
+// It considers the command name as the first word in the Use description.
 func (c *Cmd) Name() string {
 	return strings.Split(c.Use, " ")[0]
 }
@@ -194,14 +195,12 @@ func (inv *Invocation) WithOS() *Invocation {
 		i.Environ = ParseEnviron(os.Environ(), "")
 	})
 }
-
 func (inv *Invocation) Context() context.Context {
 	if inv.ctx == nil {
 		return context.Background()
 	}
 	return inv.ctx
 }
-
 func (inv *Invocation) ParsedFlags() *pflag.FlagSet {
 	if inv.parsedFlags == nil {
 		panic("flags not parsed, has Run() been called?")
@@ -212,7 +211,6 @@ func (inv *Invocation) ParsedFlags() *pflag.FlagSet {
 type runState struct {
 	allArgs      []string
 	commandDepth int
-
 	flagParseErr error
 }
 
@@ -249,13 +247,11 @@ func (inv *Invocation) run(state *runState) error {
 			children[name] = child
 		}
 	}
-
 	if inv.parsedFlags == nil {
 		inv.parsedFlags = pflag.NewFlagSet(inv.Command.Name(), pflag.ContinueOnError)
 		// We handle Usage ourselves.
 		inv.parsedFlags.Usage = func() {}
 	}
-
 	// If we find a duplicate flag, we want the deeper command's flag to override
 	// the shallow one. Unfortunately, pflag has no way to remove a flag, so we
 	// have to create a copy of the flagset without a value.
@@ -265,52 +261,43 @@ func (inv *Invocation) run(state *runState) error {
 		}
 		inv.parsedFlags.AddFlag(f)
 	})
-
 	var parsedArgs []string
-
 	if !inv.Command.RawArgs {
 		// Flag parsing will fail on intermediate commands in the command tree,
 		// so we check the error after looking for a child command.
 		state.flagParseErr = inv.parsedFlags.Parse(state.allArgs)
 		parsedArgs = inv.parsedFlags.Args()
 	}
-
 	// Set value sources for flags.
 	for i, opt := range inv.Command.Options {
 		if fl := inv.parsedFlags.Lookup(opt.Flag); fl != nil && fl.Changed {
 			inv.Command.Options[i].ValueSource = ValueSourceFlag
 		}
 	}
-
 	// Read YAML configs, if any.
 	for _, opt := range inv.Command.Options {
 		path, ok := opt.Value.(*YAMLConfigPath)
 		if !ok || path.String() == "" {
 			continue
 		}
-
 		byt, err := os.ReadFile(path.String())
 		if err != nil {
 			return xerrors.Errorf("reading yaml: %w", err)
 		}
-
 		var n yaml.Node
 		err = yaml.Unmarshal(byt, &n)
 		if err != nil {
 			return xerrors.Errorf("decoding yaml: %w", err)
 		}
-
 		err = inv.Command.Options.UnmarshalYAML(&n)
 		if err != nil {
 			return xerrors.Errorf("applying yaml: %w", err)
 		}
 	}
-
 	err = inv.Command.Options.SetDefaults()
 	if err != nil {
 		return xerrors.Errorf("setting defaults: %w", err)
 	}
-
 	// Run child command if found (next child only)
 	// We must do subcommand detection after flag parsing so we don't mistake flag
 	// values for subcommand names.
@@ -323,7 +310,6 @@ func (inv *Invocation) run(state *runState) error {
 			return inv.run(state)
 		}
 	}
-
 	// Flag parse errors are irrelevant for raw args commands.
 	if !inv.Command.RawArgs && state.flagParseErr != nil && !errors.Is(state.flagParseErr, pflag.ErrHelp) {
 		return xerrors.Errorf(
@@ -332,7 +318,6 @@ func (inv *Invocation) run(state *runState) error {
 			inv.Command.FullName(), state.flagParseErr,
 		)
 	}
-
 	if inv.Command.RawArgs {
 		// If we're at the root command, then the name is omitted
 		// from the arguments, so we can just use the entire slice.
@@ -349,28 +334,23 @@ func (inv *Invocation) run(state *runState) error {
 		// In non-raw-arg mode, we want to skip over flags.
 		inv.Args = parsedArgs[state.commandDepth:]
 	}
-
 	mw := inv.Command.Middleware
 	if mw == nil {
 		mw = Chain()
 	}
-
 	ctx := inv.ctx
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	inv = inv.WithContext(ctx)
-
 	if inv.Command.Handler == nil || errors.Is(state.flagParseErr, pflag.ErrHelp) {
 		if inv.Command.HelpHandler == nil {
 			return xerrors.Errorf("no handler or help for command %s", inv.Command.FullName())
 		}
 		return inv.Command.HelpHandler(inv)
 	}
-
 	err = mw(inv.Command.Handler)(inv)
 	if err != nil {
 		return &RunCommandError{
@@ -389,7 +369,6 @@ type RunCommandError struct {
 func (e *RunCommandError) Unwrap() error {
 	return e.Err
 }
-
 func (e *RunCommandError) Error() string {
 	return fmt.Sprintf("running command %q: %+v", e.Cmd.FullName(), e.Err)
 }
@@ -405,13 +384,11 @@ func findArg(want string, args []string, fs *pflag.FlagSet) (int, error) {
 			}
 			continue
 		}
-
 		// This is a flag!
 		if strings.Contains(arg, "=") {
 			// The flag contains the value in the same arg, just skip.
 			continue
 		}
-
 		// We need to check if NoOptValue is set, then we should not wait
 		// for the next arg to be the value.
 		f := fs.Lookup(strings.TrimLeft(arg, "-"))
@@ -421,15 +398,12 @@ func findArg(want string, args []string, fs *pflag.FlagSet) (int, error) {
 		if f.NoOptDefVal != "" {
 			continue
 		}
-
 		if i == len(args)-1 {
 			return -1, xerrors.Errorf("flag %s requires a value", arg)
 		}
-
 		// Skip the value.
 		i++
 	}
-
 	return -1, xerrors.Errorf("arg %s not found", want)
 }
 
@@ -506,7 +480,6 @@ func Chain(ms ...MiddlewareFunc) MiddlewareFunc {
 	}
 	return chain(reversed...)
 }
-
 func RequireNArgs(want int) MiddlewareFunc {
 	return RequireRangeArgs(want, want)
 }

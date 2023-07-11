@@ -7,9 +7,8 @@
 package clibase
 
 import (
-	"strings"
-
 	"golang.org/x/exp/maps"
+	"strings"
 )
 
 // Group describes a hierarchy of groups that an option or command belongs to.
@@ -20,12 +19,13 @@ type Group struct {
 	Description string `json:"description,omitempty"`
 }
 
-// Ancestry returns the group and all of its parents, in order.
+// Ancestry returns a slice of Group values, beginning with the current group and
+// ascending to the root. If the group is nil, it returns nil. Changes to the
+// returned slice do not affect the original groups.
 func (g *Group) Ancestry() []Group {
 	if g == nil {
 		return nil
 	}
-
 	groups := []Group{*g}
 	for p := g.Parent; p != nil; p = p.Parent {
 		// Prepend to the slice so that the order is correct.
@@ -34,6 +34,8 @@ func (g *Group) Ancestry() []Group {
 	return groups
 }
 
+// FullName returns the full path of the group from the root to the current group.
+// Each group is separated by a " / ". If the group is nil, it returns an empty string.
 func (g *Group) FullName() string {
 	var names []string
 	for _, g := range g.Ancestry() {
@@ -46,9 +48,8 @@ func (g *Group) FullName() string {
 // Its methods won't panic if the map is nil.
 type Annotations map[string]string
 
-// Mark sets a value on the annotations map, creating one
-// if it doesn't exist. Mark does not mutate the original and
-// returns a copy. It is suitable for chaining.
+// Mark sets a key-value pair in a copy of the Annotations map, creating a new one if necessary.
+// It returns the modified copy, leaving the original map as it is. Suitable for chaining operations.
 func (a Annotations) Mark(key string, value string) Annotations {
 	var aa Annotations
 	if a != nil {
@@ -60,7 +61,8 @@ func (a Annotations) Mark(key string, value string) Annotations {
 	return aa
 }
 
-// IsSet returns true if the key is set in the annotations map.
+// IsSet checks whether the provided key exists in the annotations map. If the
+// map is nil or the key is not present, it returns false. Otherwise, it returns true.
 func (a Annotations) IsSet(key string) bool {
 	if a == nil {
 		return false
@@ -69,8 +71,8 @@ func (a Annotations) IsSet(key string) bool {
 	return ok
 }
 
-// Get retrieves a key from the map, returning false if the key is not found
-// or the map is nil.
+// Get returns the value associated with the key from the Annotations.
+// Returns false if the key does not exist or Annotations is nil, otherwise true.
 func (a Annotations) Get(key string) (string, bool) {
 	if a == nil {
 		return "", false

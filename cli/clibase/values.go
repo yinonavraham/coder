@@ -4,16 +4,15 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/pflag"
+	"golang.org/x/xerrors"
+	"gopkg.in/yaml.v3"
 	"net"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/spf13/pflag"
-	"golang.org/x/xerrors"
-	"gopkg.in/yaml.v3"
 )
 
 // NoOptDefValuer describes behavior when no
@@ -26,27 +25,23 @@ type NoOptDefValuer interface {
 
 // values.go contains a standard set of value types that can be used as
 // Option Values.
-
 type Int64 int64
 
+// Int64Of wraps a pointer to an int64 in an Int64 type, returning a pointer to the new value.
 func Int64Of(i *int64) *Int64 {
 	return (*Int64)(i)
 }
-
 func (i *Int64) Set(s string) error {
 	ii, err := strconv.ParseInt(s, 10, 64)
 	*i = Int64(ii)
 	return err
 }
-
 func (i Int64) Value() int64 {
 	return int64(i)
 }
-
 func (i Int64) String() string {
 	return strconv.Itoa(int(i))
 }
-
 func (Int64) Type() string {
 	return "int"
 }
@@ -56,7 +51,6 @@ type Bool bool
 func BoolOf(b *bool) *Bool {
 	return (*Bool)(b)
 }
-
 func (b *Bool) Set(s string) error {
 	if s == "" {
 		*b = Bool(false)
@@ -66,19 +60,15 @@ func (b *Bool) Set(s string) error {
 	*b = Bool(bb)
 	return err
 }
-
 func (*Bool) NoOptDefValue() string {
 	return "true"
 }
-
 func (b Bool) String() string {
 	return strconv.FormatBool(bool(b))
 }
-
 func (b Bool) Value() bool {
 	return bool(b)
 }
-
 func (Bool) Type() string {
 	return "bool"
 }
@@ -88,24 +78,19 @@ type String string
 func StringOf(s *string) *String {
 	return (*String)(s)
 }
-
 func (*String) NoOptDefValue() string {
 	return ""
 }
-
 func (s *String) Set(v string) error {
 	*s = String(v)
 	return nil
 }
-
 func (s String) String() string {
 	return string(s)
 }
-
 func (s String) Value() string {
 	return string(s)
 }
-
 func (String) Type() string {
 	return "string"
 }
@@ -118,25 +103,20 @@ type StringArray []string
 func StringArrayOf(ss *[]string) *StringArray {
 	return (*StringArray)(ss)
 }
-
 func (s *StringArray) Append(v string) error {
 	*s = append(*s, v)
 	return nil
 }
-
 func (s *StringArray) Replace(vals []string) error {
 	*s = vals
 	return nil
 }
-
 func (s *StringArray) GetSlice() []string {
 	return *s
 }
-
 func readAsCSV(v string) ([]string, error) {
 	return csv.NewReader(strings.NewReader(v)).Read()
 }
-
 func writeAsCSV(vals []string) string {
 	var sb strings.Builder
 	err := csv.NewWriter(&sb).Write(vals)
@@ -145,7 +125,6 @@ func writeAsCSV(vals []string) string {
 	}
 	return sb.String()
 }
-
 func (s *StringArray) Set(v string) error {
 	if v == "" {
 		*s = nil
@@ -158,15 +137,12 @@ func (s *StringArray) Set(v string) error {
 	*s = append(*s, ss...)
 	return nil
 }
-
 func (s StringArray) String() string {
 	return writeAsCSV([]string(s))
 }
-
 func (s StringArray) Value() []string {
 	return []string(s)
 }
-
 func (StringArray) Type() string {
 	return "string-array"
 }
@@ -176,32 +152,26 @@ type Duration time.Duration
 func DurationOf(d *time.Duration) *Duration {
 	return (*Duration)(d)
 }
-
 func (d *Duration) Set(v string) error {
 	dd, err := time.ParseDuration(v)
 	*d = Duration(dd)
 	return err
 }
-
 func (d *Duration) Value() time.Duration {
 	return time.Duration(*d)
 }
-
 func (d *Duration) String() string {
 	return time.Duration(*d).String()
 }
-
 func (Duration) Type() string {
 	return "duration"
 }
-
 func (d *Duration) MarshalYAML() (interface{}, error) {
 	return yaml.Node{
 		Kind:  yaml.ScalarNode,
 		Value: d.String(),
 	}, nil
 }
-
 func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 	return d.Set(n.Value)
 }
@@ -211,7 +181,6 @@ type URL url.URL
 func URLOf(u *url.URL) *URL {
 	return (*URL)(u)
 }
-
 func (u *URL) Set(v string) error {
 	uu, err := url.Parse(v)
 	if err != nil {
@@ -220,27 +189,22 @@ func (u *URL) Set(v string) error {
 	*u = URL(*uu)
 	return nil
 }
-
 func (u *URL) String() string {
 	uu := url.URL(*u)
 	return uu.String()
 }
-
 func (u *URL) MarshalYAML() (interface{}, error) {
 	return yaml.Node{
 		Kind:  yaml.ScalarNode,
 		Value: u.String(),
 	}, nil
 }
-
 func (u *URL) UnmarshalYAML(n *yaml.Node) error {
 	return u.Set(n.Value)
 }
-
 func (u *URL) MarshalJSON() ([]byte, error) {
 	return json.Marshal(u.String())
 }
-
 func (u *URL) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
@@ -249,11 +213,9 @@ func (u *URL) UnmarshalJSON(b []byte) error {
 	}
 	return u.Set(s)
 }
-
 func (*URL) Type() string {
 	return "url"
 }
-
 func (u *URL) Value() *url.URL {
 	return (*url.URL)(u)
 }
@@ -272,7 +234,6 @@ func (hp *HostPort) Set(v string) error {
 	hp.Host, hp.Port, err = net.SplitHostPort(v)
 	return err
 }
-
 func (hp *HostPort) String() string {
 	if hp.Host == "" && hp.Port == "" {
 		return ""
@@ -281,11 +242,9 @@ func (hp *HostPort) String() string {
 	// IPv6 addresses.
 	return net.JoinHostPort(hp.Host, hp.Port)
 }
-
 func (hp *HostPort) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hp.String())
 }
-
 func (hp *HostPort) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
@@ -299,18 +258,15 @@ func (hp *HostPort) UnmarshalJSON(b []byte) error {
 	}
 	return hp.Set(s)
 }
-
 func (hp *HostPort) MarshalYAML() (interface{}, error) {
 	return yaml.Node{
 		Kind:  yaml.ScalarNode,
 		Value: hp.String(),
 	}, nil
 }
-
 func (hp *HostPort) UnmarshalYAML(n *yaml.Node) error {
 	return hp.Set(n.Value)
 }
-
 func (*HostPort) Type() string {
 	return "host:port"
 }
@@ -332,7 +288,6 @@ type Struct[T any] struct {
 func (s *Struct[T]) Set(v string) error {
 	return yaml.Unmarshal([]byte(v), &s.Value)
 }
-
 func (s *Struct[T]) String() string {
 	byt, err := yaml.Marshal(s.Value)
 	if err != nil {
@@ -340,7 +295,6 @@ func (s *Struct[T]) String() string {
 	}
 	return string(byt)
 }
-
 func (s *Struct[T]) MarshalYAML() (interface{}, error) {
 	var n yaml.Node
 	err := n.Encode(s.Value)
@@ -349,7 +303,6 @@ func (s *Struct[T]) MarshalYAML() (interface{}, error) {
 	}
 	return n, nil
 }
-
 func (s *Struct[T]) UnmarshalYAML(n *yaml.Node) error {
 	// HACK: for compatibility with flags, we use nil slices instead of empty
 	// slices. In most cases, nil slices and empty slices are treated
@@ -360,15 +313,12 @@ func (s *Struct[T]) UnmarshalYAML(n *yaml.Node) error {
 	}
 	return n.Decode(&s.Value)
 }
-
 func (s *Struct[T]) Type() string {
 	return fmt.Sprintf("struct[%T]", s.Value)
 }
-
 func (s *Struct[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.Value)
 }
-
 func (s *Struct[T]) UnmarshalJSON(b []byte) error {
 	return json.Unmarshal(b, &s.Value)
 }
@@ -383,11 +333,9 @@ type discardValue struct{}
 func (discardValue) Set(string) error {
 	return nil
 }
-
 func (discardValue) String() string {
 	return ""
 }
-
 func (discardValue) Type() string {
 	return "discard"
 }
@@ -405,7 +353,6 @@ func EnumOf(v *string, choices ...string) *Enum {
 		Value:   v,
 	}
 }
-
 func (e *Enum) Set(v string) error {
 	for _, c := range e.Choices {
 		if v == c {
@@ -415,11 +362,9 @@ func (e *Enum) Set(v string) error {
 	}
 	return xerrors.Errorf("invalid choice: %s, should be one of %v", v, e.Choices)
 }
-
 func (e *Enum) Type() string {
 	return fmt.Sprintf("enum[%v]", strings.Join(e.Choices, "|"))
 }
-
 func (e *Enum) String() string {
 	return *e.Value
 }
@@ -434,11 +379,9 @@ func (p *YAMLConfigPath) Set(v string) error {
 	*p = YAMLConfigPath(v)
 	return nil
 }
-
 func (p *YAMLConfigPath) String() string {
 	return string(*p)
 }
-
 func (*YAMLConfigPath) Type() string {
 	return "yaml-config-path"
 }
