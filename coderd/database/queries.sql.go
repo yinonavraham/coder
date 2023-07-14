@@ -8512,6 +8512,12 @@ WHERE
 			) > 0
 		ELSE true
 	END
+	-- Filter by locked workspaces.
+	AND CASE
+		WHEN $10 :: timestamptz > '0001-01-01 00:00:00+00'::timestamptz THEN
+			locked_at IS NOT NULL AND locked_at >= $10
+		ELSE true
+	END
 	-- Authorize Filter clause will be injected below in GetAuthorizedWorkspaces
 	-- @authorize_filter
 ORDER BY
@@ -8523,11 +8529,11 @@ ORDER BY
 	LOWER(workspaces.name) ASC
 LIMIT
 	CASE
-		WHEN $11 :: integer > 0 THEN
-			$11
+		WHEN $12 :: integer > 0 THEN
+			$12
 	END
 OFFSET
-	$10
+	$11
 `
 
 type GetWorkspacesParams struct {
@@ -8540,6 +8546,7 @@ type GetWorkspacesParams struct {
 	Name                                  string      `db:"name" json:"name"`
 	HasAgent                              string      `db:"has_agent" json:"has_agent"`
 	AgentInactiveDisconnectTimeoutSeconds int64       `db:"agent_inactive_disconnect_timeout_seconds" json:"agent_inactive_disconnect_timeout_seconds"`
+	LockedAt                              time.Time   `db:"locked_at" json:"locked_at"`
 	Offset                                int32       `db:"offset_" json:"offset_"`
 	Limit                                 int32       `db:"limit_" json:"limit_"`
 }
@@ -8575,6 +8582,7 @@ func (q *sqlQuerier) GetWorkspaces(ctx context.Context, arg GetWorkspacesParams)
 		arg.Name,
 		arg.HasAgent,
 		arg.AgentInactiveDisconnectTimeoutSeconds,
+		arg.LockedAt,
 		arg.Offset,
 		arg.Limit,
 	)
