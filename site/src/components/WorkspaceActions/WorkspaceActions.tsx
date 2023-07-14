@@ -3,7 +3,7 @@ import Menu from "@mui/material/Menu"
 import { makeStyles } from "@mui/styles"
 import MoreVertOutlined from "@mui/icons-material/MoreVertOutlined"
 import { FC, Fragment, ReactNode, useRef, useState } from "react"
-import { WorkspaceStatus } from "api/typesGenerated"
+import { Workspace, WorkspaceStatus } from "api/typesGenerated"
 import {
   ActionLoadingButton,
   CancelButton,
@@ -12,6 +12,7 @@ import {
   StopButton,
   RestartButton,
   UpdateButton,
+  UnlockButton,
 } from "./Buttons"
 import {
   ButtonMapping,
@@ -28,6 +29,7 @@ import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined"
 import { useLocalPreferences } from "contexts/LocalPreferencesContext"
 
 export interface WorkspaceActionsProps {
+  workspace: Workspace
   workspaceStatus: WorkspaceStatus
   isOutdated: boolean
   handleStart: () => void
@@ -38,6 +40,7 @@ export interface WorkspaceActionsProps {
   handleCancel: () => void
   handleSettings: () => void
   handleChangeVersion: () => void
+  handleUnlock: () => void
   isUpdating: boolean
   isRestarting: boolean
   children?: ReactNode
@@ -47,6 +50,7 @@ export interface WorkspaceActionsProps {
 }
 
 export const WorkspaceActions: FC<WorkspaceActionsProps> = ({
+  workspace,
   workspaceStatus,
   isOutdated,
   handleStart,
@@ -57,6 +61,7 @@ export const WorkspaceActions: FC<WorkspaceActionsProps> = ({
   handleCancel,
   handleSettings,
   handleChangeVersion,
+  handleUnlock,
   isUpdating,
   isRestarting,
   canChangeVersions,
@@ -68,7 +73,7 @@ export const WorkspaceActions: FC<WorkspaceActionsProps> = ({
     canCancel,
     canAcceptJobs,
     actions: actionsByStatus,
-  } = actionsByWorkspaceStatus(workspaceStatus)
+  } = actionsByWorkspaceStatus(workspace, workspaceStatus)
   const canBeUpdated = isOutdated && canAcceptJobs
   const menuTriggerRef = useRef<HTMLButtonElement>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -98,6 +103,10 @@ export const WorkspaceActions: FC<WorkspaceActionsProps> = ({
     [ButtonTypesEnum.canceling]: <DisabledButton label="Canceling..." />,
     [ButtonTypesEnum.deleted]: <DisabledButton label="Deleted" />,
     [ButtonTypesEnum.pending]: <ActionLoadingButton label="Pending..." />,
+    [ButtonTypesEnum.unlock]: <UnlockButton handleAction={handleUnlock} />,
+    [ButtonTypesEnum.unlocking]: (
+      <UnlockButton loading handleAction={handleUnlock} />
+    ),
   }
 
   // Returns a function that will execute the action and close the menu

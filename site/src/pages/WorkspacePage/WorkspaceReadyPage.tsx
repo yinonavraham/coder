@@ -28,7 +28,7 @@ import {
 import { UpdateBuildParametersDialog } from "./UpdateBuildParametersDialog"
 import { ChangeVersionDialog } from "./ChangeVersionDialog"
 import { useQuery } from "@tanstack/react-query"
-import { getTemplateVersions } from "api/api"
+import { getTemplateVersions, updateWorkspaceLock } from "api/api"
 import { useRestartWorkspace } from "./hooks"
 import {
   ConfirmDialog,
@@ -177,6 +177,15 @@ export const WorkspaceReadyPage = ({
         handleBuildRetry={() => workspaceSend({ type: "RETRY_BUILD" })}
         handleChangeVersion={() => {
           setChangeVersionDialogOpen(true)
+        }}
+        handleUnlock={() => {
+          updateWorkspaceLock(workspace.id, false)
+            .then(() => {
+              window.location.reload()
+            })
+            .catch((error) => {
+              console.log("ERROR: ", error)
+            })
         }}
         resources={workspace.latest_build.resources}
         builds={builds}
