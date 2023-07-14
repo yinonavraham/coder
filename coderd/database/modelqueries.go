@@ -213,6 +213,7 @@ func (q *sqlQuerier) GetAuthorizedWorkspaces(ctx context.Context, arg GetWorkspa
 		arg.Name,
 		arg.HasAgent,
 		arg.AgentInactiveDisconnectTimeoutSeconds,
+		arg.LockedAt,
 		arg.Offset,
 		arg.Limit,
 	)
