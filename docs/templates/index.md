@@ -69,37 +69,17 @@ coder templates create <template-name>
 > [examples/](https://github.com/coder/coder/tree/main/examples/templates)
 > directory in the repo.
 
-## Template policies (enterprise)
+## Schedule settings (enterprise)
 
-By default, developers have unlimited workspace usage and can use any template version. Template policies allows you to:
+While workspaces can auto-stop based on activity, users set this value per-workspace it can be continuously bumped to prevent a workspace from stopping. For large enterprises, this can drive up cloud cost and introduce security concerns, as workspaces are not kept up to date.
 
-- Auto-stop workspaces after 3 hours of inactivity.
-- Require workspaces to be restarted frequently to ensure they use the most recent template version.
-- Disable workspace auto-start.
+To enforce auto-stopping, you can enforce a timeout for all workspaces, as well as a max session duration.
 
-### Stop policy
-
-Stop policies require workspaces be stopped (or restarted), regardless of activity:
-
-- Daily (Restart on next quiet hours)
-- Weekly (Restart on weekends)
-- Custom (Every 2 weeks)
-
-  ```text
-   Every [2] [Weeks] on [Friday]
-   or
-   Every [2] [Days]
-   or
-   Every [4] [Weeks] on [Saturday]
-   ```
-
-- Never
+![Workspace auto-stop settings](../images/templates/pre-filled-parameters.png)
 
 Stops occur during a user's [quiet hours](../workspaces.md#quiet-hours), which prevent interruptions. If a user is still using their workspace, they can postpone a restart up to 3 hours.
 
 Learn more about [workspace auto-stop](../workspaces.md#workspace-auto-stop)
-
-<!-- TODO: Add the dashboard screenshots. We can remove the "most recent version" bullet point once we finish template version policies -->
 
 ## Customize templates
 

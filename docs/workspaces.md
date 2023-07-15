@@ -37,7 +37,7 @@ information, see [Resource Persistence](./templates/resource-persistence.md).
 
 When a workspace is deleted, all of the workspace's resources are deleted.
 
-## Workspace auto-stop
+## Inactivity timeout
 
 In Coder, workspaces can auto-stop when the user is not actively using the workspace. By default, Coder recognizes the following actions as activity and will keep the workspace online:
 
@@ -47,15 +47,13 @@ In Coder, workspaces can auto-stop when the user is not actively using the works
 
 > [Custom activity](#TODO) can be registered via Coder's REST API, such as an ongoing data science pipeline.
 
-<!-- TODO. Document this. We may want to move to a custom activity section. See coder/coder[#8064](https://github.com/coder/coder/issues/8064) and coder/coder#5629 -->
-
-Your workspace's auto-stop behavior can be seen in the dashboard. Template settings in Coder determine if users can alter their workspace schedules. 
+Your workspace's auto-stop behavior can be seen in the dashboard. Template settings in Coder determine if users can alter their workspace schedules.
 
 ![TODO: use real screenshot](./images/workspaces/stops-after-3-hours.png)
 
-### Max workspace lifetime (enterprise)
+### Max session length (enterpise)
 
-Workspaces may also have a max lifetime, which enforces a stop or restart even if you are actively using your workspace.
+Workspaces may also have a max session length, which enforces a stop or restart even if you are actively using your workspace.
 
 ![TODO: use real screenshot](./images/workspaces/approaching-stop.png)
 
