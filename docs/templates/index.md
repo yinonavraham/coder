@@ -73,9 +73,9 @@ coder templates create <template-name>
 
 While workspaces can auto-stop based on activity, users set this value per-workspace it can be continuously bumped to prevent a workspace from stopping. For large enterprises, this can drive up cloud cost and introduce security concerns, as workspaces are not kept up to date.
 
-To enforce auto-stopping, you can enforce a timeout for all workspaces, as well as a max session duration.
+To enforce auto-stopping, you can set an auto-stop interval to ensure workspaces are auto restarted or auto-stopped, regardless of user activity.
 
-![Workspace auto-stop settings](../images/templates/pre-filled-parameters.png)
+![Workspace auto-stop settings](../images/templates/template-schedule-settings.png)
 
 Stops occur during a user's [quiet hours](../workspaces.md#quiet-hours), which prevent interruptions. If a user is still using their workspace, they can postpone a restart up to 3 hours.
 

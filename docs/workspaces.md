@@ -45,21 +45,19 @@ In Coder, workspaces can auto-stop when the user is not actively using the works
 - Open tunnels (`coder port-forward`)
 - Open WebSockets (web terminal, [web IDEs](./ides/web-ides.md) such as code-server and JupyterLab)
 
-> [Custom activity](#TODO) can be registered via Coder's REST API, such as an ongoing data science pipeline.
+> [Custom activity](./admin/automation.md#workspace-agents) can be registered via Coder's REST API, such as an ongoing data science pipeline.
 
 Your workspace's auto-stop behavior can be seen in the dashboard. Template settings in Coder determine if users can alter their workspace schedules.
 
 ![TODO: use real screenshot](./images/workspaces/stops-after-3-hours.png)
 
-### Max session length (enterpise)
+### Auto-stop schedule
 
-Workspaces may also have a max session length, which enforces a stop or restart even if you are actively using your workspace.
-
-![TODO: use real screenshot](./images/workspaces/approaching-stop.png)
-
+Some templates may have an auto-stop schedule that ensures workspaces are stopped
+or restarted at a specific interval, regardless of activity. This occurs during quiet hours (see below) to avoid interrupting users..
 #### Quiet hours
 
-To avoid interruptions, users can establish their "quiet hours", which are by default set from midnight to 3 AM, during which these actions occur. Users can also extend the deadline by up to 2 hours if they are in the middle of important work.
+To avoid interruptions, you can establish "quiet hours", which are by default set from midnight to 3 AM, during which these actions occur. Users can also extend the deadline by up to 2 hours if they are in the middle of important work.
 
 Example:
 
@@ -78,13 +76,6 @@ user bumps
 <!-- NOTE: This will be in the "Account settings" page -->
 
 Admin controls around workspace auto-stop are an enterprise feature. [Learn more here](./admin/template)
-
-### Max lifetime
-
-Max lifetime is a template-level setting that determines the number of hours a
-workspace can run before it is automatically shutdown, regardless of any
-active connections. This setting ensures workspaces do not run in perpetuity
-when connections are left open inadvertently.
 
 ## Updating workspaces
 
