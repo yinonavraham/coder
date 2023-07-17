@@ -223,17 +223,21 @@ func (r *Runner) Run() {
 		r.logger.Debug(ctx, "sending FailedJob")
 		err := r.sender.FailJob(ctx, r.failedJob)
 		if err != nil {
-			r.logger.Error(ctx, "send FailJob", slog.Error(err))
+			r.logger.Error(ctx, "sending FailJob failed", slog.Error(err))
 		} else {
-			r.logger.Info(ctx, "sent FailedJob")
+			r.logger.Debug(ctx, "sent FailedJob")
 		}
 	} else {
 		r.logger.Debug(ctx, "sending CompletedJob")
 		err := r.sender.CompleteJob(ctx, r.completedJob)
 		if err != nil {
-			r.logger.Error(ctx, "send CompletedJob", slog.Error(err))
+			r.logger.Error(ctx, "sending CompletedJob failed", slog.Error(err))
+			err = r.sender.FailJob(ctx, r.failedJobf("internal provisionerserver error"))
+			if err != nil {
+				r.logger.Error(ctx, "sending FailJob failed (while CompletedJob)", slog.Error(err))
+			}
 		} else {
-			r.logger.Info(ctx, "sent CompletedJob")
+			r.logger.Debug(ctx, "sent CompletedJob")
 		}
 	}
 	close(r.done)
@@ -337,6 +341,9 @@ func (r *Runner) sendHeartbeat(ctx context.Context) (*proto.UpdateJobResponse, e
 }
 
 func (r *Runner) update(ctx context.Context, u *proto.UpdateJobRequest) (*proto.UpdateJobResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	ctx, span := r.startTrace(ctx, tracing.FuncName())
 	defer span.End()
 	defer func() {
@@ -537,6 +544,7 @@ func (r *Runner) heartbeatRoutine(ctx context.Context) {
 
 		resp, err := r.sendHeartbeat(ctx)
 		if err != nil {
+			// Calling Fail starts cancellation so the process will exit.
 			err = r.Fail(ctx, r.failedJobf("send periodic update: %s", err))
 			if err != nil {
 				r.logger.Error(ctx, "failed to call FailJob", slog.Error(err))
@@ -547,13 +555,13 @@ func (r *Runner) heartbeatRoutine(ctx context.Context) {
 			ticker.Reset(r.updateInterval)
 			continue
 		}
-		r.logger.Info(ctx, "attempting graceful cancelation")
+		r.logger.Info(ctx, "attempting graceful cancellation")
 		r.Cancel()
-		// Hard-cancel the job after a minute of pending cancelation.
+		// Mark the job as failed after a minute of pending cancellation.
 		timer := time.NewTimer(r.forceCancelInterval)
 		select {
 		case <-timer.C:
-			r.logger.Warn(ctx, "Cancel timed out")
+			r.logger.Debug(ctx, "cancel timed out")
 			err := r.Fail(ctx, r.failedJobf("Cancel timed out"))
 			if err != nil {
 				r.logger.Warn(ctx, "failed to call FailJob", slog.Error(err))
@@ -706,7 +714,7 @@ func (r *Runner) runTemplateImportParse(ctx context.Context) ([]*sdkproto.Templa
 				Stage:     "Parse parameters",
 			})
 		case *sdkproto.Parse_Response_Complete:
-			r.logger.Info(context.Background(), "parse complete",
+			r.logger.Debug(context.Background(), "parse complete",
 				slog.F("template_variables", msgType.Complete.TemplateVariables),
 			)
 
@@ -883,7 +891,7 @@ func (r *Runner) buildWorkspace(ctx context.Context, stage string, req *sdkproto
 	// will still be available for us to send the cancel to the provisioner
 	stream, err := r.provisioner.Provision(ctx)
 	if err != nil {
-		return nil, r.failedJobf("provision: %s", err)
+		return nil, r.failedWorkspaceBuildf("provision: %s", err)
 	}
 	defer stream.Close()
 	go func() {
@@ -901,13 +909,13 @@ func (r *Runner) buildWorkspace(ctx context.Context, stage string, req *sdkproto
 
 	err = stream.Send(req)
 	if err != nil {
-		return nil, r.failedJobf("start provision: %s", err)
+		return nil, r.failedWorkspaceBuildf("start provision: %s", err)
 	}
 
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
-			return nil, r.failedJobf("recv workspace provision: %s", err)
+			return nil, r.failedWorkspaceBuildf("recv workspace provision: %s", err)
 		}
 		switch msgType := msg.Type.(type) {
 		case *sdkproto.Provision_Response_Log:
@@ -926,7 +934,7 @@ func (r *Runner) buildWorkspace(ctx context.Context, stage string, req *sdkproto
 			})
 		case *sdkproto.Provision_Response_Complete:
 			if msgType.Complete.Error != "" {
-				r.logger.Error(context.Background(), "provision failed; updating state",
+				r.logger.Warn(context.Background(), "provision failed; updating state",
 					slog.F("state_length", len(msgType.Complete.State)),
 					slog.F("error", msgType.Complete.Error),
 				)
@@ -950,7 +958,7 @@ func (r *Runner) buildWorkspace(ctx context.Context, stage string, req *sdkproto
 			// Stop looping!
 			return msgType.Complete, nil
 		default:
-			return nil, r.failedJobf("invalid message type %T received from provisioner", msg.Type)
+			return nil, r.failedWorkspaceBuildf("invalid message type %T received from provisioner", msg.Type)
 		}
 	}
 }
@@ -1082,6 +1090,12 @@ func (r *Runner) runWorkspaceBuild(ctx context.Context) (*proto.CompletedJob, *p
 			},
 		},
 	}, nil
+}
+
+func (r *Runner) failedWorkspaceBuildf(format string, args ...interface{}) *proto.FailedJob {
+	failedJob := r.failedJobf(format, args...)
+	failedJob.Type = &proto.FailedJob_WorkspaceBuild_{}
+	return failedJob
 }
 
 func (r *Runner) failedJobf(format string, args ...interface{}) *proto.FailedJob {

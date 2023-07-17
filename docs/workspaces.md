@@ -79,6 +79,13 @@ user bumps
 
 Admin controls around workspace auto-stop are an enterprise feature. [Learn more here](./admin/template)
 
+### Max lifetime
+
+Max lifetime is a template-level setting that determines the number of hours a
+workspace can run before it is automatically shutdown, regardless of any
+active connections. This setting ensures workspaces do not run in perpetuity
+when connections are left open inadvertently.
+
 ## Updating workspaces
 
 Use the following command to update a workspace to the latest template version.

@@ -54,7 +54,7 @@ Coder with Docker has the following advantages:
 
    <img src="../images/platforms/docker/login.png">
 
-   Then navigate to `Templates > docker > Create workspace`
+   Then navigate to `Templates > docker > Create Workspace`
 
    <img src="../images/platforms/docker/create-workspace.png">
 
@@ -69,6 +69,13 @@ Coder with Docker has the following advantages:
 
 1. If you want to modify the Docker image or template, edit the files in the
    previously created `./docker` directory, then run `coder templates push`.
+
+## Using remote Docker host
+
+You can use a remote Docker host in 2 ways.
+
+1. Over SSH. See [here](https://registry.terraform.io/providers/kreuzwerker/docker/latest/docs#remote-hosts) for details.
+2. Over TCP. See [here](https://registry.terraform.io/providers/kreuzwerker/docker/latest/docs#certificate-information) for details.
 
 ## Troubleshooting
 

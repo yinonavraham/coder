@@ -52,6 +52,7 @@ type DeploymentOptions struct {
 	// The following fields are only used by setupProxyTestWithFactory.
 	noWorkspace bool
 	port        uint16
+	headers     http.Header
 }
 
 // Deployment is a license-agnostic deployment with all the fields that apps
@@ -184,7 +185,7 @@ func setupProxyTestWithFactory(t *testing.T, factory DeploymentFactory, opts *De
 	}
 
 	if opts.port == 0 {
-		opts.port = appServer(t)
+		opts.port = appServer(t, opts.headers)
 	}
 	workspace, agnt := createWorkspaceWithApps(t, deployment.SDKClient, deployment.FirstUser.OrganizationID, me, opts.port)
 
@@ -233,13 +234,13 @@ func setupProxyTestWithFactory(t *testing.T, factory DeploymentFactory, opts *De
 	return details
 }
 
-func appServer(t *testing.T) uint16 {
+func appServer(t *testing.T, headers http.Header) uint16 {
 	// Start a listener on a random port greater than the minimum app port.
 	var (
 		ln      net.Listener
 		tcpAddr *net.TCPAddr
 	)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 32; i++ {
 		var err error
 		// #nosec
 		ln, err = net.Listen("tcp", ":0")
@@ -250,10 +251,12 @@ func appServer(t *testing.T) uint16 {
 		require.True(t, ok)
 		if tcpAddr.Port < codersdk.WorkspaceAgentMinimumListeningPort {
 			_ = ln.Close()
+			ln = nil
 			time.Sleep(20 * time.Millisecond)
 			continue
 		}
 	}
+	require.NotNil(t, ln, "failed to find a free port greater than the minimum app port")
 
 	server := http.Server{
 		ReadHeaderTimeout: time.Minute,
@@ -261,6 +264,11 @@ func appServer(t *testing.T) uint16 {
 			_, err := r.Cookie(codersdk.SessionTokenCookie)
 			assert.ErrorIs(t, err, http.ErrNoCookie)
 			w.Header().Set("X-Forwarded-For", r.Header.Get("X-Forwarded-For"))
+			for name, values := range headers {
+				for _, value := range values {
+					w.Header().Add(name, value)
+				}
+			}
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(proxyTestAppBody))
 		}),
@@ -393,7 +401,8 @@ func doWithRetries(t require.TestingT, client *codersdk.Client, req *http.Reques
 	return resp, err
 }
 
-func requestWithRetries(ctx context.Context, t require.TestingT, client *codersdk.Client, method, urlOrPath string, body interface{}, opts ...codersdk.RequestOption) (*http.Response, error) {
+func requestWithRetries(ctx context.Context, t testing.TB, client *codersdk.Client, method, urlOrPath string, body interface{}, opts ...codersdk.RequestOption) (*http.Response, error) {
+	t.Helper()
 	var resp *http.Response
 	var err error
 	require.Eventually(t, func() bool {

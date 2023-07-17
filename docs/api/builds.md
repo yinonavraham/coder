@@ -42,6 +42,8 @@ curl -X GET http://coder-server:8080/api/v2/users/{user}/workspace/{workspacenam
     "error_code": "MISSING_TEMPLATE_PARAMETER",
     "file_id": "8a0cfb4f-ddc9-436d-91bb-75133c583767",
     "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+    "queue_position": 0,
+    "queue_size": 0,
     "started_at": "2019-08-24T14:15:22Z",
     "status": "pending",
     "tags": {
@@ -86,6 +88,10 @@ curl -X GET http://coder-server:8080/api/v2/users/{user}/workspace/{workspacenam
           },
           "expanded_directory": "string",
           "first_connected_at": "2019-08-24T14:15:22Z",
+          "health": {
+            "healthy": false,
+            "reason": "agent has lost connection"
+          },
           "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
           "instance_id": "string",
           "last_connected_at": "2019-08-24T14:15:22Z",
@@ -198,6 +204,8 @@ curl -X GET http://coder-server:8080/api/v2/workspacebuilds/{workspacebuild} \
     "error_code": "MISSING_TEMPLATE_PARAMETER",
     "file_id": "8a0cfb4f-ddc9-436d-91bb-75133c583767",
     "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+    "queue_position": 0,
+    "queue_size": 0,
     "started_at": "2019-08-24T14:15:22Z",
     "status": "pending",
     "tags": {
@@ -242,6 +250,10 @@ curl -X GET http://coder-server:8080/api/v2/workspacebuilds/{workspacebuild} \
           },
           "expanded_directory": "string",
           "first_connected_at": "2019-08-24T14:15:22Z",
+          "health": {
+            "healthy": false,
+            "reason": "agent has lost connection"
+          },
           "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
           "instance_id": "string",
           "last_connected_at": "2019-08-24T14:15:22Z",
@@ -539,6 +551,10 @@ curl -X GET http://coder-server:8080/api/v2/workspacebuilds/{workspacebuild}/res
         },
         "expanded_directory": "string",
         "first_connected_at": "2019-08-24T14:15:22Z",
+        "health": {
+          "healthy": false,
+          "reason": "agent has lost connection"
+        },
         "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
         "instance_id": "string",
         "last_connected_at": "2019-08-24T14:15:22Z",
@@ -631,6 +647,9 @@ Status Code **200**
 | `»»» [any property]`                 | string                                                                                                 | false    |              |                                                                                                                                                                                                                                                |
 | `»» expanded_directory`              | string                                                                                                 | false    |              |                                                                                                                                                                                                                                                |
 | `»» first_connected_at`              | string(date-time)                                                                                      | false    |              |                                                                                                                                                                                                                                                |
+| `»» health`                          | [codersdk.WorkspaceAgentHealth](schemas.md#codersdkworkspaceagenthealth)                               | false    |              | Health reports the health of the agent.                                                                                                                                                                                                        |
+| `»»» healthy`                        | boolean                                                                                                | false    |              | Healthy is true if the agent is healthy.                                                                                                                                                                                                       |
+| `»»» reason`                         | string                                                                                                 | false    |              | Reason is a human-readable explanation of the agent's health. It is empty if Healthy is true.                                                                                                                                                  |
 | `»» id`                              | string(uuid)                                                                                           | false    |              |                                                                                                                                                                                                                                                |
 | `»» instance_id`                     | string                                                                                                 | false    |              |                                                                                                                                                                                                                                                |
 | `»» last_connected_at`               | string(date-time)                                                                                      | false    |              |                                                                                                                                                                                                                                                |
@@ -744,6 +763,8 @@ curl -X GET http://coder-server:8080/api/v2/workspacebuilds/{workspacebuild}/sta
     "error_code": "MISSING_TEMPLATE_PARAMETER",
     "file_id": "8a0cfb4f-ddc9-436d-91bb-75133c583767",
     "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+    "queue_position": 0,
+    "queue_size": 0,
     "started_at": "2019-08-24T14:15:22Z",
     "status": "pending",
     "tags": {
@@ -788,6 +809,10 @@ curl -X GET http://coder-server:8080/api/v2/workspacebuilds/{workspacebuild}/sta
           },
           "expanded_directory": "string",
           "first_connected_at": "2019-08-24T14:15:22Z",
+          "health": {
+            "healthy": false,
+            "reason": "agent has lost connection"
+          },
           "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
           "instance_id": "string",
           "last_connected_at": "2019-08-24T14:15:22Z",
@@ -905,6 +930,8 @@ curl -X GET http://coder-server:8080/api/v2/workspaces/{workspace}/builds \
       "error_code": "MISSING_TEMPLATE_PARAMETER",
       "file_id": "8a0cfb4f-ddc9-436d-91bb-75133c583767",
       "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+      "queue_position": 0,
+      "queue_size": 0,
       "started_at": "2019-08-24T14:15:22Z",
       "status": "pending",
       "tags": {
@@ -949,6 +976,10 @@ curl -X GET http://coder-server:8080/api/v2/workspaces/{workspace}/builds \
             },
             "expanded_directory": "string",
             "first_connected_at": "2019-08-24T14:15:22Z",
+            "health": {
+              "healthy": false,
+              "reason": "agent has lost connection"
+            },
             "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
             "instance_id": "string",
             "last_connected_at": "2019-08-24T14:15:22Z",
@@ -1042,6 +1073,8 @@ Status Code **200**
 | `»» error_code`                       | [codersdk.JobErrorCode](schemas.md#codersdkjoberrorcode)                                               | false    |              |                                                                                                                                                                                                                                                |
 | `»» file_id`                          | string(uuid)                                                                                           | false    |              |                                                                                                                                                                                                                                                |
 | `»» id`                               | string(uuid)                                                                                           | false    |              |                                                                                                                                                                                                                                                |
+| `»» queue_position`                   | integer                                                                                                | false    |              |                                                                                                                                                                                                                                                |
+| `»» queue_size`                       | integer                                                                                                | false    |              |                                                                                                                                                                                                                                                |
 | `»» started_at`                       | string(date-time)                                                                                      | false    |              |                                                                                                                                                                                                                                                |
 | `»» status`                           | [codersdk.ProvisionerJobStatus](schemas.md#codersdkprovisionerjobstatus)                               | false    |              |                                                                                                                                                                                                                                                |
 | `»» tags`                             | object                                                                                                 | false    |              |                                                                                                                                                                                                                                                |
@@ -1075,6 +1108,9 @@ Status Code **200**
 | `»»»» [any property]`                 | string                                                                                                 | false    |              |                                                                                                                                                                                                                                                |
 | `»»» expanded_directory`              | string                                                                                                 | false    |              |                                                                                                                                                                                                                                                |
 | `»»» first_connected_at`              | string(date-time)                                                                                      | false    |              |                                                                                                                                                                                                                                                |
+| `»»» health`                          | [codersdk.WorkspaceAgentHealth](schemas.md#codersdkworkspaceagenthealth)                               | false    |              | Health reports the health of the agent.                                                                                                                                                                                                        |
+| `»»»» healthy`                        | boolean                                                                                                | false    |              | Healthy is true if the agent is healthy.                                                                                                                                                                                                       |
+| `»»»» reason`                         | string                                                                                                 | false    |              | Reason is a human-readable explanation of the agent's health. It is empty if Healthy is true.                                                                                                                                                  |
 | `»»» id`                              | string(uuid)                                                                                           | false    |              |                                                                                                                                                                                                                                                |
 | `»»» instance_id`                     | string                                                                                                 | false    |              |                                                                                                                                                                                                                                                |
 | `»»» last_connected_at`               | string(date-time)                                                                                      | false    |              |                                                                                                                                                                                                                                                |
@@ -1242,6 +1278,8 @@ curl -X POST http://coder-server:8080/api/v2/workspaces/{workspace}/builds \
     "error_code": "MISSING_TEMPLATE_PARAMETER",
     "file_id": "8a0cfb4f-ddc9-436d-91bb-75133c583767",
     "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+    "queue_position": 0,
+    "queue_size": 0,
     "started_at": "2019-08-24T14:15:22Z",
     "status": "pending",
     "tags": {
@@ -1286,6 +1324,10 @@ curl -X POST http://coder-server:8080/api/v2/workspaces/{workspace}/builds \
           },
           "expanded_directory": "string",
           "first_connected_at": "2019-08-24T14:15:22Z",
+          "health": {
+            "healthy": false,
+            "reason": "agent has lost connection"
+          },
           "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
           "instance_id": "string",
           "last_connected_at": "2019-08-24T14:15:22Z",

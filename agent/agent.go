@@ -1,13 +1,11 @@
 package agent
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -53,20 +51,22 @@ const (
 )
 
 type Options struct {
-	Filesystem             afero.Fs
-	LogDir                 string
-	TempDir                string
-	ExchangeToken          func(ctx context.Context) (string, error)
-	Client                 Client
-	ReconnectingPTYTimeout time.Duration
-	EnvironmentVariables   map[string]string
-	Logger                 slog.Logger
-	IgnorePorts            map[int]string
-	SSHMaxTimeout          time.Duration
-	TailnetListenPort      uint16
-	Subsystem              codersdk.AgentSubsystem
-
-	PrometheusRegistry *prometheus.Registry
+	Filesystem                   afero.Fs
+	LogDir                       string
+	TempDir                      string
+	ExchangeToken                func(ctx context.Context) (string, error)
+	Client                       Client
+	ReconnectingPTYTimeout       time.Duration
+	EnvironmentVariables         map[string]string
+	Logger                       slog.Logger
+	IgnorePorts                  map[int]string
+	SSHMaxTimeout                time.Duration
+	TailnetListenPort            uint16
+	Subsystem                    codersdk.AgentSubsystem
+	Addresses                    []netip.Prefix
+	PrometheusRegistry           *prometheus.Registry
+	ReportMetadataInterval       time.Duration
+	ServiceBannerRefreshInterval time.Duration
 }
 
 type Client interface {
@@ -78,6 +78,7 @@ type Client interface {
 	PostStartup(ctx context.Context, req agentsdk.PostStartupRequest) error
 	PostMetadata(ctx context.Context, key string, req agentsdk.PostMetadataRequest) error
 	PatchStartupLogs(ctx context.Context, req agentsdk.PatchStartupLogs) error
+	GetServiceBanner(ctx context.Context) (codersdk.ServiceBannerConfig, error)
 }
 
 type Agent interface {
@@ -106,6 +107,12 @@ func New(options Options) Agent {
 			return "", nil
 		}
 	}
+	if options.ReportMetadataInterval == 0 {
+		options.ReportMetadataInterval = 1 * time.Minute
+	}
+	if options.ServiceBannerRefreshInterval == 0 {
+		options.ServiceBannerRefreshInterval = 2 * time.Minute
+	}
 
 	prometheusRegistry := options.PrometheusRegistry
 	if prometheusRegistry == nil {
@@ -114,24 +121,27 @@ func New(options Options) Agent {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	a := &agent{
-		tailnetListenPort:      options.TailnetListenPort,
-		reconnectingPTYTimeout: options.ReconnectingPTYTimeout,
-		logger:                 options.Logger,
-		closeCancel:            cancelFunc,
-		closed:                 make(chan struct{}),
-		envVars:                options.EnvironmentVariables,
-		client:                 options.Client,
-		exchangeToken:          options.ExchangeToken,
-		filesystem:             options.Filesystem,
-		logDir:                 options.LogDir,
-		tempDir:                options.TempDir,
-		lifecycleUpdate:        make(chan struct{}, 1),
-		lifecycleReported:      make(chan codersdk.WorkspaceAgentLifecycle, 1),
-		lifecycleStates:        []agentsdk.PostLifecycleRequest{{State: codersdk.WorkspaceAgentLifecycleCreated}},
-		ignorePorts:            options.IgnorePorts,
-		connStatsChan:          make(chan *agentsdk.Stats, 1),
-		sshMaxTimeout:          options.SSHMaxTimeout,
-		subsystem:              options.Subsystem,
+		tailnetListenPort:            options.TailnetListenPort,
+		reconnectingPTYTimeout:       options.ReconnectingPTYTimeout,
+		logger:                       options.Logger,
+		closeCancel:                  cancelFunc,
+		closed:                       make(chan struct{}),
+		envVars:                      options.EnvironmentVariables,
+		client:                       options.Client,
+		exchangeToken:                options.ExchangeToken,
+		filesystem:                   options.Filesystem,
+		logDir:                       options.LogDir,
+		tempDir:                      options.TempDir,
+		lifecycleUpdate:              make(chan struct{}, 1),
+		lifecycleReported:            make(chan codersdk.WorkspaceAgentLifecycle, 1),
+		lifecycleStates:              []agentsdk.PostLifecycleRequest{{State: codersdk.WorkspaceAgentLifecycleCreated}},
+		ignorePorts:                  options.IgnorePorts,
+		connStatsChan:                make(chan *agentsdk.Stats, 1),
+		reportMetadataInterval:       options.ReportMetadataInterval,
+		serviceBannerRefreshInterval: options.ServiceBannerRefreshInterval,
+		sshMaxTimeout:                options.SSHMaxTimeout,
+		subsystem:                    options.Subsystem,
+		addresses:                    options.Addresses,
 
 		prometheusRegistry: prometheusRegistry,
 		metrics:            newAgentMetrics(prometheusRegistry),
@@ -163,11 +173,14 @@ type agent struct {
 	closed        chan struct{}
 
 	envVars map[string]string
-	// manifest is atomic because values can change after reconnection.
-	manifest      atomic.Pointer[agentsdk.Manifest]
-	sessionToken  atomic.Pointer[string]
-	sshServer     *agentssh.Server
-	sshMaxTimeout time.Duration
+
+	manifest                     atomic.Pointer[agentsdk.Manifest] // manifest is atomic because values can change after reconnection.
+	reportMetadataInterval       time.Duration
+	serviceBanner                atomic.Pointer[codersdk.ServiceBannerConfig] // serviceBanner is atomic because it is periodically updated.
+	serviceBannerRefreshInterval time.Duration
+	sessionToken                 atomic.Pointer[string]
+	sshServer                    *agentssh.Server
+	sshMaxTimeout                time.Duration
 
 	lifecycleUpdate   chan struct{}
 	lifecycleReported chan codersdk.WorkspaceAgentLifecycle
@@ -175,6 +188,7 @@ type agent struct {
 	lifecycleStates   []agentsdk.PostLifecycleRequest
 
 	network       *tailnet.Conn
+	addresses     []netip.Prefix
 	connStatsChan chan *agentsdk.Stats
 	latestStat    atomic.Pointer[agentsdk.Stats]
 
@@ -192,6 +206,7 @@ func (a *agent) init(ctx context.Context) {
 	sshSrv.Env = a.envVars
 	sshSrv.AgentToken = func() string { return *a.sessionToken.Load() }
 	sshSrv.Manifest = &a.manifest
+	sshSrv.ServiceBanner = &a.serviceBanner
 	a.sshServer = sshSrv
 
 	go a.runLoop(ctx)
@@ -204,6 +219,7 @@ func (a *agent) init(ctx context.Context) {
 func (a *agent) runLoop(ctx context.Context) {
 	go a.reportLifecycleLoop(ctx)
 	go a.reportMetadataLoop(ctx)
+	go a.fetchServiceBannerLoop(ctx)
 
 	for retrier := retry.New(100*time.Millisecond, 10*time.Second); retrier.Wait(ctx); {
 		a.logger.Info(ctx, "connecting to coderd")
@@ -276,16 +292,6 @@ func (a *agent) collectMetadata(ctx context.Context, md codersdk.WorkspaceAgentM
 	return result
 }
 
-func adjustIntervalForTests(i int64) time.Duration {
-	// In tests we want to set shorter intervals because engineers are
-	// impatient.
-	base := time.Second
-	if flag.Lookup("test.v") != nil {
-		base = time.Millisecond * 100
-	}
-	return time.Duration(i) * base
-}
-
 type metadataResultAndKey struct {
 	result *codersdk.WorkspaceAgentMetadataResult
 	key    string
@@ -307,12 +313,10 @@ func (t *trySingleflight) Do(key string, fn func()) {
 }
 
 func (a *agent) reportMetadataLoop(ctx context.Context) {
-	baseInterval := adjustIntervalForTests(1)
-
 	const metadataLimit = 128
 
 	var (
-		baseTicker       = time.NewTicker(baseInterval)
+		baseTicker       = time.NewTicker(a.reportMetadataInterval)
 		lastCollectedAts = make(map[string]time.Time)
 		metadataResults  = make(chan metadataResultAndKey, metadataLimit)
 	)
@@ -332,7 +336,7 @@ func (a *agent) reportMetadataLoop(ctx context.Context) {
 			lastCollectedAts[mr.key] = mr.result.CollectedAt
 			err := a.client.PostMetadata(ctx, mr.key, *mr.result)
 			if err != nil {
-				a.logger.Error(ctx, "report metadata", slog.Error(err))
+				a.logger.Error(ctx, "agent failed to report metadata", slog.Error(err))
 			}
 		case <-baseTicker.C:
 		}
@@ -383,9 +387,7 @@ func (a *agent) reportMetadataLoop(ctx context.Context) {
 					continue
 				}
 				// The last collected value isn't quite stale yet, so we skip it.
-				if collectedAt.Add(
-					adjustIntervalForTests(md.Interval),
-				).After(time.Now()) {
+				if collectedAt.Add(a.reportMetadataInterval).After(time.Now()) {
 					continue
 				}
 			}
@@ -462,7 +464,7 @@ func (a *agent) reportLifecycleLoop(ctx context.Context) {
 				return
 			}
 			// If we fail to report the state we probably shouldn't exit, log only.
-			a.logger.Error(ctx, "post state", slog.Error(err))
+			a.logger.Error(ctx, "agent failed to report the lifecycle state", slog.Error(err))
 		}
 	}
 }
@@ -492,6 +494,30 @@ func (a *agent) setLifecycle(ctx context.Context, state codersdk.WorkspaceAgentL
 	}
 }
 
+// fetchServiceBannerLoop fetches the service banner on an interval.  It will
+// not be fetched immediately; the expectation is that it is primed elsewhere
+// (and must be done before the session actually starts).
+func (a *agent) fetchServiceBannerLoop(ctx context.Context) {
+	ticker := time.NewTicker(a.serviceBannerRefreshInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			serviceBanner, err := a.client.GetServiceBanner(ctx)
+			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				a.logger.Error(ctx, "failed to update service banner", slog.Error(err))
+				continue
+			}
+			a.serviceBanner.Store(&serviceBanner)
+		}
+	}
+}
+
 func (a *agent) run(ctx context.Context) error {
 	// This allows the agent to refresh it's token if necessary.
 	// For instance identity this is required, since the instance
@@ -502,11 +528,21 @@ func (a *agent) run(ctx context.Context) error {
 	}
 	a.sessionToken.Store(&sessionToken)
 
+	serviceBanner, err := a.client.GetServiceBanner(ctx)
+	if err != nil {
+		return xerrors.Errorf("fetch service banner: %w", err)
+	}
+	a.serviceBanner.Store(&serviceBanner)
+
 	manifest, err := a.client.Manifest(ctx)
 	if err != nil {
 		return xerrors.Errorf("fetch metadata: %w", err)
 	}
 	a.logger.Info(ctx, "fetched manifest", slog.F("manifest", manifest))
+
+	if manifest.AgentID == uuid.Nil {
+		return xerrors.New("nil agentID returned by manifest")
+	}
 
 	// Expand the directory and send it back to coderd so external
 	// applications that rely on the directory can use it.
@@ -593,7 +629,7 @@ func (a *agent) run(ctx context.Context) error {
 	network := a.network
 	a.closeMutex.Unlock()
 	if network == nil {
-		network, err = a.createTailnet(ctx, manifest.DERPMap)
+		network, err = a.createTailnet(ctx, manifest.AgentID, manifest.DERPMap, manifest.DisableDirectConnections)
 		if err != nil {
 			return xerrors.Errorf("create tailnet: %w", err)
 		}
@@ -611,8 +647,14 @@ func (a *agent) run(ctx context.Context) error {
 
 		a.startReportingConnectionStats(ctx)
 	} else {
-		// Update the DERP map!
+		// Update the wireguard IPs if the agent ID changed.
+		err := network.SetAddresses(a.wireguardAddresses(manifest.AgentID))
+		if err != nil {
+			a.logger.Error(ctx, "update tailnet addresses", slog.Error(err))
+		}
+		// Update the DERP map and allow/disallow direct connections.
 		network.SetDERPMap(manifest.DERPMap)
+		network.SetBlockEndpoints(manifest.DisableDirectConnections)
 	}
 
 	a.logger.Debug(ctx, "running tailnet connection coordinator")
@@ -621,6 +663,20 @@ func (a *agent) run(ctx context.Context) error {
 		return xerrors.Errorf("run coordinator: %w", err)
 	}
 	return nil
+}
+
+func (a *agent) wireguardAddresses(agentID uuid.UUID) []netip.Prefix {
+	if len(a.addresses) == 0 {
+		return []netip.Prefix{
+			// This is the IP that should be used primarily.
+			netip.PrefixFrom(tailnet.IPFromUUID(agentID), 128),
+			// We also listen on the legacy codersdk.WorkspaceAgentIP. This
+			// allows for a transition away from wsconncache.
+			netip.PrefixFrom(codersdk.WorkspaceAgentIP, 128),
+		}
+	}
+
+	return a.addresses
 }
 
 func (a *agent) trackConnGoroutine(fn func()) error {
@@ -637,12 +693,13 @@ func (a *agent) trackConnGoroutine(fn func()) error {
 	return nil
 }
 
-func (a *agent) createTailnet(ctx context.Context, derpMap *tailcfg.DERPMap) (_ *tailnet.Conn, err error) {
+func (a *agent) createTailnet(ctx context.Context, agentID uuid.UUID, derpMap *tailcfg.DERPMap, disableDirectConnections bool) (_ *tailnet.Conn, err error) {
 	network, err := tailnet.NewConn(&tailnet.Options{
-		Addresses:  []netip.Prefix{netip.PrefixFrom(codersdk.WorkspaceAgentIP, 128)},
-		DERPMap:    derpMap,
-		Logger:     a.logger.Named("tailnet"),
-		ListenPort: a.tailnetListenPort,
+		Addresses:      a.wireguardAddresses(agentID),
+		DERPMap:        derpMap,
+		Logger:         a.logger.Named("tailnet"),
+		ListenPort:     a.tailnetListenPort,
+		BlockEndpoints: disableDirectConnections,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("create tailnet: %w", err)
@@ -861,26 +918,30 @@ func (a *agent) runScript(ctx context.Context, lifecycle, script string) (err er
 	}
 	cmd := cmdPty.AsExec()
 
-	var writer io.Writer = fileWriter
+	var stdout, stderr io.Writer = fileWriter, fileWriter
 	if lifecycle == "startup" {
-		// Create pipes for startup logs reader and writer
-		logsReader, logsWriter := io.Pipe()
+		send, flushAndClose := agentsdk.StartupLogsSender(a.client.PatchStartupLogs, logger)
+		// If ctx is canceled here (or in a writer below), we may be
+		// discarding logs, but that's okay because we're shutting down
+		// anyway. We could consider creating a new context here if we
+		// want better control over flush during shutdown.
 		defer func() {
-			_ = logsReader.Close()
+			if err := flushAndClose(ctx); err != nil {
+				logger.Warn(ctx, "flush startup logs failed", slog.Error(err))
+			}
 		}()
-		writer = io.MultiWriter(fileWriter, logsWriter)
-		flushedLogs, err := a.trackScriptLogs(ctx, logsReader)
-		if err != nil {
-			return xerrors.Errorf("track %s script logs: %w", lifecycle, err)
-		}
-		defer func() {
-			_ = logsWriter.Close()
-			<-flushedLogs
-		}()
+
+		infoW := agentsdk.StartupLogsWriter(ctx, send, codersdk.LogLevelInfo)
+		defer infoW.Close()
+		errW := agentsdk.StartupLogsWriter(ctx, send, codersdk.LogLevelError)
+		defer errW.Close()
+
+		stdout = io.MultiWriter(fileWriter, infoW)
+		stderr = io.MultiWriter(fileWriter, errW)
 	}
 
-	cmd.Stdout = writer
-	cmd.Stderr = writer
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	start := time.Now()
 	defer func() {
@@ -909,143 +970,6 @@ func (a *agent) runScript(ctx context.Context, lifecycle, script string) (err er
 		return xerrors.Errorf("%s script: run: %w", lifecycle, err)
 	}
 	return nil
-}
-
-func (a *agent) trackScriptLogs(ctx context.Context, reader io.ReadCloser) (chan struct{}, error) {
-	// Synchronous sender, there can only be one outbound send at a time.
-	//
-	// It's important that we either flush or drop all logs before returning
-	// because the startup state is reported after flush.
-	sendDone := make(chan struct{})
-	send := make(chan []agentsdk.StartupLog, 1)
-	go func() {
-		// Set flushTimeout and backlogLimit so that logs are uploaded
-		// once every 250ms or when 100 logs have been added to the
-		// backlog, whichever comes first.
-		flushTimeout := 250 * time.Millisecond
-		backlogLimit := 100
-
-		flush := time.NewTicker(flushTimeout)
-
-		var backlog []agentsdk.StartupLog
-		defer func() {
-			flush.Stop()
-			_ = reader.Close() // Ensure read routine is closed.
-			if len(backlog) > 0 {
-				a.logger.Debug(ctx, "track script logs sender exiting, discarding logs", slog.F("discarded_logs_count", len(backlog)))
-			}
-			a.logger.Debug(ctx, "track script logs sender exited")
-			close(sendDone)
-		}()
-
-		done := false
-		for {
-			flushed := false
-			select {
-			case <-ctx.Done():
-				return
-			case <-a.closed:
-				return
-			// Close (!ok) can be triggered by the reader closing due to
-			// EOF or due to agent closing, when this happens we attempt
-			// a final flush. If the context is canceled this will be a
-			// no-op.
-			case logs, ok := <-send:
-				done = !ok
-				if ok {
-					backlog = append(backlog, logs...)
-					flushed = len(backlog) >= backlogLimit
-				}
-			case <-flush.C:
-				flushed = true
-			}
-
-			if (done || flushed) && len(backlog) > 0 {
-				flush.Stop() // Lower the chance of a double flush.
-
-				// Retry uploading logs until successful or a specific
-				// error occurs.
-				for r := retry.New(time.Second, 5*time.Second); r.Wait(ctx); {
-					err := a.client.PatchStartupLogs(ctx, agentsdk.PatchStartupLogs{
-						Logs: backlog,
-					})
-					if err == nil {
-						break
-					}
-
-					if errors.Is(err, context.Canceled) {
-						return
-					}
-					var sdkErr *codersdk.Error
-					if errors.As(err, &sdkErr) {
-						if sdkErr.StatusCode() == http.StatusRequestEntityTooLarge {
-							a.logger.Warn(ctx, "startup logs too large, dropping logs")
-							break
-						}
-					}
-					a.logger.Error(ctx, "upload startup logs failed", slog.Error(err), slog.F("to_send", backlog))
-				}
-				if ctx.Err() != nil {
-					return
-				}
-				backlog = nil
-
-				// Anchor flush to the last log upload.
-				flush.Reset(flushTimeout)
-			}
-			if done {
-				return
-			}
-		}
-	}()
-
-	// Forward read lines to the sender or queue them for when the
-	// sender is ready to process them.
-	//
-	// We only need to track this goroutine since it will ensure that
-	// the sender has closed before returning.
-	logsDone := make(chan struct{})
-	err := a.trackConnGoroutine(func() {
-		defer func() {
-			close(send)
-			<-sendDone
-			a.logger.Debug(ctx, "track script logs reader exited")
-			close(logsDone)
-		}()
-
-		var queue []agentsdk.StartupLog
-
-		s := bufio.NewScanner(reader)
-		for s.Scan() {
-			select {
-			case <-ctx.Done():
-				return
-			case <-a.closed:
-				return
-			case queue = <-send:
-				// Not captured by sender yet, re-use.
-			default:
-			}
-
-			queue = append(queue, agentsdk.StartupLog{
-				CreatedAt: database.Now(),
-				Output:    s.Text(),
-			})
-			send <- queue
-			queue = nil
-		}
-		if err := s.Err(); err != nil {
-			a.logger.Warn(ctx, "scan startup logs ended unexpectedly", slog.Error(err))
-		}
-	})
-	if err != nil {
-		close(send)
-		<-sendDone
-		close(logsDone)
-		return logsDone, err
-	}
-
-	return logsDone, nil
 }
 
 func (a *agent) handleReconnectingPTY(ctx context.Context, logger slog.Logger, msg codersdk.WorkspaceAgentReconnectingPTYInit, conn net.Conn) (retErr error) {
@@ -1365,7 +1289,7 @@ func (a *agent) startReportingConnectionStats(ctx context.Context) {
 		)
 	})
 	if err != nil {
-		a.logger.Error(ctx, "report stats", slog.Error(err))
+		a.logger.Error(ctx, "agent failed to report stats", slog.Error(err))
 	} else {
 		if err = a.trackConnGoroutine(func() {
 			// This is OK because the agent never re-creates the tailnet

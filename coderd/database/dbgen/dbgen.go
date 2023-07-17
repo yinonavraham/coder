@@ -13,8 +13,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/moby/moby/pkg/namesgenerator"
+	"github.com/sqlc-dev/pqtype"
 	"github.com/stretchr/testify/require"
-	"github.com/tabbed/pqtype"
 
 	"github.com/coder/coder/coderd/database"
 	"github.com/coder/coder/coderd/database/dbauthz"
@@ -199,13 +199,22 @@ func User(t testing.TB, db database.Store, orig database.User) database.User {
 		ID:             takeFirst(orig.ID, uuid.New()),
 		Email:          takeFirst(orig.Email, namesgenerator.GetRandomName(1)),
 		Username:       takeFirst(orig.Username, namesgenerator.GetRandomName(1)),
-		HashedPassword: takeFirstSlice(orig.HashedPassword, []byte{}),
+		HashedPassword: takeFirstSlice(orig.HashedPassword, []byte(must(cryptorand.String(32)))),
 		CreatedAt:      takeFirst(orig.CreatedAt, database.Now()),
 		UpdatedAt:      takeFirst(orig.UpdatedAt, database.Now()),
 		RBACRoles:      takeFirstSlice(orig.RBACRoles, []string{}),
 		LoginType:      takeFirst(orig.LoginType, database.LoginTypePassword),
 	})
 	require.NoError(t, err, "insert user")
+
+	if !orig.LastSeenAt.IsZero() {
+		user, err = db.UpdateUserLastSeenAt(genCtx, database.UpdateUserLastSeenAtParams{
+			ID:         user.ID,
+			LastSeenAt: orig.LastSeenAt,
+			UpdatedAt:  user.UpdatedAt,
+		})
+		require.NoError(t, err, "user last seen")
+	}
 	return user
 }
 
@@ -468,6 +477,7 @@ func TemplateVersion(t testing.TB, db database.Store, orig database.TemplateVers
 		CreatedAt:      takeFirst(orig.CreatedAt, database.Now()),
 		UpdatedAt:      takeFirst(orig.UpdatedAt, database.Now()),
 		Name:           takeFirst(orig.Name, namesgenerator.GetRandomName(1)),
+		Message:        orig.Message,
 		Readme:         takeFirst(orig.Readme, namesgenerator.GetRandomName(1)),
 		JobID:          takeFirst(orig.JobID, uuid.New()),
 		CreatedBy:      takeFirst(orig.CreatedBy, uuid.New()),

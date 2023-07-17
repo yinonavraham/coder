@@ -15,6 +15,9 @@ import (
 	"github.com/pion/udp"
 	"golang.org/x/xerrors"
 
+	"cdr.dev/slog"
+	"cdr.dev/slog/sloggers/sloghuman"
+
 	"github.com/coder/coder/agent/agentssh"
 	"github.com/coder/coder/cli/clibase"
 	"github.com/coder/coder/cli/cliui"
@@ -87,18 +90,26 @@ func (r *RootCmd) portForward() *clibase.Cmd {
 				}
 			}
 
-			err = cliui.Agent(ctx, inv.Stderr, cliui.AgentOptions{
-				WorkspaceName: workspace.Name,
-				Fetch: func(ctx context.Context) (codersdk.WorkspaceAgent, error) {
-					return client.WorkspaceAgent(ctx, workspaceAgent.ID)
-				},
-				Wait: false,
+			err = cliui.Agent(ctx, inv.Stderr, workspaceAgent.ID, cliui.AgentOptions{
+				Fetch: client.WorkspaceAgent,
+				Wait:  false,
 			})
 			if err != nil {
 				return xerrors.Errorf("await agent: %w", err)
 			}
 
-			conn, err := client.DialWorkspaceAgent(ctx, workspaceAgent.ID, nil)
+			var logger slog.Logger
+			if r.verbose {
+				logger = slog.Make(sloghuman.Sink(inv.Stdout)).Leveled(slog.LevelDebug)
+			}
+
+			if r.disableDirect {
+				_, _ = fmt.Fprintln(inv.Stderr, "Direct connections disabled.")
+			}
+			conn, err := client.DialWorkspaceAgent(ctx, workspaceAgent.ID, &codersdk.DialWorkspaceAgentOptions{
+				Logger:         logger,
+				BlockEndpoints: r.disableDirect,
+			})
 			if err != nil {
 				return err
 			}

@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/tabbed/pqtype"
+	"github.com/sqlc-dev/pqtype"
 	semconv "go.opentelemetry.io/otel/semconv/v1.14.0"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/exp/maps"
@@ -445,7 +445,7 @@ func (server *Server) UpdateJob(ctx context.Context, request *proto.UpdateJobReq
 	if err != nil {
 		return nil, xerrors.Errorf("parse job id: %w", err)
 	}
-	server.Logger.Debug(ctx, "UpdateJob starting", slog.F("job_id", parsedID))
+	server.Logger.Debug(ctx, "stage UpdateJob starting", slog.F("job_id", parsedID))
 	job, err := server.Database.GetProvisionerJobByID(ctx, parsedID)
 	if err != nil {
 		return nil, xerrors.Errorf("get job: %w", err)
@@ -506,7 +506,7 @@ func (server *Server) UpdateJob(ctx context.Context, request *proto.UpdateJobReq
 		err = server.Pubsub.Publish(provisionersdk.ProvisionerJobLogsNotifyChannel(parsedID), data)
 		if err != nil {
 			server.Logger.Error(ctx, "failed to publish job logs", slog.F("job_id", parsedID), slog.Error(err))
-			return nil, xerrors.Errorf("publish job log: %w", err)
+			return nil, xerrors.Errorf("publish job logs: %w", err)
 		}
 		server.Logger.Debug(ctx, "published job logs", slog.F("job_id", parsedID))
 	}
@@ -592,7 +592,7 @@ func (server *Server) FailJob(ctx context.Context, failJob *proto.FailedJob) (*p
 	if err != nil {
 		return nil, xerrors.Errorf("parse job id: %w", err)
 	}
-	server.Logger.Debug(ctx, "FailJob starting", slog.F("job_id", jobID))
+	server.Logger.Debug(ctx, "stage FailJob starting", slog.F("job_id", jobID))
 	job, err := server.Database.GetProvisionerJobByID(ctx, jobID)
 	if err != nil {
 		return nil, xerrors.Errorf("get provisioner job: %w", err)
@@ -632,9 +632,6 @@ func (server *Server) FailJob(ctx context.Context, failJob *proto.FailedJob) (*p
 
 	switch jobType := failJob.Type.(type) {
 	case *proto.FailedJob_WorkspaceBuild_:
-		if jobType.WorkspaceBuild.State == nil {
-			break
-		}
 		var input WorkspaceProvisionJob
 		err = json.Unmarshal(job.Input, &input)
 		if err != nil {
@@ -642,21 +639,23 @@ func (server *Server) FailJob(ctx context.Context, failJob *proto.FailedJob) (*p
 		}
 
 		var build database.WorkspaceBuild
-		err := server.Database.InTx(func(db database.Store) error {
-			workspaceBuild, err := db.GetWorkspaceBuildByID(ctx, input.WorkspaceBuildID)
+		err = server.Database.InTx(func(db database.Store) error {
+			build, err = db.GetWorkspaceBuildByID(ctx, input.WorkspaceBuildID)
 			if err != nil {
 				return xerrors.Errorf("get workspace build: %w", err)
 			}
 
-			build, err = db.UpdateWorkspaceBuildByID(ctx, database.UpdateWorkspaceBuildByIDParams{
-				ID:               input.WorkspaceBuildID,
-				UpdatedAt:        database.Now(),
-				ProvisionerState: jobType.WorkspaceBuild.State,
-				Deadline:         workspaceBuild.Deadline,
-				MaxDeadline:      workspaceBuild.MaxDeadline,
-			})
-			if err != nil {
-				return xerrors.Errorf("update workspace build state: %w", err)
+			if jobType.WorkspaceBuild.State != nil {
+				_, err = db.UpdateWorkspaceBuildByID(ctx, database.UpdateWorkspaceBuildByIDParams{
+					ID:               input.WorkspaceBuildID,
+					UpdatedAt:        database.Now(),
+					ProvisionerState: jobType.WorkspaceBuild.State,
+					Deadline:         build.Deadline,
+					MaxDeadline:      build.MaxDeadline,
+				})
+				if err != nil {
+					return xerrors.Errorf("update workspace build state: %w", err)
+				}
 			}
 
 			return nil
@@ -746,7 +745,7 @@ func (server *Server) CompleteJob(ctx context.Context, completed *proto.Complete
 	if err != nil {
 		return nil, xerrors.Errorf("parse job id: %w", err)
 	}
-	server.Logger.Debug(ctx, "CompleteJob starting", slog.F("job_id", jobID))
+	server.Logger.Debug(ctx, "stage CompleteJob starting", slog.F("job_id", jobID))
 	job, err := server.Database.GetProvisionerJobByID(ctx, jobID)
 	if err != nil {
 		return nil, xerrors.Errorf("get job by id: %w", err)
@@ -789,6 +788,8 @@ func (server *Server) CompleteJob(ctx context.Context, completed *proto.Complete
 			server.Logger.Info(ctx, "inserting template import job parameter",
 				slog.F("job_id", job.ID.String()),
 				slog.F("parameter_name", richParameter.Name),
+				slog.F("type", richParameter.Type),
+				slog.F("ephemeral", richParameter.Ephemeral),
 			)
 			options, err := json.Marshal(richParameter.Options)
 			if err != nil {
@@ -825,7 +826,8 @@ func (server *Server) CompleteJob(ctx context.Context, completed *proto.Complete
 				ValidationMax:       validationMax,
 				ValidationMonotonic: richParameter.ValidationMonotonic,
 				Required:            richParameter.Required,
-				LegacyVariableName:  richParameter.LegacyVariableName,
+				DisplayOrder:        richParameter.Order,
+				Ephemeral:           richParameter.Ephemeral,
 			})
 			if err != nil {
 				return nil, xerrors.Errorf("insert parameter: %w", err)
@@ -1121,7 +1123,7 @@ func (server *Server) CompleteJob(ctx context.Context, completed *proto.Complete
 		return nil, xerrors.Errorf("publish end of job logs: %w", err)
 	}
 
-	server.Logger.Debug(ctx, "CompleteJob done", slog.F("job_id", jobID))
+	server.Logger.Debug(ctx, "stage CompleteJob done", slog.F("job_id", jobID))
 	return &proto.Empty{}, nil
 }
 

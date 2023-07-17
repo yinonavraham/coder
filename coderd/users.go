@@ -199,12 +199,14 @@ func (api *API) users(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	userRows, err := api.Database.GetUsers(ctx, database.GetUsersParams{
-		AfterID:   paginationParams.AfterID,
-		OffsetOpt: int32(paginationParams.Offset),
-		LimitOpt:  int32(paginationParams.Limit),
-		Search:    params.Search,
-		Status:    params.Status,
-		RbacRole:  params.RbacRole,
+		AfterID:        paginationParams.AfterID,
+		Search:         params.Search,
+		Status:         params.Status,
+		RbacRole:       params.RbacRole,
+		LastSeenBefore: params.LastSeenBefore,
+		LastSeenAfter:  params.LastSeenAfter,
+		OffsetOpt:      int32(paginationParams.Offset),
+		LimitOpt:       int32(paginationParams.Limit),
 	})
 	if err != nil {
 		httpapi.Write(ctx, rw, http.StatusInternalServerError, codersdk.Response{
@@ -497,6 +499,37 @@ func (api *API) userByName(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.Write(ctx, rw, http.StatusOK, db2sdk.User(user, organizationIDs))
+}
+
+// Returns the user's login type. This only works if the api key for authorization
+// and the requested user match. Eg: 'me'
+//
+// @Summary Get user login type
+// @ID get-user-login-type
+// @Security CoderSessionToken
+// @Produce json
+// @Tags Users
+// @Param user path string true "User ID, name, or me"
+// @Success 200 {object} codersdk.UserLoginType
+// @Router /users/{user}/login-type [get]
+func (*API) userLoginType(rw http.ResponseWriter, r *http.Request) {
+	var (
+		ctx  = r.Context()
+		user = httpmw.UserParam(r)
+		key  = httpmw.APIKey(r)
+	)
+
+	if key.UserID != user.ID {
+		// Currently this is only valid for querying yourself.
+		httpapi.Write(ctx, rw, http.StatusForbidden, codersdk.Response{
+			Message: "You are not authorized to view this user's login type.",
+		})
+		return
+	}
+
+	httpapi.Write(ctx, rw, http.StatusOK, codersdk.UserLoginType{
+		LoginType: codersdk.LoginType(user.LoginType),
+	})
 }
 
 // @Summary Update user profile

@@ -326,7 +326,7 @@ export const templateVersionEditorMachine = createMachine(
 
           tar.addFolder(fullPath)
         })
-        const blob = await tar.write()
+        const blob = (await tar.write()) as Blob
         return API.uploadTemplateFile(new File([blob], "template.tar"))
       },
       createBuild: (ctx) => {
@@ -387,7 +387,7 @@ export const templateVersionEditorMachine = createMachine(
       },
       publishingVersion: async (
         { version, templateId },
-        { name, isActiveVersion },
+        { name, message, isActiveVersion },
       ) => {
         if (!version) {
           throw new Error("Version is not set")
@@ -395,10 +395,10 @@ export const templateVersionEditorMachine = createMachine(
         if (!templateId) {
           throw new Error("Template is not set")
         }
+        const haveChanges = name !== version.name || message !== version.message
         await Promise.all([
-          // Only do a patch if the name is different
-          name !== version.name
-            ? API.patchTemplateVersion(version.id, { name })
+          haveChanges
+            ? API.patchTemplateVersion(version.id, { name, message })
             : Promise.resolve(),
           isActiveVersion
             ? API.updateActiveTemplateVersion(templateId, {

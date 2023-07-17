@@ -25,7 +25,10 @@ CREATE TYPE audit_action AS ENUM (
 CREATE TYPE build_reason AS ENUM (
     'initiator',
     'autostart',
-    'autostop'
+    'autostop',
+    'autolock',
+    'failedstop',
+    'autodelete'
 );
 
 CREATE TYPE log_level AS ENUM (
@@ -99,7 +102,8 @@ CREATE TYPE resource_type AS ENUM (
     'group',
     'workspace_build',
     'license',
-    'workspace_proxy'
+    'workspace_proxy',
+    'convert_login'
 );
 
 CREATE TYPE startup_script_behavior AS ENUM (
@@ -168,6 +172,45 @@ BEGIN
 		END IF;
 	END IF;
 	RETURN NEW;
+END;
+$$;
+
+CREATE FUNCTION tailnet_notify_agent_change() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	IF (OLD IS NOT NULL) THEN
+		PERFORM pg_notify('tailnet_agent_update', OLD.id::text);
+		RETURN NULL;
+	END IF;
+	IF (NEW IS NOT NULL) THEN
+		PERFORM pg_notify('tailnet_agent_update', NEW.id::text);
+		RETURN NULL;
+	END IF;
+END;
+$$;
+
+CREATE FUNCTION tailnet_notify_client_change() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	IF (OLD IS NOT NULL) THEN
+		PERFORM pg_notify('tailnet_client_update', OLD.id || ',' || OLD.agent_id);
+		RETURN NULL;
+	END IF;
+	IF (NEW IS NOT NULL) THEN
+		PERFORM pg_notify('tailnet_client_update', NEW.id || ',' || NEW.agent_id);
+		RETURN NULL;
+	END IF;
+END;
+$$;
+
+CREATE FUNCTION tailnet_notify_coordinator_heartbeat() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	PERFORM pg_notify('tailnet_coordinator_heartbeat', NEW.id::text);
+	RETURN NULL;
 END;
 $$;
 
@@ -383,6 +426,28 @@ CREATE TABLE site_configs (
     value character varying(8192) NOT NULL
 );
 
+CREATE TABLE tailnet_agents (
+    id uuid NOT NULL,
+    coordinator_id uuid NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    node jsonb NOT NULL
+);
+
+CREATE TABLE tailnet_clients (
+    id uuid NOT NULL,
+    coordinator_id uuid NOT NULL,
+    agent_id uuid NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    node jsonb NOT NULL
+);
+
+CREATE TABLE tailnet_coordinators (
+    id uuid NOT NULL,
+    heartbeat_at timestamp with time zone NOT NULL
+);
+
+COMMENT ON TABLE tailnet_coordinators IS 'We keep this separate from replicas in case we need to break the coordinator out into its own service';
+
 CREATE TABLE template_version_parameters (
     template_version_id uuid NOT NULL,
     name text NOT NULL,
@@ -398,8 +463,9 @@ CREATE TABLE template_version_parameters (
     validation_error text DEFAULT ''::text NOT NULL,
     validation_monotonic text DEFAULT ''::text NOT NULL,
     required boolean DEFAULT true NOT NULL,
-    legacy_variable_name text DEFAULT ''::text NOT NULL,
     display_name text DEFAULT ''::text NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL,
+    ephemeral boolean DEFAULT false NOT NULL,
     CONSTRAINT validation_monotonic_order CHECK ((validation_monotonic = ANY (ARRAY['increasing'::text, 'decreasing'::text, ''::text])))
 );
 
@@ -429,9 +495,11 @@ COMMENT ON COLUMN template_version_parameters.validation_monotonic IS 'Validatio
 
 COMMENT ON COLUMN template_version_parameters.required IS 'Is parameter required?';
 
-COMMENT ON COLUMN template_version_parameters.legacy_variable_name IS 'Name of the legacy variable for migration purposes';
-
 COMMENT ON COLUMN template_version_parameters.display_name IS 'Display name of the rich parameter';
+
+COMMENT ON COLUMN template_version_parameters.display_order IS 'Specifies the order in which to display parameters in user interfaces.';
+
+COMMENT ON COLUMN template_version_parameters.ephemeral IS 'The value of an ephemeral parameter will not be preserved between consecutive workspace builds.';
 
 CREATE TABLE template_version_variables (
     template_version_id uuid NOT NULL,
@@ -468,10 +536,13 @@ CREATE TABLE template_versions (
     readme character varying(1048576) NOT NULL,
     job_id uuid NOT NULL,
     created_by uuid NOT NULL,
-    git_auth_providers text[]
+    git_auth_providers text[],
+    message character varying(1048576) DEFAULT ''::character varying NOT NULL
 );
 
 COMMENT ON COLUMN template_versions.git_auth_providers IS 'IDs of Git auth providers for a specific template version';
+
+COMMENT ON COLUMN template_versions.message IS 'Message describing the changes in this version of the template, similar to a Git commit message. Like a commit message, this should be a short, high-level description of the changes in this version of the template. This message is immutable and should not be updated after the fact.';
 
 CREATE TABLE templates (
     id uuid NOT NULL,
@@ -755,7 +826,8 @@ CREATE TABLE workspaces (
     name character varying(64) NOT NULL,
     autostart_schedule text,
     ttl bigint,
-    last_used_at timestamp without time zone DEFAULT '0001-01-01 00:00:00'::timestamp without time zone NOT NULL
+    last_used_at timestamp without time zone DEFAULT '0001-01-01 00:00:00'::timestamp without time zone NOT NULL,
+    locked_at timestamp with time zone
 );
 
 ALTER TABLE ONLY licenses ALTER COLUMN id SET DEFAULT nextval('licenses_id_seq'::regclass);
@@ -834,6 +906,15 @@ ALTER TABLE ONLY provisioner_jobs
 
 ALTER TABLE ONLY site_configs
     ADD CONSTRAINT site_configs_key_key UNIQUE (key);
+
+ALTER TABLE ONLY tailnet_agents
+    ADD CONSTRAINT tailnet_agents_pkey PRIMARY KEY (id, coordinator_id);
+
+ALTER TABLE ONLY tailnet_clients
+    ADD CONSTRAINT tailnet_clients_pkey PRIMARY KEY (id, coordinator_id);
+
+ALTER TABLE ONLY tailnet_coordinators
+    ADD CONSTRAINT tailnet_coordinators_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY template_version_parameters
     ADD CONSTRAINT template_version_parameters_template_version_id_name_key UNIQUE (template_version_id, name);
@@ -922,6 +1003,12 @@ CREATE UNIQUE INDEX idx_organization_name ON organizations USING btree (name);
 
 CREATE UNIQUE INDEX idx_organization_name_lower ON organizations USING btree (lower(name));
 
+CREATE INDEX idx_tailnet_agents_coordinator ON tailnet_agents USING btree (coordinator_id);
+
+CREATE INDEX idx_tailnet_clients_agent ON tailnet_clients USING btree (agent_id);
+
+CREATE INDEX idx_tailnet_clients_coordinator ON tailnet_clients USING btree (coordinator_id);
+
 CREATE UNIQUE INDEX idx_users_email ON users USING btree (email) WHERE (deleted = false);
 
 CREATE UNIQUE INDEX idx_users_username ON users USING btree (username) WHERE (deleted = false);
@@ -947,6 +1034,12 @@ CREATE UNIQUE INDEX workspace_proxies_lower_name_idx ON workspace_proxies USING 
 CREATE INDEX workspace_resources_job_id_idx ON workspace_resources USING btree (job_id);
 
 CREATE UNIQUE INDEX workspaces_owner_id_lower_idx ON workspaces USING btree (owner_id, lower((name)::text)) WHERE (deleted = false);
+
+CREATE TRIGGER tailnet_notify_agent_change AFTER INSERT OR DELETE OR UPDATE ON tailnet_agents FOR EACH ROW EXECUTE FUNCTION tailnet_notify_agent_change();
+
+CREATE TRIGGER tailnet_notify_client_change AFTER INSERT OR DELETE OR UPDATE ON tailnet_clients FOR EACH ROW EXECUTE FUNCTION tailnet_notify_client_change();
+
+CREATE TRIGGER tailnet_notify_coordinator_heartbeat AFTER INSERT OR UPDATE ON tailnet_coordinators FOR EACH ROW EXECUTE FUNCTION tailnet_notify_coordinator_heartbeat();
 
 CREATE TRIGGER trigger_insert_apikeys BEFORE INSERT ON api_keys FOR EACH ROW EXECUTE FUNCTION insert_apikey_fail_if_user_deleted();
 
@@ -981,6 +1074,12 @@ ALTER TABLE ONLY provisioner_job_logs
 
 ALTER TABLE ONLY provisioner_jobs
     ADD CONSTRAINT provisioner_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY tailnet_agents
+    ADD CONSTRAINT tailnet_agents_coordinator_id_fkey FOREIGN KEY (coordinator_id) REFERENCES tailnet_coordinators(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY tailnet_clients
+    ADD CONSTRAINT tailnet_clients_coordinator_id_fkey FOREIGN KEY (coordinator_id) REFERENCES tailnet_coordinators(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY template_version_parameters
     ADD CONSTRAINT template_version_parameters_template_version_id_fkey FOREIGN KEY (template_version_id) REFERENCES template_versions(id) ON DELETE CASCADE;
