@@ -73,7 +73,7 @@ coder templates create <template-name>
 
 While workspaces can auto-stop based on activity, users set this value per-workspace it can be continuously bumped to prevent a workspace from stopping. For large enterprises, this can drive up cloud cost and introduce security concerns, as workspaces are not kept up to date.
 
-To enforce auto-stopping, you can set an auto-stop interval to ensure workspaces are auto restarted or auto-stopped, regardless of user activity.
+To enforce auto-stopping, you can set an auto-stop interval to ensure workspaces are auto restarted or auto-stopped, regardless of user activity. This can have several benefits, such as saving cloud cost or ensuring workspaces are up to date and have the latest OS patches.
 
 ![Workspace auto-stop settings](../images/templates/template-schedule-settings.png)
 
