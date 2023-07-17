@@ -1691,6 +1691,13 @@ type UserLink struct {
 	OAuthExpiry       time.Time `db:"oauth_expiry" json:"oauth_expiry"`
 }
 
+// Visible fields of users are allowed to be joined with other tables for including context of other resources.
+type VisibleUser struct {
+	ID        uuid.UUID      `db:"id" json:"id"`
+	Username  string         `db:"username" json:"username"`
+	AvatarURL sql.NullString `db:"avatar_url" json:"avatar_url"`
+}
+
 type Workspace struct {
 	ID                uuid.UUID      `db:"id" json:"id"`
 	CreatedAt         time.Time      `db:"created_at" json:"created_at"`
