@@ -1152,6 +1152,7 @@ func TestAgent_Metadata(t *testing.T) {
 		})
 
 		var gotMd map[string]agentsdk.PostMetadataRequest
+
 		require.Eventually(t, func() bool {
 			gotMd = client.GetMetadata()
 			return len(gotMd) == 1
@@ -1165,7 +1166,7 @@ func TestAgent_Metadata(t *testing.T) {
 				panic("unexpected number of metadata")
 			}
 			return !gotMd["greeting"].CollectedAt.Equal(collectedAt)
-		}, testutil.WaitShort, testutil.IntervalMedium)
+		}, testutil.WaitShort, testutil.IntervalMedium, "gotMd: %+v", gotMd)
 	})
 
 	t.Run("Many", func(t *testing.T) {
