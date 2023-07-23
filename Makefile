@@ -410,8 +410,13 @@ else
 endif
 .PHONY: fmt/shfmt
 
-lint: lint/shellcheck lint/go lint/ts lint/helm
+lint: lint/shellcheck lint/go lint/ts lint/helm lint/site-icons
 .PHONY: lint
+
+lint/site-icons:
+	cd site/static/icons
+
+.PHONY: lint/site-icons
 
 lint/ts:
 	cd site
