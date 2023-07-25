@@ -63,10 +63,10 @@ provider "artifactory" {
 }
 ```
 
-When pushing the template, you can pass in the variables using the `--variable` flag:
+When pushing the template, you can pass in the variables using the `-V` flag:
 
 ```sh
-coder templates push --variable 'jfrog_url=https://YYY.jfrog.io' --variable 'artifactory_access_token=XXX'
+coder templates push -V 'jfrog_url=https://YYY.jfrog.io' -V 'artifactory_access_token=XXX'
 ```
 
 ## Installing jf
