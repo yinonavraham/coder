@@ -81,7 +81,7 @@ Disable the default behavior of granting template access to the 'everyone' group
 
 Specify a set of tags to target provisioner daemons.
 
-### --variable
+### -V, --variable
 
 |      |                           |
 | ---- | ------------------------- |
